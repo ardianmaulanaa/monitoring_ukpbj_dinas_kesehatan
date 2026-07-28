@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 enum UserStatus {
@@ -82,11 +83,24 @@ enum RupStatus {
   DITARIK
 }
 
+enum KontrakStatus {
+  DRAFT
+  AKTIF
+  SELESAI
+  TERLAMBAT
+  BATAL
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Char(36)
   name         String     @db.VarChar(160)
   email        String     @unique @db.VarChar(180)
   passwordHash String     @map("password_hash") @db.VarChar(255)
+  nip          String?    @db.VarChar(40)
+  jabatan      String?    @db.VarChar(120)
+  unitKerja    String?    @map("unit_kerja") @db.VarChar(160)
+  nomorTelepon String?    @map("nomor_telepon") @db.VarChar(40)
+  avatarUrl    String?    @map("avatar_url") @db.VarChar(255)
   status       UserStatus @default(ACTIVE)
   lastLoginAt  DateTime?  @map("last_login_at")
   createdAt    DateTime   @default(now()) @map("created_at")
@@ -175,27 +189,27 @@ model DataBarang {
 }
 
 model PaketPengadaan {
-  id                  String               @id @default(uuid()) @db.Char(36)
-  kodePaket           String               @unique @map("kode_paket") @db.VarChar(80)
-  namaPaket           String               @map("nama_paket") @db.VarChar(220)
-  unitPemohon         String               @map("unit_pemohon") @db.VarChar(160)
-  satuanKerja         String?              @map("satuan_kerja") @db.VarChar(160)
-  tahunAnggaran       Int                  @map("tahun_anggaran")
-  sumberDana          String               @map("sumber_dana") @db.VarChar(120)
-  jenisPengadaan      PaketJenisPengadaan  @default(BARANG) @map("jenis_pengadaan")
-  kategori            String               @db.VarChar(100)
-  metodePengadaan     PaketMetodePengadaan @map("metode_pengadaan")
-  pagu                Decimal              @default(0) @db.Decimal(18, 2)
-  hps                 Decimal              @default(0) @db.Decimal(18, 2)
-  statusPaket         PaketStatus          @default(PERENCANAAN) @map("status_paket")
-  prioritas           BarangPrioritas      @default(NORMAL)
-  ppkPenanggungJawab  String?              @map("ppk_penanggung_jawab") @db.VarChar(160)
-  rencanaMulai        DateTime?            @map("rencana_mulai") @db.Date
-  rencanaSelesai      DateTime?            @map("rencana_selesai") @db.Date
-  lokasiPelaksanaan   String?              @map("lokasi_pelaksanaan") @db.VarChar(180)
-  catatan             String?              @db.Text
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
+  id                 String               @id @default(uuid()) @db.Char(36)
+  kodePaket          String               @unique @map("kode_paket") @db.VarChar(80)
+  namaPaket          String               @map("nama_paket") @db.VarChar(220)
+  unitPemohon        String               @map("unit_pemohon") @db.VarChar(160)
+  satuanKerja        String?              @map("satuan_kerja") @db.VarChar(160)
+  tahunAnggaran      Int                  @map("tahun_anggaran")
+  sumberDana         String               @map("sumber_dana") @db.VarChar(120)
+  jenisPengadaan     PaketJenisPengadaan  @default(BARANG) @map("jenis_pengadaan")
+  kategori           String               @db.VarChar(100)
+  metodePengadaan    PaketMetodePengadaan @map("metode_pengadaan")
+  pagu               Decimal              @default(0) @db.Decimal(18, 2)
+  hps                Decimal              @default(0) @db.Decimal(18, 2)
+  statusPaket        PaketStatus          @default(PERENCANAAN) @map("status_paket")
+  prioritas          BarangPrioritas      @default(NORMAL)
+  ppkPenanggungJawab String?              @map("ppk_penanggung_jawab") @db.VarChar(160)
+  rencanaMulai       DateTime?            @map("rencana_mulai") @db.Date
+  rencanaSelesai     DateTime?            @map("rencana_selesai") @db.Date
+  lokasiPelaksanaan  String?              @map("lokasi_pelaksanaan") @db.VarChar(180)
+  catatan            String?              @db.Text
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
 
   @@index([namaPaket])
   @@index([unitPemohon])
@@ -206,20 +220,42 @@ model PaketPengadaan {
   @@map("paket_pengadaan")
 }
 
+model Kontrak {
+  id             String        @id @default(uuid()) @db.Char(36)
+  nomorKontrak   String        @unique @map("nomor_kontrak") @db.VarChar(100)
+  paketId        String?       @map("paket_id") @db.Char(36)
+  namaPaket      String        @map("nama_paket") @db.VarChar(220)
+  penyedia       String        @db.VarChar(180)
+  nilaiKontrak   Decimal       @default(0) @map("nilai_kontrak") @db.Decimal(18, 2)
+  tanggalKontrak DateTime?     @map("tanggal_kontrak") @db.Date
+  tanggalMulai   DateTime?     @map("tanggal_mulai") @db.Date
+  tanggalSelesai DateTime?     @map("tanggal_selesai") @db.Date
+  status         KontrakStatus @default(DRAFT)
+  catatan        String?       @db.Text
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  @@index([paketId])
+  @@index([namaPaket])
+  @@index([penyedia])
+  @@index([status])
+  @@map("kontrak")
+}
+
 model RencanaUmumPengadaan {
-  id                String               @id @default(uuid()) @db.Char(36)
-  kodeRup           String               @unique @map("kode_rup") @db.VarChar(80)
-  namaPaket         String               @map("nama_paket") @db.VarChar(220)
-  unitPengusul      String               @map("unit_pengusul") @db.VarChar(160)
-  sumberDana        String               @map("sumber_dana") @db.VarChar(120)
-  pagu              Decimal              @default(0) @db.Decimal(18, 2)
-  metodePengadaan   PaketMetodePengadaan @map("metode_pengadaan")
-  jadwalPemilihan   String?              @map("jadwal_pemilihan") @db.VarChar(120)
-  tahunAnggaran     Int                  @map("tahun_anggaran")
-  statusSirup       RupStatus            @default(BELUM_INPUT) @map("status_sirup")
-  catatan           String?              @db.Text
-  createdAt         DateTime             @default(now()) @map("created_at")
-  updatedAt         DateTime             @updatedAt @map("updated_at")
+  id              String               @id @default(uuid()) @db.Char(36)
+  kodeRup         String               @unique @map("kode_rup") @db.VarChar(80)
+  namaPaket       String               @map("nama_paket") @db.VarChar(220)
+  unitPengusul    String               @map("unit_pengusul") @db.VarChar(160)
+  sumberDana      String               @map("sumber_dana") @db.VarChar(120)
+  pagu            Decimal              @default(0) @db.Decimal(18, 2)
+  metodePengadaan PaketMetodePengadaan @map("metode_pengadaan")
+  jadwalPemilihan String?              @map("jadwal_pemilihan") @db.VarChar(120)
+  tahunAnggaran   Int                  @map("tahun_anggaran")
+  statusSirup     RupStatus            @default(BELUM_INPUT) @map("status_sirup")
+  catatan         String?              @db.Text
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
 
   @@index([namaPaket])
   @@index([unitPengusul])
@@ -228,4 +264,17 @@ model RencanaUmumPengadaan {
   @@index([metodePengadaan])
   @@index([statusSirup])
   @@map("rencana_umum_pengadaan")
+}
+
+model SumberDana {
+  id        String   @id @default(uuid()) @db.Char(36)
+  kode      String   @unique @db.VarChar(40)
+  nama      String   @db.VarChar(120)
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([nama])
+  @@index([aktif])
+  @@map("sumber_dana")
 }

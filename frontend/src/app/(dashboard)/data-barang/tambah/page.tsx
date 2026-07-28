@@ -12,29 +12,6 @@ import {
 } from "lucide-react";
 import AppHeader from "@/app/(dashboard)/_shared/AppHeader";
 
-const kategoriBarang = [
-  "Alat Kesehatan",
-  "Bahan Medis Habis Pakai",
-  "Reagen Laboratorium",
-  "Obat-obatan",
-  "Peralatan Laboratorium",
-  "IT Kesehatan",
-  "Perlengkapan Penunjang",
-] as const;
-
-const satuanBarang = [
-  "Unit",
-  "Pcs",
-  "Box",
-  "Paket",
-  "Set",
-  "Vial",
-  "Botol",
-  "Kit",
-  "Liter",
-  "Kg",
-] as const;
-
 type FormState = {
   kodeBarang: string;
   namaBarang: string;
@@ -53,9 +30,9 @@ type FormState = {
 const initialForm: FormState = {
   kodeBarang: "",
   namaBarang: "",
-  kategori: "Alat Kesehatan",
+  kategori: "",
   spesifikasi: "",
-  satuan: "Unit",
+  satuan: "",
   jumlahKebutuhan: "",
   hargaSatuan: "",
   tkdnPersen: "",
@@ -215,7 +192,6 @@ export default function Page() {
                 onChange={(event) =>
                   updateField("kodeBarang", event.target.value)
                 }
-                placeholder="Contoh: LAB-REG-001"
                 required
               />
             </div>
@@ -228,41 +204,28 @@ export default function Page() {
                 onChange={(event) =>
                   updateField("namaBarang", event.target.value)
                 }
-                placeholder="Contoh: Reagen Hematologi 3 Diff"
                 required
               />
             </div>
 
             <div>
               <FieldLabel required>Kategori</FieldLabel>
-              <select
+              <input
                 className={inputClass}
                 value={form.kategori}
                 onChange={(event) => updateField("kategori", event.target.value)}
                 required
-              >
-                {kategoriBarang.map((kategori) => (
-                  <option key={kategori} value={kategori}>
-                    {kategori}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div>
               <FieldLabel required>Satuan</FieldLabel>
-              <select
+              <input
                 className={inputClass}
                 value={form.satuan}
                 onChange={(event) => updateField("satuan", event.target.value)}
                 required
-              >
-                {satuanBarang.map((satuan) => (
-                  <option key={satuan} value={satuan}>
-                    {satuan}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div>
@@ -307,7 +270,6 @@ export default function Page() {
                 onChange={(event) =>
                   updateField("tkdnPersen", event.target.value)
                 }
-                placeholder="Contoh: 40"
               />
             </div>
 
@@ -352,7 +314,6 @@ export default function Page() {
                 onChange={(event) =>
                   updateField("lokasiPenerimaan", event.target.value)
                 }
-                placeholder="Contoh: Gudang Labkesda"
               />
             </div>
 

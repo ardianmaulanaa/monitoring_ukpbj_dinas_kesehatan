@@ -8,11 +8,32 @@ const inputClass =
   "h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100";
 const labelClass = "text-xs font-black uppercase tracking-wide text-slate-500";
 
-export default function RupForm() {
+type SumberDanaOption = {
+  kode: string;
+  nama: string;
+};
+
+type RupFormProps = {
+  sumberDanaOptions: SumberDanaOption[];
+  onCancel?: () => void;
+  onSaved?: () => void;
+  variant?: "page" | "modal";
+};
+
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+export default function RupForm({
+  sumberDanaOptions,
+  onCancel,
+  onSaved,
+  variant = "page",
+}: RupFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [pagu, setPagu] = useState("0");
+  const [pagu, setPagu] = useState("");
 
   const formattedPagu = useMemo(() => {
     const value = Number(pagu);
@@ -45,6 +66,11 @@ export default function RupForm() {
       return;
     }
 
+    if (onSaved) {
+      onSaved();
+      return;
+    }
+
     router.push("/rup");
     router.refresh();
   }
@@ -52,7 +78,11 @@ export default function RupForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+      className={
+        variant === "modal"
+          ? "overflow-hidden bg-white"
+          : "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+      }
     >
       <div className="border-b border-slate-100 px-5 py-4">
         <h1 className="text-lg font-black text-[#16227c]">
@@ -93,30 +123,41 @@ export default function RupForm() {
             name="unitPengusul"
             required
             className={inputClass}
-            placeholder="Contoh: Seksi Mikrobiologi"
           />
         </label>
 
         <label className="grid gap-2">
           <span className={labelClass}>Sumber Dana</span>
-          <input
+          <select
             name="sumberDana"
             required
             className={inputClass}
-            placeholder="Contoh: APBD / BLUD / DBHCHT"
-          />
+            defaultValue={sumberDanaOptions[0]?.kode ?? ""}
+            disabled={sumberDanaOptions.length === 0}
+          >
+            {sumberDanaOptions.length === 0 ? (
+              <option value="">Master sumber dana belum tersedia</option>
+            ) : null}
+            {sumberDanaOptions.map((option) => (
+              <option key={option.kode} value={option.kode}>
+                {option.nama}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="grid gap-2">
           <span className={labelClass}>Pagu</span>
           <input
             name="pagu"
-            type="number"
-            min="0"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             required
             className={inputClass}
             value={pagu}
-            onChange={(event) => setPagu(event.target.value)}
+            onChange={(event) => setPagu(onlyDigits(event.target.value))}
+            placeholder="0"
           />
           <span className="text-xs font-bold text-slate-500">
             {formattedPagu}
@@ -138,8 +179,8 @@ export default function RupForm() {
           <span className={labelClass}>Jadwal Pemilihan</span>
           <input
             name="jadwalPemilihan"
+            type="date"
             className={inputClass}
-            placeholder="Contoh: Mar - Apr 2026"
           />
         </label>
 
@@ -172,7 +213,7 @@ export default function RupForm() {
       <div className="flex justify-end gap-3 border-t border-slate-100 px-5 py-4">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={onCancel ?? (() => router.back())}
           className="h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-black text-slate-600 transition hover:bg-slate-50"
         >
           Batal

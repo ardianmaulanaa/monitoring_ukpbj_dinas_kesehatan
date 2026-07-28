@@ -1,14 +1,10 @@
 import Link from "next/link";
-import {
-  ClipboardList,
-  Download,
-  FileSpreadsheet,
-  Plus,
-  Search,
-} from "lucide-react";
+import { ClipboardList, Search } from "lucide-react";
 import AppHeader from "@/app/(dashboard)/_shared/AppHeader";
 import { formatCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
+import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
+import AddRupModalButton from "./AddRupModalButton";
 
 type RupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -52,7 +48,7 @@ function methodLabel(value: string) {
 function sourceFundClass(value: string) {
   const normalized = value.toUpperCase();
 
-  if (normalized.includes("BLUD")) return "bg-sky-100 text-sky-700";
+  if (normalized.includes("BLUD")) return "bg-emerald-100 text-[#08783f]";
   if (normalized.includes("APBD")) return "bg-amber-100 text-amber-700";
   if (normalized.includes("DBHCHT")) return "bg-red-100 text-red-700";
 
@@ -92,28 +88,22 @@ export default async function Page({ searchParams }: RupPageProps) {
       : {}),
   };
 
-  const [rupData, years, sourceFunds, units] = await Promise.all([
-    prisma.rencanaUmumPengadaan.findMany({
-      where,
-      orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
-      take: 100,
-    }),
-    prisma.rencanaUmumPengadaan.findMany({
-      distinct: ["tahunAnggaran"],
-      orderBy: { tahunAnggaran: "desc" },
-      select: { tahunAnggaran: true },
-    }),
-    prisma.rencanaUmumPengadaan.findMany({
-      distinct: ["sumberDana"],
-      orderBy: { sumberDana: "asc" },
-      select: { sumberDana: true },
-    }),
-    prisma.rencanaUmumPengadaan.findMany({
-      distinct: ["unitPengusul"],
-      orderBy: { unitPengusul: "asc" },
-      select: { unitPengusul: true },
-    }),
-  ]);
+  const rupData = await prisma.rencanaUmumPengadaan.findMany({
+    where,
+    orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
+    take: 100,
+  });
+  const years = await prisma.rencanaUmumPengadaan.findMany({
+    distinct: ["tahunAnggaran"],
+    orderBy: { tahunAnggaran: "desc" },
+    select: { tahunAnggaran: true },
+  });
+  const sourceFunds = await getActiveSumberDanaOptions();
+  const units = await prisma.rencanaUmumPengadaan.findMany({
+    distinct: ["unitPengusul"],
+    orderBy: { unitPengusul: "asc" },
+    select: { unitPengusul: true },
+  });
 
   return (
     <>
@@ -124,15 +114,16 @@ export default async function Page({ searchParams }: RupPageProps) {
       />
 
       <main className="bg-[#f4f7f5]">
-        <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-            <div className="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-              <span className="text-sm font-black text-slate-400">Filter:</span>
+        <form className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
+          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
+              <span className="self-center text-sm font-black text-slate-400">
+                Filter:
+              </span>
 
               <select
                 name="tahunAnggaran"
                 defaultValue={tahunAnggaran ?? ""}
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
               >
                 <option value="">Semua Tahun</option>
                 {years.map((year) => (
@@ -145,12 +136,12 @@ export default async function Page({ searchParams }: RupPageProps) {
               <select
                 name="sumberDana"
                 defaultValue={sumberDana ?? ""}
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
               >
                 <option value="">Semua Sumber Dana</option>
                 {sourceFunds.map((item) => (
-                  <option key={item.sumberDana} value={item.sumberDana}>
-                    {item.sumberDana}
+                  <option key={item.kode} value={item.kode}>
+                    {item.nama}
                   </option>
                 ))}
               </select>
@@ -158,7 +149,7 @@ export default async function Page({ searchParams }: RupPageProps) {
               <select
                 name="unitPengusul"
                 defaultValue={unitPengusul ?? ""}
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
               >
                 <option value="">Semua Unit</option>
                 {units.map((item) => (
@@ -171,7 +162,7 @@ export default async function Page({ searchParams }: RupPageProps) {
               <select
                 name="statusSirup"
                 defaultValue={statusSirup ?? ""}
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
               >
                 <option value="">Semua Status</option>
                 <option value="SUDAH_TAYANG">Sudah Tayang</option>
@@ -181,7 +172,7 @@ export default async function Page({ searchParams }: RupPageProps) {
                 <option value="DITARIK">Ditarik</option>
               </select>
 
-              <label className="flex h-10 min-w-[220px] items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-3 text-sm text-slate-500 focus-within:border-[#08783f] focus-within:ring-2 focus-within:ring-emerald-100">
+              <label className="flex h-11 w-full items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500 focus-within:border-[#08783f] focus-within:ring-2 focus-within:ring-emerald-100 sm:col-span-2 lg:col-span-4 xl:col-span-1">
                 <Search className="h-4 w-4" />
                 <input
                   name="q"
@@ -190,31 +181,6 @@ export default async function Page({ searchParams }: RupPageProps) {
                   className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
                 />
               </label>
-
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532]"
-              >
-                Terapkan
-              </button>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sky-200 bg-white px-4 text-sm font-black text-sky-700 transition hover:bg-sky-50"
-              >
-                <FileSpreadsheet className="h-4 w-4" />
-                Excel
-              </button>
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sky-200 bg-white px-4 text-sm font-black text-sky-700 transition hover:bg-sky-50"
-              >
-                <Download className="h-4 w-4" />
-                PDF
-              </button>
-            </div>
           </div>
         </form>
 
@@ -228,13 +194,7 @@ export default async function Page({ searchParams }: RupPageProps) {
                 </h1>
               </div>
 
-              <Link
-                href="/rup/tambah"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532]"
-              >
-                <Plus className="h-4 w-4" strokeWidth={2.5} />
-                Tambah RUP
-              </Link>
+              <AddRupModalButton sumberDanaOptions={sourceFunds} />
             </div>
 
             <div className="overflow-x-auto">
@@ -291,7 +251,7 @@ export default async function Page({ searchParams }: RupPageProps) {
                         <td className="whitespace-nowrap px-4 py-4 text-right">
                           <Link
                             href={`/rup/${item.id}`}
-                            className="inline-flex h-9 items-center justify-center rounded-lg border border-sky-200 bg-white px-4 text-sm font-black text-sky-700 transition hover:bg-sky-50"
+                            className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50"
                           >
                             Detail
                           </Link>

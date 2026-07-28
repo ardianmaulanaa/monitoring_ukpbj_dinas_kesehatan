@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   ArrowUpRight,
-  Boxes,
   CalendarClock,
   CheckCircle2,
   ClipboardList,
@@ -18,19 +17,34 @@ import AppHeader from "@/app/(dashboard)/_shared/AppHeader";
 import { formatCurrency } from "@/lib/currency";
 import { getDashboardData } from "@/lib/dashboard-data";
 
-const toneStyles = {
-  green: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  blue: "border-sky-200 bg-sky-50 text-sky-700",
-  yellow: "border-amber-200 bg-amber-50 text-amber-700",
-  red: "border-red-200 bg-red-50 text-red-700",
-  slate: "border-slate-200 bg-slate-50 text-slate-700",
-  violet: "border-violet-200 bg-violet-50 text-violet-700",
-};
-
 const priorityToneStyles = {
   amber: "bg-amber-100 text-amber-700",
   green: "bg-emerald-100 text-emerald-700",
   red: "bg-red-100 text-red-700",
+};
+
+const timelineToneStyles = {
+  done: "bg-emerald-500 ring-emerald-100",
+  active: "bg-emerald-500 ring-emerald-100",
+  warning: "bg-amber-500 ring-amber-100",
+  danger: "bg-red-500 ring-red-100",
+  pending: "bg-slate-300 ring-slate-100",
+};
+
+const auditToneStyles = {
+  green: "bg-emerald-100 text-emerald-700",
+  amber: "bg-amber-100 text-amber-700",
+  red: "bg-red-100 text-red-700",
+};
+
+const dashboardCardToneStyles = {
+  blue: "border-l-sky-600",
+  green: "border-l-emerald-600",
+  orange: "border-l-orange-500",
+  red: "border-l-red-500",
+  teal: "border-l-teal-600",
+  violet: "border-l-violet-700",
+  slate: "border-l-slate-400",
 };
 
 function formatCompactCurrency(value: number) {
@@ -60,7 +74,7 @@ function statusClass(status: string) {
   const normalized = status.toUpperCase();
 
   if (normalized.includes("SELESAI")) return "bg-emerald-100 text-emerald-700";
-  if (normalized.includes("KONTRAK")) return "bg-sky-100 text-sky-700";
+  if (normalized.includes("KONTRAK")) return "bg-emerald-100 text-[#08783f]";
   if (normalized.includes("PEMILIHAN") || normalized.includes("PEMENANG")) {
     return "bg-amber-100 text-amber-700";
   }
@@ -85,9 +99,13 @@ export default async function Page() {
 
   const selesaiCount =
     dashboard.stages.find((item) => item.label === "Selesai")?.count ?? 0;
-  const kontrakCount =
-    dashboard.stages.find((item) => item.label === "Kontrak")?.count ?? 0;
   const tahapAktif = Math.max(summary.totalPaket - selesaiCount, 0);
+  const maxMonthlyAmount = Math.max(
+    ...dashboard.monthlyRealization.map((item) =>
+      Math.max(item.pagu, item.realisasi),
+    ),
+    1,
+  );
 
   const summaryCards = [
     {
@@ -95,141 +113,132 @@ export default async function Page() {
       value: summary.totalPaket.toLocaleString("id-ID"),
       helper: `TA ${summary.tahunAnggaran}`,
       icon: ClipboardList,
-      tone: "green",
+      tone: "blue",
     },
     {
       label: "Total Pagu",
       value: formatCompactCurrency(summary.totalPagu),
-      helper: "Batas anggaran paket",
+      helper: "Anggaran berjalan",
       icon: Landmark,
       tone: "blue",
     },
     {
-      label: "Total HPS",
-      value: formatCompactCurrency(summary.totalHps),
-      helper: "Harga perkiraan sendiri",
-      icon: LineChart,
-      tone: "yellow",
-    },
-    {
-      label: "Nilai Kontrak",
+      label: "Realisasi",
       value: formatCompactCurrency(summary.totalNilaiKontrak),
-      helper: `${summary.realisasiKontrakPercent.toLocaleString("id-ID")}% dari pagu`,
-      icon: FileCheck2,
-      tone: "violet",
+      helper: `Serapan ${summary.realisasiKontrakPercent.toLocaleString("id-ID")}%`,
+      icon: CheckCircle2,
+      tone: "green",
     },
-    {
-      label: "Data Barang",
-      value: summary.totalBarang.toLocaleString("id-ID"),
-      helper: `${summary.totalPdn.toLocaleString("id-ID")} item PDN`,
-      icon: Boxes,
-      tone: "slate",
-    },
-    {
-      label: "Deadline <7 Hari",
-      value: summary.deadlineDekat.toLocaleString("id-ID"),
-      helper: "Perlu dipantau UKPBJ",
-      icon: CalendarClock,
-      tone: "red",
-    },
+    ...dashboard.sourceFunds.slice(0, 3).map((item, index) => ({
+      label: `Paket ${item.label}`,
+      value: item.count.toLocaleString("id-ID"),
+      helper: "Sumber dana",
+      icon: index === 0 ? Landmark : index === 1 ? PackageCheck : PieChart,
+      tone: index === 0 ? "orange" : index === 1 ? "teal" : "violet",
+    })),
   ];
 
-  const quickStats = [
+  const methodCards = [
     {
-      label: "Paket selesai",
-      value: selesaiCount,
-      description: "Sudah mencapai tahap selesai.",
+      label: "Paket Selesai",
+      value: selesaiCount.toLocaleString("id-ID"),
+      helper: "Selesai diproses",
       icon: CheckCircle2,
       tone: "green",
     },
     {
-      label: "Kontrak berjalan",
-      value: kontrakCount,
-      description: "Sedang pelaksanaan atau pengiriman.",
+      label: "Paket Berjalan",
+      value: tahapAktif.toLocaleString("id-ID"),
+      helper: "Dalam proses",
       icon: PackageCheck,
-      tone: "blue",
-    },
-    {
-      label: "Paket aktif",
-      value: tahapAktif,
-      description: "Masih dalam alur perencanaan sampai kontrak.",
-      icon: ShoppingCart,
-      tone: "yellow",
+      tone: "orange",
     },
     {
       label: "Bermasalah",
-      value: summary.paketTerlambat,
-      description: "Status terlambat atau butuh eskalasi.",
+      value: summary.paketBermasalah.toLocaleString("id-ID"),
+      helper: "Perlu perhatian",
       icon: AlertTriangle,
       tone: "red",
     },
+    {
+      label: "Deadline <7 Hari",
+      value: summary.deadlineDekat.toLocaleString("id-ID"),
+      helper: "Segera tindak lanjut",
+      icon: CalendarClock,
+      tone: "orange",
+    },
+    {
+      label: "e-Katalog V6/V5",
+      value: summary.paketEKatalogV6.toLocaleString("id-ID"),
+      helper: "Paket",
+      icon: ShoppingCart,
+      tone: "blue",
+    },
+    {
+      label: "Tender / Non Tender",
+      value: summary.paketTenderNonTender.toLocaleString("id-ID"),
+      helper: "Paket",
+      icon: ShieldCheck,
+      tone: "slate",
+    },
   ];
+
+  const dashboardKpiCards = [...summaryCards, ...methodCards];
 
   return (
     <>
       <AppHeader
-        title="Dashboard"
-        subtitle="Ringkasan monitoring pengadaan barang kesehatan Dinas Kesehatan."
-        rightLabel="Monitoring"
+        title="Dashboard Utama"
+        subtitle="UKPBJ Labkes Jabar › Dashboard"
       />
 
-      <main className="bg-[#f4f7f5] px-4 py-6 sm:px-6 lg:px-8">
+      <main className="bg-[#f4f7f5]">
+        <section className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex flex-1 flex-wrap items-center gap-3">
+            <span className="text-sm font-black text-slate-400">Filter:</span>
+            <select className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100">
+              <option>TA {summary.tahunAnggaran}</option>
+            </select>
+            <select className="h-9 min-w-44 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100">
+              <option>Semua Sumber Dana</option>
+              {dashboard.sourceFunds.map((item) => (
+                <option key={item.label}>{item.label}</option>
+              ))}
+            </select>
+            <select className="h-9 min-w-40 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100">
+              <option>Semua Unit</option>
+            </select>
+            <select className="h-9 min-w-40 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100">
+              <option>Semua Status</option>
+            </select>
+          </div>
+        </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-          {summaryCards.map((card) => {
+        <div className="px-4 py-5 sm:px-6 lg:px-8">
+
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {dashboardKpiCards.map((card) => {
             const Icon = card.icon;
 
             return (
               <div
                 key={card.label}
-                className="relative overflow-hidden rounded-lg border border-white/20 bg-white p-4 shadow-sm"
+                className={`relative overflow-hidden rounded-lg border border-slate-100 border-l-4 bg-white px-4 py-4 shadow-sm ${dashboardCardToneStyles[card.tone as keyof typeof dashboardCardToneStyles]}`}
               >
-                <div className="absolute inset-x-0 top-0 h-1 bg-[#f5bd20]" />
-                <div className="grid grid-cols-[minmax(0,1fr)_42px] items-start gap-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_34px] items-start gap-3">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-black uppercase text-slate-500">
+                    <p className="text-[11px] font-black uppercase text-slate-400">
                       {card.label}
                     </p>
-                    <p className="mt-3 truncate text-2xl font-black text-slate-950">
+                    <p className="mt-1 truncate text-2xl font-black leading-tight text-slate-950">
                       {card.value}
                     </p>
-                  </div>
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${toneStyles[card.tone as keyof typeof toneStyles]}`}
-                  >
-                    <Icon className="h-5 w-5" strokeWidth={2.3} />
-                  </div>
-                </div>
-                <p className="mt-3 text-xs font-semibold text-slate-500">
-                  {card.helper}
-                </p>
-              </div>
-            );
-          })}
-        </section>
-
-        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {quickStats.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <div
-                key={item.label}
-                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${toneStyles[item.tone as keyof typeof toneStyles]}`}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-black text-slate-900">
-                      {item.value.toLocaleString("id-ID")} {item.label}
+                    <p className="mt-2 truncate text-xs font-semibold text-slate-400">
+                      {card.helper}
                     </p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">
-                      {item.description}
-                    </p>
+                  </div>
+                  <div className="mt-10 flex h-8 w-8 shrink-0 items-center justify-center text-slate-300">
+                    <Icon className="h-6 w-6" strokeWidth={2} />
                   </div>
                 </div>
               </div>
@@ -254,29 +263,61 @@ export default async function Page() {
               </div>
             </div>
 
-            <div className="mt-6 space-y-5">
-              {dashboard.stages.length > 0 ? (
-                dashboard.stages.map((item) => (
-                  <div key={item.label}>
-                    <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                      <span className="font-bold text-slate-700">
-                        {item.label}
-                      </span>
-                      <span className="font-black text-slate-950">
-                        {item.count.toLocaleString("id-ID")} paket
-                      </span>
+            <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_0.9fr]">
+              <div className="space-y-5">
+                {dashboard.stages.length > 0 ? (
+                  dashboard.stages.map((item) => (
+                    <div key={item.label}>
+                      <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                        <span className="font-bold text-slate-700">
+                          {item.label}
+                        </span>
+                        <span className="font-black text-slate-950">
+                          {item.count.toLocaleString("id-ID")} paket
+                        </span>
+                      </div>
+                      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${item.color}`}
+                          style={{ width: `${item.percent}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                  ))
+                ) : (
+                  <EmptyState message="Belum ada data tahapan paket di database." />
+                )}
+              </div>
+
+              <div className="border-t border-slate-100 pt-5 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+                <p className="text-sm font-black text-slate-900">
+                  Timeline pengadaan
+                </p>
+                <div className="mt-4 space-y-4">
+                  {dashboard.timeline.map((item) => (
+                    <div key={item.label} className="relative pl-7">
                       <div
-                        className={`h-full rounded-full ${item.color}`}
-                        style={{ width: `${item.percent}%` }}
+                        className={`absolute left-0 top-1.5 h-3 w-3 rounded-full ring-4 ${
+                          timelineToneStyles[item.status]
+                        }`}
                       />
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-black text-slate-900">
+                            {item.label}
+                          </p>
+                          <p className="mt-1 text-xs font-semibold text-slate-500">
+                            {item.period}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
+                          {item.count}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <EmptyState message="Belum ada data tahapan paket di database." />
-              )}
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -327,6 +368,106 @@ export default async function Page() {
           </div>
         </section>
 
+        <section className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-black uppercase text-[#08783f]">
+                  Grafik Realisasi
+                </p>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                  Pagu vs HPS per bulan
+                </h2>
+              </div>
+              <LineChart className="h-6 w-6 text-[#08783f]" />
+            </div>
+
+            <div className="mt-6 grid h-64 grid-cols-12 items-end gap-2 rounded-lg bg-slate-50 px-3 pb-4 pt-6">
+              {dashboard.monthlyRealization.map((item) => (
+                <div key={item.month} className="flex h-full flex-col justify-end gap-1">
+                  <div className="flex min-h-0 flex-1 items-end gap-1">
+                    <div
+                      className="w-full rounded-t bg-emerald-500"
+                      style={{
+                        height: `${Math.max((item.pagu / maxMonthlyAmount) * 100, item.pagu > 0 ? 8 : 0)}%`,
+                      }}
+                      title={`Pagu ${item.month}: ${formatCurrency(item.pagu)}`}
+                    />
+                    <div
+                      className="w-full rounded-t bg-emerald-500"
+                      style={{
+                        height: `${Math.max((item.realisasi / maxMonthlyAmount) * 100, item.realisasi > 0 ? 8 : 0)}%`,
+                      }}
+                      title={`HPS ${item.month}: ${formatCurrency(item.realisasi)}`}
+                    />
+                  </div>
+                  <span className="text-center text-[10px] font-bold text-slate-500">
+                    {item.month}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-4 text-xs font-bold text-slate-600">
+              <span>
+                <span className="text-[#08783f]">■</span> Pagu
+              </span>
+              <span>
+                <span className="text-emerald-500">■</span> HPS / estimasi realisasi
+              </span>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-black uppercase text-[#08783f]">
+                  Audit Readiness
+                </p>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                  Snapshot kelengkapan
+                </h2>
+              </div>
+              <FileCheck2 className="h-6 w-6 text-[#08783f]" />
+            </div>
+
+            <div className="mt-5 rounded-lg bg-emerald-50 p-5 text-center">
+              <p className="text-4xl font-black text-emerald-700">
+                {dashboard.auditReadiness.percent}%
+              </p>
+              <p className="mt-1 text-xs font-bold text-emerald-700">
+                kesiapan audit berdasarkan status paket
+              </p>
+              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white">
+                <div
+                  className="h-full rounded-full bg-emerald-500"
+                  style={{ width: `${dashboard.auditReadiness.percent}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {dashboard.auditReadiness.items.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0"
+                >
+                  <span className="text-sm font-bold text-slate-700">
+                    {item.label}
+                  </span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-black ${
+                      auditToneStyles[item.tone]
+                    }`}
+                  >
+                    {item.complete}/{item.total}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="mt-6 grid gap-6 xl:grid-cols-2">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between gap-4">
@@ -335,7 +476,7 @@ export default async function Page() {
                   Sumber Dana
                 </p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">
-                  Distribusi APBD, BLUD, dan lainnya
+                  Distribusi sumber dana dari database
                 </h2>
               </div>
               <PieChart className="h-6 w-6 text-[#08783f]" />
@@ -399,7 +540,7 @@ export default async function Page() {
                     </div>
                     <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className="h-full rounded-full bg-sky-500"
+                        className="h-full rounded-full bg-emerald-500"
                         style={{ width: `${item.percent}%` }}
                       />
                     </div>
@@ -529,6 +670,7 @@ export default async function Page() {
             </div>
           </section>
         </section>
+        </div>
       </main>
     </>
   );

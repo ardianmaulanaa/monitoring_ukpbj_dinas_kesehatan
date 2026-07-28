@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import {
   AlertTriangle,
   Archive,
@@ -35,6 +34,8 @@ type SidebarProps = {
   open?: boolean;
   onClose?: () => void;
   mode?: "mobile" | "desktop";
+  collapsed?: boolean;
+  onToggleDesktop?: () => void;
 };
 
 type NavigationItem = {
@@ -125,18 +126,17 @@ export default function Sidebar({
   open = false,
   onClose,
   mode = "mobile",
+  collapsed = false,
+  onToggleDesktop,
 }: SidebarProps) {
   const pathname = usePathname();
   const isDesktop = mode === "desktop";
-  const [collapsed, setCollapsed] = useState(false);
-
-  const toggleCollapsed = () => setCollapsed((current) => !current);
 
   return (
     <>
       {!isDesktop ? (
         <div
-          className={`fixed inset-0 z-40 bg-slate-950/30 backdrop-blur-sm transition lg:hidden ${
+          className={`fixed inset-0 z-40 bg-slate-950/30 transition lg:hidden ${
             open ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
           onClick={onClose}
@@ -147,7 +147,11 @@ export default function Sidebar({
       <aside
         className={`inset-y-0 left-0 z-50 flex-col border-r border-slate-200 bg-white text-slate-700 transition-all duration-300 ${
           isDesktop
-            ? `sticky top-0 hidden h-dvh lg:flex ${collapsed ? "w-[76px]" : "w-[260px]"}`
+            ? `fixed top-0 hidden h-dvh lg:flex ${
+                collapsed
+                  ? "w-[76px]"
+                  : "w-[260px] shadow-2xl shadow-slate-950/10"
+              }`
             : `fixed flex w-[300px] lg:hidden ${open ? "translate-x-0" : "-translate-x-full"}`
         }`}
       >
@@ -157,10 +161,12 @@ export default function Sidebar({
           <div className="bg-[#159cc3]" />
         </div>
 
-        <div className="flex min-h-[96px] items-center justify-between border-b border-slate-100 px-5">
-          <div
-            className={`min-w-0 ${collapsed && isDesktop ? "hidden" : "block"}`}
-          >
+        <div
+          className={`flex min-h-[96px] items-center border-b border-slate-100 ${
+            collapsed && isDesktop ? "justify-center px-3" : "justify-between px-5"
+          }`}
+        >
+          <div className={`min-w-0 ${collapsed && isDesktop ? "hidden" : ""}`}>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#08783f]">
               Dinkes Jabar
             </p>
@@ -168,6 +174,18 @@ export default function Sidebar({
               Monitoring PBJ
             </h2>
           </div>
+
+          {isDesktop ? (
+            <button
+              type="button"
+              onClick={onToggleDesktop}
+              className="hidden h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#08783f] lg:flex"
+              aria-label={collapsed ? "Buka sidebar" : "Tutup sidebar"}
+              title={collapsed ? "Buka sidebar" : "Tutup sidebar"}
+            >
+              <Menu className="h-5 w-5" strokeWidth={2.4} />
+            </button>
+          ) : null}
 
           <button
             type="button"
@@ -180,29 +198,19 @@ export default function Sidebar({
           >
             <X className="h-5 w-5" strokeWidth={2.4} />
           </button>
-
-          {isDesktop ? (
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-[#f4f7f5] hover:text-[#08783f]"
-              aria-label={collapsed ? "Buka sidebar" : "Tutup sidebar"}
-              title={collapsed ? "Buka sidebar" : "Tutup sidebar"}
-            >
-              <Menu className="h-5 w-5" strokeWidth={2.6} />
-            </button>
-          ) : null}
         </div>
 
-        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+        <nav className={`min-h-0 flex-1 overflow-y-auto py-4 ${collapsed && isDesktop ? "px-2" : "px-3"}`}>
           <div className="space-y-4">
             {sections.map((section) => (
               <section key={section.title}>
-                {collapsed && isDesktop ? null : (
-                  <p className="px-3 pb-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-                    {section.title}
-                  </p>
-                )}
+                <p
+                  className={`px-3 pb-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 ${
+                    collapsed && isDesktop ? "sr-only" : ""
+                  }`}
+                >
+                  {section.title}
+                </p>
                 <div className="mt-2 space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
@@ -214,20 +222,22 @@ export default function Sidebar({
                         href={item.href}
                         onClick={onClose}
                         title={collapsed && isDesktop ? item.label : undefined}
-                        className={`flex min-h-10 items-center gap-3 rounded-lg border-l-[3px] px-3 text-sm font-bold transition ${
+                        className={`flex min-h-10 items-center rounded-lg border-l-[3px] text-sm font-bold transition ${
+                          collapsed && isDesktop
+                            ? "justify-center gap-0 px-2"
+                            : "gap-3 px-3"
+                        } ${
                           active
                             ? "border-[#08783f] bg-[#08783f] text-white shadow-[0_10px_22px_rgba(8,120,63,0.18)]"
                             : "border-transparent text-slate-600 hover:border-[#08783f]/25 hover:bg-[#f4f7f5] hover:text-[#08783f]"
-                        } ${collapsed && isDesktop ? "justify-center px-0" : ""}`}
+                        }`}
                       >
                         <Icon
                           className="h-5 w-5 shrink-0"
                           strokeWidth={2.2}
                         />
                         <span
-                          className={`truncate ${
-                            collapsed && isDesktop ? "hidden" : "block"
-                          }`}
+                          className={`truncate ${collapsed && isDesktop ? "sr-only" : ""}`}
                         >
                           {item.label}
                         </span>

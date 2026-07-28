@@ -1,15 +1,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const bcrypt = require("bcrypt");
-const { PrismaMariaDb } = require("@prisma/adapter-mariadb");
 const { PrismaClient } = require("@prisma/client");
 
-const databaseUrl =
-  process.env.DATABASE_URL ??
-  "mysql://root@127.0.0.1:3306/health_procurement_dashboard";
-
-const prisma = new PrismaClient({
-  adapter: new PrismaMariaDb(databaseUrl),
-});
+const prisma = new PrismaClient();
 
 const roles = [
   ["SUPER_ADMIN", "Super Admin"],
@@ -26,12 +19,26 @@ const roles = [
   ["VIEWER", "Viewer"],
 ];
 
+const sumberDana = [
+  ["APBD", "APBD"],
+  ["BLUD", "BLUD"],
+  ["DBHCHT", "DBHCHT"],
+];
+
 async function main() {
   for (const [code, name] of roles) {
     await prisma.role.upsert({
       where: { code },
       update: { name },
       create: { code, name },
+    });
+  }
+
+  for (const [kode, nama] of sumberDana) {
+    await prisma.sumberDana.upsert({
+      where: { kode },
+      update: { nama, aktif: true },
+      create: { kode, nama, aktif: true },
     });
   }
 
@@ -48,12 +55,20 @@ async function main() {
     update: {
       name: "Administrator",
       passwordHash,
+      jabatan: "Administrator Sistem",
+      unitKerja: "UKPBJ Labkes Provinsi Jawa Barat",
+      nomorTelepon: "0812-0000-0000",
+      nip: "198001012010011001",
       status: "ACTIVE",
     },
     create: {
       name: "Administrator",
       email: adminEmail,
       passwordHash,
+      jabatan: "Administrator Sistem",
+      unitKerja: "UKPBJ Labkes Provinsi Jawa Barat",
+      nomorTelepon: "0812-0000-0000",
+      nip: "198001012010011001",
       status: "ACTIVE",
     },
   });
