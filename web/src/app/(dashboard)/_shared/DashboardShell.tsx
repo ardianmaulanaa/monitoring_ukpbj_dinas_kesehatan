@@ -1,14 +1,16 @@
 "use client";
 
 import type { ReactNode } from "react";
+import type { RoleCode } from "@prisma/client";
 import Sidebar from "./Sidebar";
 import { SidebarStateProvider, useSidebarState } from "./SidebarState";
 
 type DashboardShellProps = {
   children: ReactNode;
+  roles: RoleCode[];
 };
 
-function DashboardContent({ children }: DashboardShellProps) {
+function DashboardContent({ children, roles }: DashboardShellProps) {
   const { desktopCollapsed, toggleDesktopSidebar } = useSidebarState();
 
   return (
@@ -17,6 +19,7 @@ function DashboardContent({ children }: DashboardShellProps) {
         mode="desktop"
         collapsed={desktopCollapsed}
         onToggleDesktop={toggleDesktopSidebar}
+        roles={roles}
       />
       <div className="min-w-0 lg:pl-[76px]">
         {children}
@@ -25,10 +28,10 @@ function DashboardContent({ children }: DashboardShellProps) {
   );
 }
 
-export default function DashboardShell({ children }: DashboardShellProps) {
+export default function DashboardShell({ children, roles }: DashboardShellProps) {
   return (
     <SidebarStateProvider>
-      <DashboardContent>{children}</DashboardContent>
+      <DashboardContent roles={roles}>{children}</DashboardContent>
     </SidebarStateProvider>
   );
 }

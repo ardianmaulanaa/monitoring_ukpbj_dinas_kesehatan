@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { canAccessPath } from "@/lib/access-control";
 
 const sessionCookieName = "dinkes_pbj_session";
 
@@ -38,7 +39,38 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  const sessionToken = request.cookies.get(sessionCookieName)?.value;
+  const roles = sessionToken ? readRolesFromJwtPayload(sessionToken) : [];
+
+  if (!canAccessPath(pathname, roles)) {
+    const unauthorizedUrl = request.nextUrl.clone();
+    unauthorizedUrl.pathname = "/unauthorized";
+    unauthorizedUrl.search = "";
+    return NextResponse.redirect(unauthorizedUrl);
+  }
+
   return NextResponse.next();
+}
+
+function readRolesFromJwtPayload(token: string) {
+  try {
+    const payload = token.split(".")[1];
+
+    if (!payload) {
+      return [];
+    }
+
+    const normalizedPayload = payload.replaceAll("-", "+").replaceAll("_", "/");
+    const paddedPayload = normalizedPayload.padEnd(
+      Math.ceil(normalizedPayload.length / 4) * 4,
+      "=",
+    );
+    const decoded = JSON.parse(atob(paddedPayload)) as { roles?: string[] };
+
+    return Array.isArray(decoded.roles) ? decoded.roles : [];
+  } catch {
+    return [];
+  }
 }
 
 export const config = {

@@ -13,6 +13,9 @@ type RupPageProps = {
 const statusStyles = {
   BELUM_INPUT: "bg-slate-100 text-slate-600",
   PROSES_VERIFIKASI: "bg-amber-100 text-amber-700",
+  MENUNGGU_PPTK: "bg-blue-100 text-blue-700",
+  MENUNGGU_PPK: "bg-violet-100 text-violet-700",
+  MENUNGGU_KPA_PA: "bg-indigo-100 text-indigo-700",
   SUDAH_TAYANG: "bg-emerald-100 text-emerald-700",
   REVISI_PAGU: "bg-orange-100 text-orange-700",
   DITARIK: "bg-red-100 text-red-700",
@@ -81,6 +84,9 @@ export default async function Page({ searchParams }: RupPageProps) {
           statusSirup: statusSirup as
             | "BELUM_INPUT"
             | "PROSES_VERIFIKASI"
+            | "MENUNGGU_PPTK"
+            | "MENUNGGU_PPK"
+            | "MENUNGGU_KPA_PA"
             | "SUDAH_TAYANG"
             | "REVISI_PAGU"
             | "DITARIK",
@@ -167,6 +173,9 @@ export default async function Page({ searchParams }: RupPageProps) {
                 <option value="">Semua Status</option>
                 <option value="SUDAH_TAYANG">Sudah Tayang</option>
                 <option value="PROSES_VERIFIKASI">Proses Verifikasi</option>
+                <option value="MENUNGGU_PPTK">Menunggu PPTK</option>
+                <option value="MENUNGGU_PPK">Menunggu PPK</option>
+                <option value="MENUNGGU_KPA_PA">Menunggu KPA/PA</option>
                 <option value="BELUM_INPUT">Belum Input</option>
                 <option value="REVISI_PAGU">Revisi Pagu</option>
                 <option value="DITARIK">Ditarik</option>

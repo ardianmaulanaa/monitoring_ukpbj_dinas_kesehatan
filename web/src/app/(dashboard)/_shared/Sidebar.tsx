@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { RoleCode } from "@prisma/client";
 import {
   AlertTriangle,
   Archive,
@@ -29,6 +30,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { canAccessPath } from "@/lib/access-control";
 
 type SidebarProps = {
   open?: boolean;
@@ -36,6 +38,7 @@ type SidebarProps = {
   mode?: "mobile" | "desktop";
   collapsed?: boolean;
   onToggleDesktop?: () => void;
+  roles?: RoleCode[];
 };
 
 type NavigationItem = {
@@ -104,6 +107,7 @@ const sections: NavigationSection[] = [
       { href: "/master/instansi", label: "Master Data", icon: Building2 },
       { href: "/pengaturan", label: "Pengaturan", icon: Settings },
       { href: "/admin/users", label: "Users", icon: UsersRound },
+      { href: "/admin/roles", label: "Roles", icon: ShieldCheck },
       { href: "/admin/audit-log", label: "Audit Log", icon: Archive },
       { href: "/profile", label: "Profile", icon: FileText },
     ],
@@ -128,9 +132,16 @@ export default function Sidebar({
   mode = "mobile",
   collapsed = false,
   onToggleDesktop,
+  roles = [],
 }: SidebarProps) {
   const pathname = usePathname();
   const isDesktop = mode === "desktop";
+  const visibleSections = sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => canAccessPath(item.href, roles)),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <>
@@ -202,7 +213,7 @@ export default function Sidebar({
 
         <nav className={`min-h-0 flex-1 overflow-y-auto py-4 ${collapsed && isDesktop ? "px-2" : "px-3"}`}>
           <div className="space-y-4">
-            {sections.map((section) => (
+            {visibleSections.map((section) => (
               <section key={section.title}>
                 <p
                   className={`px-3 pb-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 ${

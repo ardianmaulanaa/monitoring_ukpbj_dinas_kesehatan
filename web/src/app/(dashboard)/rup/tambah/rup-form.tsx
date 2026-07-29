@@ -18,6 +18,7 @@ type RupFormProps = {
   onCancel?: () => void;
   onSaved?: () => void;
   variant?: "page" | "modal";
+  mode?: "rup" | "planning";
 };
 
 function onlyDigits(value: string) {
@@ -29,6 +30,7 @@ export default function RupForm({
   onCancel,
   onSaved,
   variant = "page",
+  mode = "rup",
 }: RupFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -86,18 +88,28 @@ export default function RupForm({
     >
       <div className="border-b border-slate-100 px-5 py-4">
         <h1 className="text-lg font-black text-[#16227c]">
-          Form Rencana Umum Pengadaan
+          {mode === "planning"
+            ? "Form Usulan Perencanaan"
+            : "Form Rencana Umum Pengadaan"}
         </h1>
         <p className="mt-1 text-sm font-semibold text-slate-500">
-          Isi data RUP seperti kode RUP, unit pengusul, sumber dana, pagu,
-          metode, jadwal pemilihan, dan status tayang SIRUP.
+          {mode === "planning"
+            ? "Isi kebutuhan unit, sumber dana, pagu, metode awal, jadwal, dan status approval."
+            : "Isi data RUP seperti kode RUP, unit pengusul, sumber dana, pagu, metode, jadwal pemilihan, dan status tayang SIRUP."}
         </p>
       </div>
 
       <div className="grid gap-5 p-5 md:grid-cols-2">
         <label className="grid gap-2">
-          <span className={labelClass}>Kode RUP</span>
-          <input name="kodeRup" required className={inputClass} />
+          <span className={labelClass}>
+            {mode === "planning" ? "Kode Usulan" : "Kode RUP"}
+          </span>
+          <input
+            name="kodeRup"
+            required
+            className={inputClass}
+            placeholder={mode === "planning" ? "USUL-2025-001" : undefined}
+          />
         </label>
 
         <label className="grid gap-2">
@@ -113,7 +125,9 @@ export default function RupForm({
         </label>
 
         <label className="grid gap-2 md:col-span-2">
-          <span className={labelClass}>Nama Paket</span>
+          <span className={labelClass}>
+            {mode === "planning" ? "Nama Usulan" : "Nama Paket"}
+          </span>
           <input name="namaPaket" required className={inputClass} />
         </label>
 
@@ -185,13 +199,30 @@ export default function RupForm({
         </label>
 
         <label className="grid gap-2">
-          <span className={labelClass}>Status SIRUP</span>
+          <span className={labelClass}>
+            {mode === "planning" ? "Status Approval" : "Status SIRUP"}
+          </span>
           <select name="statusSirup" required className={inputClass}>
-            <option value="BELUM_INPUT">Belum Input</option>
-            <option value="PROSES_VERIFIKASI">Proses Verifikasi</option>
-            <option value="SUDAH_TAYANG">Sudah Tayang</option>
-            <option value="REVISI_PAGU">Revisi Pagu</option>
-            <option value="DITARIK">Ditarik</option>
+            {mode === "planning" ? (
+              <>
+                <option value="BELUM_INPUT">Draft Usulan</option>
+                <option value="PROSES_VERIFIKASI">Menunggu Kepala Unit</option>
+                <option value="MENUNGGU_PPTK">Menunggu PPTK</option>
+                <option value="MENUNGGU_PPK">Menunggu PPK</option>
+                <option value="MENUNGGU_KPA_PA">Menunggu KPA/PA</option>
+                <option value="REVISI_PAGU">Perlu Revisi</option>
+                <option value="SUDAH_TAYANG">Siap RUP/SIRUP</option>
+                <option value="DITARIK">Ditolak</option>
+              </>
+            ) : (
+              <>
+                <option value="BELUM_INPUT">Belum Input</option>
+                <option value="PROSES_VERIFIKASI">Proses Verifikasi</option>
+                <option value="SUDAH_TAYANG">Sudah Tayang</option>
+                <option value="REVISI_PAGU">Revisi Pagu</option>
+                <option value="DITARIK">Ditarik</option>
+              </>
+            )}
           </select>
         </label>
 
@@ -224,7 +255,11 @@ export default function RupForm({
           className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:opacity-60"
         >
           <Save className="h-4 w-4" />
-          {saving ? "Menyimpan..." : "Simpan RUP"}
+          {saving
+            ? "Menyimpan..."
+            : mode === "planning"
+              ? "Simpan Usulan"
+              : "Simpan RUP"}
         </button>
       </div>
     </form>

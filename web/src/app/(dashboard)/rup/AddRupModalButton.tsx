@@ -14,11 +14,13 @@ type SumberDanaOption = {
 type AddRupModalButtonProps = {
   sumberDanaOptions: SumberDanaOption[];
   label?: string;
+  mode?: "rup" | "planning";
 };
 
 export default function AddRupModalButton({
   sumberDanaOptions,
   label = "Tambah RUP",
+  mode = "rup",
 }: AddRupModalButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -43,11 +45,12 @@ export default function AddRupModalButton({
       <ModalShell
         isOpen={isOpen}
         onClose={close}
-        eyebrow="SIRUP / RUP"
+        eyebrow={mode === "planning" ? "Perencanaan" : "SIRUP / RUP"}
         title={label}
       >
         <RupForm
           sumberDanaOptions={sumberDanaOptions}
+          mode={mode}
           variant="modal"
           onCancel={close}
           onSaved={handleSaved}

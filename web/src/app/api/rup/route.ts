@@ -12,6 +12,9 @@ const rupQuerySchema = z.object({
     .enum([
       "BELUM_INPUT",
       "PROSES_VERIFIKASI",
+      "MENUNGGU_PPTK",
+      "MENUNGGU_PPK",
+      "MENUNGGU_KPA_PA",
       "SUDAH_TAYANG",
       "REVISI_PAGU",
       "DITARIK",
@@ -41,6 +44,9 @@ const createRupSchema = z.object({
     .enum([
       "BELUM_INPUT",
       "PROSES_VERIFIKASI",
+      "MENUNGGU_PPTK",
+      "MENUNGGU_PPK",
+      "MENUNGGU_KPA_PA",
       "SUDAH_TAYANG",
       "REVISI_PAGU",
       "DITARIK",
