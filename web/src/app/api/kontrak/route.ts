@@ -58,16 +58,24 @@ export async function POST(request: Request) {
   } = parsed.data;
 
   try {
-    const kontrak = await prisma.kontrak.create({
-      data: {
-        ...data,
-        paketId: paketId || undefined,
-        nilaiKontrak: new Prisma.Decimal(nilaiKontrak),
-        tanggalKontrak: toDate(tanggalKontrak),
-        tanggalMulai: toDate(tanggalMulai),
-        tanggalSelesai: toDate(tanggalSelesai),
-        catatan: catatan || undefined,
-      },
+    const kontrak = await prisma.$transaction(async (tx) => {
+      await tx.penyedia.upsert({
+        where: { nama: data.penyedia },
+        update: {},
+        create: { nama: data.penyedia },
+      });
+
+      return tx.kontrak.create({
+        data: {
+          ...data,
+          paketId: paketId || undefined,
+          nilaiKontrak: new Prisma.Decimal(nilaiKontrak),
+          tanggalKontrak: toDate(tanggalKontrak),
+          tanggalMulai: toDate(tanggalMulai),
+          tanggalSelesai: toDate(tanggalSelesai),
+          catatan: catatan || undefined,
+        },
+      });
     });
 
     return apiSuccess(kontrak, "Data kontrak berhasil disimpan.", {

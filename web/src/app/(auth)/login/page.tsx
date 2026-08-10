@@ -4,13 +4,49 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import {
+  AlertCircle,
   ArrowRight,
   Eye,
   EyeOff,
   LockKeyhole,
   Mail,
   ShieldCheck,
+  X,
 } from "lucide-react";
+
+const protectedRedirectPrefixes = [
+  "/dashboard",
+  "/pengadaan",
+  "/kontrak",
+  "/realisasi",
+  "/penyedia",
+  "/warning",
+  "/laporan",
+];
+
+function getSafeRedirectPath() {
+  if (typeof window === "undefined") {
+    return "/dashboard";
+  }
+
+  const redirectPath = new URLSearchParams(window.location.search).get(
+    "redirect",
+  );
+
+  if (
+    redirectPath &&
+    redirectPath.startsWith("/") &&
+    !redirectPath.startsWith("//") &&
+    protectedRedirectPrefixes.some(
+      (prefix) =>
+        redirectPath === prefix || redirectPath.startsWith(`${prefix}/`),
+    )
+  ) {
+    return redirectPath;
+  }
+
+  return "/dashboard";
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,7 +92,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace("/dashboard");
+      router.replace(getSafeRedirectPath());
       router.refresh();
     } catch {
       setError("Tidak dapat menghubungi server. Coba lagi sebentar.");
@@ -67,6 +103,32 @@ export default function LoginPage() {
 
   return (
     <main className="fixed inset-0 h-[100dvh] max-h-[100dvh] overflow-hidden overscroll-none bg-[#f2f7f3] text-slate-900">
+      {error && (
+        <div
+          role="alert"
+          className="toast-alert fixed right-4 top-5 z-[80] flex w-[calc(100%-2rem)] max-w-sm items-start gap-3 rounded-2xl border border-red-100 bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_18px_45px_rgba(127,29,29,0.14)] ring-1 ring-red-50 sm:right-6 sm:top-6"
+        >
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+            <AlertCircle className="h-5 w-5" strokeWidth={2.4} />
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <p className="font-black text-red-700">Login gagal</p>
+            <p className="mt-0.5 leading-5 text-slate-600">{error}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setError("")}
+            className="-mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+            aria-label="Tutup alert"
+            title="Tutup alert"
+          >
+            <X className="h-4 w-4" strokeWidth={2.4} />
+          </button>
+        </div>
+      )}
+
       {/* Garis identitas Dinkes */}
       <div className="absolute inset-x-0 top-0 z-40 grid h-1.5 grid-cols-3">
         <div className="bg-[#08783f]" />
@@ -338,20 +400,6 @@ export default function LoginPage() {
                           </button>
                         </div>
                       </div>
-
-                      {/* Error */}
-                      {error && (
-                        <div
-                          role="alert"
-                          className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-semibold text-red-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
-                        >
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs font-black">
-                            !
-                          </span>
-
-                          <span>{error}</span>
-                        </div>
-                      )}
 
                       {/* Tombol login */}
                       <button

@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  ArrowUpRight,
   CalendarClock,
   CheckCircle2,
   ClipboardList,
@@ -12,7 +11,6 @@ import {
   ShieldCheck,
   ShoppingCart,
 } from "lucide-react";
-import Link from "next/link";
 import AppHeader from "@/app/(dashboard)/_shared/AppHeader";
 import { formatCurrency } from "@/lib/currency";
 import { getDashboardData } from "@/lib/dashboard-data";
@@ -606,13 +604,6 @@ export default async function Page() {
                   Monitoring paket pengadaan barang
                 </h2>
               </div>
-              <Link
-                href="/paket"
-                className="inline-flex min-h-10 w-fit items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532]"
-              >
-                Lihat semua
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
             </div>
 
             <div className="overflow-x-auto">

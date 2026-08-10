@@ -120,7 +120,7 @@ export default async function Page({ searchParams }: RupPageProps) {
       />
 
       <main className="bg-[#f4f7f5]">
-        <form className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
+        <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
           <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
               <span className="self-center text-sm font-black text-slate-400">
                 Filter:
@@ -129,7 +129,7 @@ export default async function Page({ searchParams }: RupPageProps) {
               <select
                 name="tahunAnggaran"
                 defaultValue={tahunAnggaran ?? ""}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+                className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
               >
                 <option value="">Semua Tahun</option>
                 {years.map((year) => (
@@ -142,7 +142,7 @@ export default async function Page({ searchParams }: RupPageProps) {
               <select
                 name="sumberDana"
                 defaultValue={sumberDana ?? ""}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+                className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
               >
                 <option value="">Semua Sumber Dana</option>
                 {sourceFunds.map((item) => (
@@ -155,7 +155,7 @@ export default async function Page({ searchParams }: RupPageProps) {
               <select
                 name="unitPengusul"
                 defaultValue={unitPengusul ?? ""}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+                className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
               >
                 <option value="">Semua Unit</option>
                 {units.map((item) => (
@@ -168,7 +168,7 @@ export default async function Page({ searchParams }: RupPageProps) {
               <select
                 name="statusSirup"
                 defaultValue={statusSirup ?? ""}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+                className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
               >
                 <option value="">Semua Status</option>
                 <option value="SUDAH_TAYANG">Sudah Tayang</option>
@@ -181,7 +181,7 @@ export default async function Page({ searchParams }: RupPageProps) {
                 <option value="DITARIK">Ditarik</option>
               </select>
 
-              <label className="flex h-11 w-full items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500 focus-within:border-[#08783f] focus-within:ring-2 focus-within:ring-emerald-100 sm:col-span-2 lg:col-span-4 xl:col-span-1">
+              <label className="flex h-9 w-full items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500 focus-within:border-[#08783f] focus-within:ring-2 focus-within:ring-emerald-100 sm:col-span-2 lg:col-span-4 xl:col-span-1">
                 <Search className="h-4 w-4" />
                 <input
                   name="q"

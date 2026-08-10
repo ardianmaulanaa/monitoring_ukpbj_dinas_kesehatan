@@ -1,5 +1,5 @@
-import ProcurementModulePage from "@/app/(dashboard)/_shared/ProcurementModulePage";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ProcurementModulePage pageKey="serah-terima" />;
+  redirect("/dashboard");
 }

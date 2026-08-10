@@ -42,7 +42,7 @@ export default function ModalShell({
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-slate-950/40 px-3 py-5 sm:px-6"
+      className="fixed inset-0 z-[120] flex h-[100dvh] items-center justify-center overflow-hidden bg-slate-950/40 px-3 py-4 sm:px-6 sm:py-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -55,9 +55,9 @@ export default function ModalShell({
       />
 
       <div
-        className={`relative my-auto w-full ${maxWidthClassName} rounded-2xl border border-slate-200 bg-white shadow-2xl`}
+        className={`relative flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] min-w-0 max-w-[calc(100vw-1.5rem)] ${maxWidthClassName} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:w-full sm:max-w-[calc(100vw-3rem)]`}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 rounded-t-2xl border-b border-slate-200 bg-white px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between gap-4 rounded-t-2xl border-b border-slate-200 bg-white px-5 py-4">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#08783f]">
               {eyebrow}
@@ -79,7 +79,7 @@ export default function ModalShell({
           </button>
         </div>
 
-        <div className="max-h-[calc(100vh-9rem)] overflow-y-auto p-5 sm:p-6">
+        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-6">
           {children}
         </div>
       </div>

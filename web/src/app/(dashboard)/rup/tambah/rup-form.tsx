@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
 
 const inputClass =
-  "h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100";
+  "h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100";
 const labelClass = "text-xs font-black uppercase tracking-wide text-slate-500";
 
 type SumberDanaOption = {
@@ -82,25 +82,27 @@ export default function RupForm({
       onSubmit={handleSubmit}
       className={
         variant === "modal"
-          ? "overflow-hidden bg-white"
+          ? "min-w-0 bg-white"
           : "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       }
     >
-      <div className="border-b border-slate-100 px-5 py-4">
-        <h1 className="text-lg font-black text-[#16227c]">
-          {mode === "planning"
-            ? "Form Usulan Perencanaan"
-            : "Form Rencana Umum Pengadaan"}
-        </h1>
-        <p className="mt-1 text-sm font-semibold text-slate-500">
-          {mode === "planning"
-            ? "Isi kebutuhan unit, sumber dana, pagu, metode awal, jadwal, dan status approval."
-            : "Isi data RUP seperti kode RUP, unit pengusul, sumber dana, pagu, metode, jadwal pemilihan, dan status tayang SIRUP."}
-        </p>
-      </div>
+      {variant === "page" ? (
+        <div className="border-b border-slate-100 px-5 py-4">
+          <h1 className="text-lg font-black text-[#16227c]">
+            {mode === "planning"
+              ? "Form Usulan Perencanaan"
+              : "Form Rencana Umum Pengadaan"}
+          </h1>
+          <p className="mt-1 text-sm font-semibold text-slate-500">
+            {mode === "planning"
+              ? "Isi kebutuhan unit, sumber dana, pagu, metode awal, jadwal, dan status approval."
+              : "Isi data RUP seperti kode RUP, unit pengusul, sumber dana, pagu, metode, jadwal pemilihan, dan status tayang SIRUP."}
+          </p>
+        </div>
+      ) : null}
 
-      <div className="grid gap-5 p-5 md:grid-cols-2">
-        <label className="grid gap-2">
+      <div className={`grid min-w-0 gap-5 md:grid-cols-2 ${variant === "modal" ? "p-0" : "p-5"}`}>
+        <label className="grid min-w-0 gap-2">
           <span className={labelClass}>
             {mode === "planning" ? "Kode Usulan" : "Kode RUP"}
           </span>
@@ -112,7 +114,7 @@ export default function RupForm({
           />
         </label>
 
-        <label className="grid gap-2">
+        <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Tahun Anggaran</span>
           <input
             name="tahunAnggaran"
@@ -124,14 +126,14 @@ export default function RupForm({
           />
         </label>
 
-        <label className="grid gap-2 md:col-span-2">
+        <label className="grid min-w-0 gap-2 md:col-span-2">
           <span className={labelClass}>
             {mode === "planning" ? "Nama Usulan" : "Nama Paket"}
           </span>
           <input name="namaPaket" required className={inputClass} />
         </label>
 
-        <label className="grid gap-2">
+        <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Unit Pengusul</span>
           <input
             name="unitPengusul"
@@ -140,7 +142,7 @@ export default function RupForm({
           />
         </label>
 
-        <label className="grid gap-2">
+        <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Sumber Dana</span>
           <select
             name="sumberDana"
@@ -160,7 +162,7 @@ export default function RupForm({
           </select>
         </label>
 
-        <label className="grid gap-2">
+        <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Pagu</span>
           <input
             name="pagu"
@@ -178,7 +180,7 @@ export default function RupForm({
           </span>
         </label>
 
-        <label className="grid gap-2">
+        <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Metode</span>
           <select name="metodePengadaan" required className={inputClass}>
             <option value="E_PURCHASING">e-Katalog</option>
@@ -189,7 +191,7 @@ export default function RupForm({
           </select>
         </label>
 
-        <label className="grid gap-2">
+        <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Jadwal Pemilihan</span>
           <input
             name="jadwalPemilihan"
@@ -198,7 +200,7 @@ export default function RupForm({
           />
         </label>
 
-        <label className="grid gap-2">
+        <label className="grid min-w-0 gap-2">
           <span className={labelClass}>
             {mode === "planning" ? "Status Approval" : "Status SIRUP"}
           </span>
@@ -226,22 +228,22 @@ export default function RupForm({
           </select>
         </label>
 
-        <label className="grid gap-2 md:col-span-2">
+        <label className="grid min-w-0 gap-2 md:col-span-2">
           <span className={labelClass}>Catatan</span>
           <textarea
             name="catatan"
-            className="min-h-28 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+            className="min-h-28 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
           />
         </label>
       </div>
 
       {error ? (
-        <div className="mx-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+        <div className={`${variant === "modal" ? "mt-5" : "mx-5"} rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700`}>
           {error}
         </div>
       ) : null}
 
-      <div className="flex justify-end gap-3 border-t border-slate-100 px-5 py-4">
+      <div className={`flex flex-col-reverse gap-3 border-t border-slate-100 sm:flex-row sm:justify-end ${variant === "modal" ? "mt-6 pt-4" : "px-5 py-4"}`}>
         <button
           type="button"
           onClick={onCancel ?? (() => router.back())}

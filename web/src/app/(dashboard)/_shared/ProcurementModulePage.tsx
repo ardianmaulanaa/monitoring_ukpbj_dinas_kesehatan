@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { PaketMetodePengadaan, PaketStatus, Prisma, RupStatus } from "@prisma/client";
+import {
+  KontrakStatus,
+  PaketMetodePengadaan,
+  PaketStatus,
+  Prisma,
+  RupStatus,
+} from "@prisma/client";
 import type { RoleCode } from "@prisma/client";
 import type { ReactNode } from "react";
 import {
@@ -19,6 +25,7 @@ import {
   FolderOpen,
   Handshake,
   Landmark,
+  ListChecks,
   MessageSquareText,
   PackageSearch,
   Search,
@@ -37,8 +44,14 @@ import AddKontrakModalButton from "../kontrak/AddKontrakModalButton";
 import AddDataBarangModalButton from "../data-barang/AddDataBarangModalButton";
 import AddPaketModalButton from "../paket/AddPaketModalButton";
 import AddRupModalButton from "../rup/AddRupModalButton";
+import AddRiskModalButton from "../warning/AddRiskModalButton";
+import ClinicConsultationForm from "../klinik/ClinicConsultationForm";
 import RoleCreateModalButton from "../admin/roles/RoleCreateModalButton";
+import UnitManagementPanel, {
+  type UnitOption,
+} from "../pengaturan/UnitManagementPanel";
 import AppHeader from "./AppHeader";
+import ExportExcelButton from "./ExportExcelButton";
 import GenericInputModalButton from "./GenericInputModalButton";
 
 type PageConfig = {
@@ -78,7 +91,8 @@ type ModuleData = {
 const pageConfigs = {
   dashboard: {
     title: "Dashboard",
-    subtitle: "Ringkasan monitoring paket, kontrak, progres, realisasi, dan warning.",
+    subtitle:
+      "Ringkasan monitoring paket, kontrak, progres, realisasi, dan warning.",
     rightLabel: "Monitoring",
     icon: BarChart3,
   },
@@ -112,7 +126,8 @@ const pageConfigs = {
   },
   pengadaan: {
     title: "Tahapan Pengadaan",
-    subtitle: "Pantau alur perencanaan, persiapan, pemilihan, dan hasil pemilihan.",
+    subtitle:
+      "Pantau alur perencanaan, persiapan, pemilihan, dan hasil pemilihan.",
     rightLabel: "Tahapan",
     icon: PackageSearch,
   },
@@ -125,7 +140,8 @@ const pageConfigs = {
   },
   progres: {
     title: "Progres Fisik",
-    subtitle: "Pantau target, realisasi, deviasi, kendala, dan dokumentasi pekerjaan.",
+    subtitle:
+      "Pantau target, realisasi, deviasi, kendala, dan dokumentasi pekerjaan.",
     rightLabel: "Progres",
     icon: BarChart3,
     primaryAction: { label: "Tambah progres", href: "/progres/tambah" },
@@ -142,17 +158,20 @@ const pageConfigs = {
     subtitle: "Kelola BAST, hasil pemeriksaan, dan dokumen serah terima.",
     rightLabel: "BAST",
     icon: Handshake,
-    primaryAction: { label: "Tambah serah terima", href: "/serah-terima/tambah" },
+    primaryAction: {
+      label: "Tambah serah terima",
+      href: "/serah-terima/tambah",
+    },
   },
   penyedia: {
-    title: "Penyedia",
+    title: "Vendor & Market Intelligence",
     subtitle: "Kelola penyedia, legalitas, kontak, dan status aktif.",
     rightLabel: "Vendor",
     icon: Truck,
     primaryAction: { label: "Tambah penyedia", href: "/penyedia/tambah" },
   },
   warning: {
-    title: "Warning",
+    title: "Risiko & Mitigasi",
     subtitle: "Pantau risiko otomatis dan tindak lanjut paket bermasalah.",
     rightLabel: "Risiko",
     icon: AlertTriangle,
@@ -260,11 +279,9 @@ const aliases: Record<string, keyof typeof pageConfigs> = {
 };
 
 function resolveConfig(pageKey: string) {
-  return (
-    pageConfigs[pageKey as keyof typeof pageConfigs] ??
+  return (pageConfigs[pageKey as keyof typeof pageConfigs] ??
     pageConfigs[aliases[pageKey]] ??
-    pageConfigs.dashboard
-  ) as PageConfig;
+    pageConfigs.dashboard) as PageConfig;
 }
 
 function formatCompactCurrency(value: number) {
@@ -281,6 +298,11 @@ function formatCompactCurrency(value: number) {
   }
 
   return formatCurrency(value);
+}
+
+function ratioValue(part: number, total: number, target: number) {
+  if (total <= 0) return 0;
+  return Math.round((part / total) * target);
 }
 
 function humanize(value: string) {
@@ -360,7 +382,8 @@ function getTahapContent(tahap?: string) {
   return {
     eyebrow: "Tahapan Pengadaan",
     title: "Tahapan Pengadaan",
-    subtitle: "Pantau alur perencanaan, persiapan, pemilihan, dan hasil pemilihan.",
+    subtitle:
+      "Pantau alur perencanaan, persiapan, pemilihan, dan hasil pemilihan.",
     actionLabel: "Tambah paket",
     actionHref: "/paket/tambah",
   };
@@ -467,7 +490,8 @@ const planningApprovalFlow = [
   },
   {
     label: "PPK",
-    helper: "Review KAK, spesifikasi teknis, HPS, metode, dan rancangan kontrak.",
+    helper:
+      "Review KAK, spesifikasi teknis, HPS, metode, dan rancangan kontrak.",
   },
   {
     label: "KPA/PA",
@@ -494,7 +518,8 @@ const roleWorkflowMatrix: {
     name: "Super Admin",
     actor: "Administrator sistem",
     approvalStep: "Semua tahap",
-    accessScope: "Akses penuh seluruh modul, user, role, master data, dan audit log.",
+    accessScope:
+      "Akses penuh seluruh modul, user, role, master data, dan audit log.",
     modules: "Semua modul",
     grants: [
       "Create",
@@ -514,7 +539,8 @@ const roleWorkflowMatrix: {
     name: "Admin LPSE",
     actor: "Admin SIRUP/SPSE",
     approvalStep: "Input/Tayang RUP",
-    accessScope: "Kelola sinkronisasi RUP/SIRUP, referensi LPSE, dan status tayang.",
+    accessScope:
+      "Kelola sinkronisasi RUP/SIRUP, referensi LPSE, dan status tayang.",
     modules: "RUP, SIRUP, Sinkronisasi",
     grants: ["Read", "Update RUP", "Sinkron SIRUP", "Tandai Tayang", "Export"],
     tone: "bg-blue-100 text-blue-700",
@@ -524,9 +550,16 @@ const roleWorkflowMatrix: {
     name: "Operator",
     actor: "Admin input data",
     approvalStep: "Draft/Input data",
-    accessScope: "Input kebutuhan, paket, dokumen, progres, dan realisasi sesuai penugasan.",
+    accessScope:
+      "Input kebutuhan, paket, dokumen, progres, dan realisasi sesuai penugasan.",
     modules: "Perencanaan, Paket, Dokumen",
-    grants: ["Create Draft", "Update Draft", "Upload Dokumen", "Ajukan Usulan", "Read"],
+    grants: [
+      "Create Draft",
+      "Update Draft",
+      "Upload Dokumen",
+      "Ajukan Usulan",
+      "Read",
+    ],
     tone: "bg-cyan-100 text-cyan-700",
   },
   {
@@ -534,9 +567,16 @@ const roleWorkflowMatrix: {
     name: "Kepala Unit",
     actor: "Pimpinan unit pengusul",
     approvalStep: "Approve Kepala Unit",
-    accessScope: "Validasi bahwa kebutuhan benar diperlukan oleh unit sebelum masuk verifikasi PPTK.",
+    accessScope:
+      "Validasi bahwa kebutuhan benar diperlukan oleh unit sebelum masuk verifikasi PPTK.",
     modules: "Perencanaan, Dashboard, Laporan",
-    grants: ["Read", "Approve Kebutuhan", "Minta Revisi", "Reject", "Disposisi"],
+    grants: [
+      "Read",
+      "Approve Kebutuhan",
+      "Minta Revisi",
+      "Reject",
+      "Disposisi",
+    ],
     tone: "bg-indigo-100 text-indigo-700",
   },
   {
@@ -544,7 +584,8 @@ const roleWorkflowMatrix: {
     name: "PPTK",
     actor: "Pejabat Pelaksana Teknis Kegiatan",
     approvalStep: "Verifikasi PPTK",
-    accessScope: "Verifikasi kesesuaian kegiatan, output, volume, jadwal, dan dukungan anggaran.",
+    accessScope:
+      "Verifikasi kesesuaian kegiatan, output, volume, jadwal, dan dukungan anggaran.",
     modules: "Perencanaan, RUP, Laporan",
     grants: ["Read", "Verifikasi Kegiatan", "Minta Revisi", "Reject", "Export"],
     tone: "bg-blue-100 text-blue-700",
@@ -554,7 +595,8 @@ const roleWorkflowMatrix: {
     name: "PA",
     actor: "Pengguna Anggaran",
     approvalStep: "Approval akhir",
-    accessScope: "Persetujuan final paket strategis dari sisi kewenangan dan anggaran.",
+    accessScope:
+      "Persetujuan final paket strategis dari sisi kewenangan dan anggaran.",
     modules: "Perencanaan, RUP, Laporan",
     grants: ["Read", "Approve Final", "Minta Revisi", "Reject", "Export"],
     tone: "bg-emerald-100 text-emerald-700",
@@ -564,7 +606,8 @@ const roleWorkflowMatrix: {
     name: "KPA",
     actor: "Kuasa Pengguna Anggaran",
     approvalStep: "Approval akhir",
-    accessScope: "Menyetujui paket sebelum siap RUP/SIRUP dan memantau realisasi.",
+    accessScope:
+      "Menyetujui paket sebelum siap RUP/SIRUP dan memantau realisasi.",
     modules: "Perencanaan, RUP, Realisasi",
     grants: ["Read", "Approve Final", "Minta Revisi", "Reject", "Export"],
     tone: "bg-emerald-100 text-emerald-700",
@@ -574,7 +617,8 @@ const roleWorkflowMatrix: {
     name: "PPK",
     actor: "Pejabat Pembuat Komitmen",
     approvalStep: "Review PPK",
-    accessScope: "Review KAK, spesifikasi, HPS, metode, rancangan kontrak, dan paket.",
+    accessScope:
+      "Review KAK, spesifikasi, HPS, metode, rancangan kontrak, dan paket.",
     modules: "Perencanaan, Paket, Kontrak",
     grants: [
       "Read",
@@ -591,9 +635,16 @@ const roleWorkflowMatrix: {
     name: "Pejabat Pengadaan",
     actor: "PP/Pejabat Pengadaan",
     approvalStep: "Proses pengadaan",
-    accessScope: "Menjalankan pengadaan langsung, e-katalog, negosiasi, dan dokumen pemilihan.",
+    accessScope:
+      "Menjalankan pengadaan langsung, e-katalog, negosiasi, dan dokumen pemilihan.",
     modules: "Katalog, Pemilihan, Paket",
-    grants: ["Read", "Update Pemilihan", "Negosiasi", "Tetapkan Penyedia", "Upload Dokumen"],
+    grants: [
+      "Read",
+      "Update Pemilihan",
+      "Negosiasi",
+      "Tetapkan Penyedia",
+      "Upload Dokumen",
+    ],
     tone: "bg-orange-100 text-orange-700",
   },
   {
@@ -601,7 +652,8 @@ const roleWorkflowMatrix: {
     name: "Pokja Pemilihan",
     actor: "Pokja",
     approvalStep: "Tender/Non Tender",
-    accessScope: "Evaluasi administrasi, teknis, harga, dan penetapan hasil pemilihan.",
+    accessScope:
+      "Evaluasi administrasi, teknis, harga, dan penetapan hasil pemilihan.",
     modules: "Tender, Non Tender, Evaluasi",
     grants: ["Read", "Evaluasi", "Klarifikasi", "Penetapan Hasil", "Upload BA"],
     tone: "bg-violet-100 text-violet-700",
@@ -611,9 +663,16 @@ const roleWorkflowMatrix: {
     name: "UKPBJ",
     actor: "Tim UKPBJ",
     approvalStep: "Pembinaan & review",
-    accessScope: "Pendampingan, klinik pengadaan, review risiko, dan monitoring lintas paket.",
+    accessScope:
+      "Pendampingan, klinik pengadaan, review risiko, dan monitoring lintas paket.",
     modules: "Klinik, Risiko, Monitoring",
-    grants: ["Read", "Review Risiko", "Klinik Pengadaan", "Monitoring", "Export"],
+    grants: [
+      "Read",
+      "Review Risiko",
+      "Klinik Pengadaan",
+      "Monitoring",
+      "Export",
+    ],
     tone: "bg-teal-100 text-teal-700",
   },
   {
@@ -621,9 +680,16 @@ const roleWorkflowMatrix: {
     name: "Auditor",
     actor: "Inspektorat/Auditor",
     approvalStep: "Audit readiness",
-    accessScope: "Read only dokumen, BAST, pembayaran, audit trail, dan catatan pemeriksaan.",
+    accessScope:
+      "Read only dokumen, BAST, pembayaran, audit trail, dan catatan pemeriksaan.",
     modules: "Audit, Dokumen, Laporan",
-    grants: ["Read Only", "Lihat Dokumen", "Lihat Audit Trail", "Catatan Temuan", "Export"],
+    grants: [
+      "Read Only",
+      "Lihat Dokumen",
+      "Lihat Audit Trail",
+      "Catatan Temuan",
+      "Export",
+    ],
     tone: "bg-red-100 text-red-700",
   },
   {
@@ -631,7 +697,8 @@ const roleWorkflowMatrix: {
     name: "Viewer",
     actor: "Pembaca terbatas",
     approvalStep: "Read only",
-    accessScope: "Melihat dashboard dan laporan terbatas tanpa aksi perubahan data.",
+    accessScope:
+      "Melihat dashboard dan laporan terbatas tanpa aksi perubahan data.",
     modules: "Dashboard, Laporan",
     grants: ["Read Only", "Lihat Dashboard", "Lihat Laporan"],
     tone: "bg-slate-100 text-slate-600",
@@ -640,9 +707,24 @@ const roleWorkflowMatrix: {
 
 const defaultKpis: ModuleKpi[] = [
   { label: "Total data", value: "0", helper: "Data aktif", tone: "blue" },
-  { label: "Nilai total", value: "Rp 0", helper: "Total pagu/nilai", tone: "green" },
-  { label: "Dalam proses", value: "0", helper: "Belum selesai", tone: "orange" },
-  { label: "Bermasalah", value: "0", helper: "Perlu tindak lanjut", tone: "red" },
+  {
+    label: "Nilai total",
+    value: "Rp 0",
+    helper: "Total pagu/nilai",
+    tone: "green",
+  },
+  {
+    label: "Dalam proses",
+    value: "0",
+    helper: "Belum selesai",
+    tone: "orange",
+  },
+  {
+    label: "Bermasalah",
+    value: "0",
+    helper: "Perlu tindak lanjut",
+    tone: "red",
+  },
 ];
 
 function getModuleKey(pageKey: string, tahap?: string) {
@@ -657,7 +739,9 @@ function kpiBorderClass(tone: ModuleKpi["tone"]) {
   return "border-l-[#1976d2]";
 }
 
-function decimalNumber(value: { toString(): string } | number | string | null | undefined) {
+function decimalNumber(
+  value: { toString(): string } | number | string | null | undefined,
+) {
   if (value === null || value === undefined) return 0;
   return Number(value.toString()) || 0;
 }
@@ -726,13 +810,25 @@ async function getPackageModuleData(
     take: 100,
   });
 
-  const totalPagu = rows.reduce((total, item) => total + decimalNumber(item.pagu), 0);
-  const totalHps = rows.reduce((total, item) => total + decimalNumber(item.hps), 0);
+  const totalPagu = rows.reduce(
+    (total, item) => total + decimalNumber(item.pagu),
+    0,
+  );
+  const totalHps = rows.reduce(
+    (total, item) => total + decimalNumber(item.hps),
+    0,
+  );
   const activeCount = rows.filter(
     (item) => !["SELESAI", "GAGAL", "BATAL"].includes(item.statusPaket),
   ).length;
   const problemCount = rows.filter((item) =>
     ["TERLAMBAT", "GAGAL", "BATAL"].includes(item.statusPaket),
+  ).length;
+  const tenderCount = rows.filter(
+    (item) => item.metodePengadaan === PaketMetodePengadaan.TENDER,
+  ).length;
+  const nonTenderCount = rows.filter(
+    (item) => item.metodePengadaan === PaketMetodePengadaan.NON_TENDER,
   ).length;
 
   return {
@@ -744,15 +840,47 @@ async function getPackageModuleData(
         tone: "blue",
       },
       {
-        label: "Total Pagu",
-        value: formatCompactCurrency(totalPagu),
-        helper: "Dari database paket",
+        label: moduleKey === "pemilihan" ? "Tender" : "Total Pagu",
+        value:
+          moduleKey === "pemilihan"
+            ? tenderCount.toLocaleString("id-ID")
+            : formatCompactCurrency(totalPagu),
+        helper:
+          moduleKey === "pemilihan"
+            ? formatCompactCurrency(
+                rows
+                  .filter(
+                    (item) =>
+                      item.metodePengadaan === PaketMetodePengadaan.TENDER,
+                  )
+                  .reduce(
+                    (total, item) => total + decimalNumber(item.pagu),
+                    0,
+                  ),
+              )
+            : "Dari database paket",
         tone: "green",
       },
       {
-        label: "Total HPS",
-        value: formatCompactCurrency(totalHps),
-        helper: "Dari database paket",
+        label: moduleKey === "pemilihan" ? "Non Tender" : "Total HPS",
+        value:
+          moduleKey === "pemilihan"
+            ? nonTenderCount.toLocaleString("id-ID")
+            : formatCompactCurrency(totalHps),
+        helper:
+          moduleKey === "pemilihan"
+            ? formatCompactCurrency(
+                rows
+                  .filter(
+                    (item) =>
+                      item.metodePengadaan === PaketMetodePengadaan.NON_TENDER,
+                  )
+                  .reduce(
+                    (total, item) => total + decimalNumber(item.pagu),
+                    0,
+                  ),
+              )
+            : "Dari database paket",
         tone: "orange",
       },
       {
@@ -813,7 +941,9 @@ async function getPackageModuleData(
   };
 }
 
-async function getDataBarangModuleData(config: PageConfig): Promise<ModuleData> {
+async function getDataBarangModuleData(
+  config: PageConfig,
+): Promise<ModuleData> {
   const rows = await prisma.dataBarang.findMany({
     orderBy: { createdAt: "desc" },
     take: 100,
@@ -823,7 +953,9 @@ async function getDataBarangModuleData(config: PageConfig): Promise<ModuleData> 
     0,
   );
   const activeCount = rows.filter((item) => item.status === "AKTIF").length;
-  const urgentCount = rows.filter((item) => item.prioritas === "MENDESAK").length;
+  const urgentCount = rows.filter(
+    (item) => item.prioritas === "MENDESAK",
+  ).length;
 
   return {
     kpis: [
@@ -879,8 +1011,28 @@ async function getDataBarangModuleData(config: PageConfig): Promise<ModuleData> 
   };
 }
 
-async function getKontrakModuleData(config: PageConfig): Promise<ModuleData> {
+async function getKontrakModuleData(
+  config: PageConfig,
+  searchParams: Record<string, string | string[] | undefined> = {},
+): Promise<ModuleData> {
+  const q = getParam(searchParams, "q")?.trim();
+  const status = getParam(searchParams, "statusPaket");
+  const where: Prisma.KontrakWhereInput = {
+    ...(q
+      ? {
+          OR: [
+            { nomorKontrak: { contains: q } },
+            { namaPaket: { contains: q } },
+            { penyedia: { contains: q } },
+          ],
+        }
+      : {}),
+    ...(status && Object.values(KontrakStatus).includes(status as KontrakStatus)
+      ? { status: status as KontrakStatus }
+      : {}),
+  };
   const rows = await prisma.kontrak.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     take: 100,
   });
@@ -950,7 +1102,11 @@ async function getModuleData(
   config: PageConfig,
   searchParams: Record<string, string | string[] | undefined> = {},
 ): Promise<ModuleData> {
-  if (moduleKey === "paket" || moduleKey === "katalog" || moduleKey === "pemilihan") {
+  if (
+    moduleKey === "paket" ||
+    moduleKey === "katalog" ||
+    moduleKey === "pemilihan"
+  ) {
     return getPackageModuleData(moduleKey, config, searchParams);
   }
 
@@ -959,7 +1115,7 @@ async function getModuleData(
   }
 
   if (moduleKey === "kontrak") {
-    return getKontrakModuleData(config);
+    return getKontrakModuleData(config, searchParams);
   }
 
   const dashboard = await getDashboardData();
@@ -1036,7 +1192,9 @@ async function getModuleData(
       table: {
         columns: ["Paket", "Unit", "Metode", "Pagu", "Status", "Aksi"],
         rows: dashboard.recentPackages
-          .filter((item) => ["TERLAMBAT", "GAGAL", "BATAL"].includes(item.status))
+          .filter((item) =>
+            ["TERLAMBAT", "GAGAL", "BATAL"].includes(item.status),
+          )
           .map((item) => [
             item.name,
             item.unit,
@@ -1116,7 +1274,9 @@ async function PlanningModuleView({
   );
   const currentUser = await getCurrentUser();
   const currentUserRoles = currentUser?.roles ?? [];
-  const draftCount = rupData.filter((item) => item.statusSirup === "BELUM_INPUT").length;
+  const draftCount = rupData.filter(
+    (item) => item.statusSirup === "BELUM_INPUT",
+  ).length;
   const reviewCount = rupData.filter(
     (item) =>
       item.statusSirup === "PROSES_VERIFIKASI" ||
@@ -1124,11 +1284,16 @@ async function PlanningModuleView({
       item.statusSirup === "MENUNGGU_PPK" ||
       item.statusSirup === "MENUNGGU_KPA_PA",
   ).length;
-  const revisionCount = rupData.filter((item) => item.statusSirup === "REVISI_PAGU").length;
-  const readyCount = rupData.filter((item) => item.statusSirup === "SUDAH_TAYANG").length;
+  const revisionCount = rupData.filter(
+    (item) => item.statusSirup === "REVISI_PAGU",
+  ).length;
+  const readyCount = rupData.filter(
+    (item) => item.statusSirup === "SUDAH_TAYANG",
+  ).length;
   const selectedProposal =
-    rupData.find((item) => canActOnPlanningStatus(currentUserRoles, item.statusSirup)) ??
-    rupData[0];
+    rupData.find((item) =>
+      canActOnPlanningStatus(currentUserRoles, item.statusSirup),
+    ) ?? rupData[0];
   const canActOnSelectedProposal = selectedProposal
     ? canActOnPlanningStatus(currentUserRoles, selectedProposal.statusSirup)
     : false;
@@ -1140,74 +1305,74 @@ async function PlanningModuleView({
     <main className="bg-[#f4f7f5]">
       <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
-            <span className="self-center text-sm font-black text-slate-400 sm:col-span-2 lg:col-span-1">
-              Filter:
-            </span>
+          <span className="self-center text-sm font-black text-slate-400 sm:col-span-2 lg:col-span-1">
+            Filter:
+          </span>
 
-            <select
-              name="tahunAnggaran"
-              defaultValue={tahunAnggaran ?? ""}
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">Semua Tahun</option>
-              {years.map((year) => (
-                <option key={year.tahunAnggaran} value={year.tahunAnggaran}>
-                  TA {year.tahunAnggaran}
-                </option>
-              ))}
-            </select>
+          <select
+            name="tahunAnggaran"
+            defaultValue={tahunAnggaran ?? ""}
+            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="">Semua Tahun</option>
+            {years.map((year) => (
+              <option key={year.tahunAnggaran} value={year.tahunAnggaran}>
+                TA {year.tahunAnggaran}
+              </option>
+            ))}
+          </select>
 
-            <select
-              name="sumberDana"
-              defaultValue={sumberDana ?? ""}
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">Semua Sumber Dana</option>
-              {sourceFunds.map((item) => (
-                <option key={item.kode} value={item.kode}>
-                  {item.nama}
-                </option>
-              ))}
-            </select>
+          <select
+            name="sumberDana"
+            defaultValue={sumberDana ?? ""}
+            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="">Semua Sumber Dana</option>
+            {sourceFunds.map((item) => (
+              <option key={item.kode} value={item.kode}>
+                {item.nama}
+              </option>
+            ))}
+          </select>
 
-            <select
-              name="unitPengusul"
-              defaultValue={unitPengusul ?? ""}
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">Semua Unit</option>
-              {units.map((item) => (
-                <option key={item.unitPengusul} value={item.unitPengusul}>
-                  {item.unitPengusul}
-                </option>
-              ))}
-            </select>
+          <select
+            name="unitPengusul"
+            defaultValue={unitPengusul ?? ""}
+            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="">Semua Unit</option>
+            {units.map((item) => (
+              <option key={item.unitPengusul} value={item.unitPengusul}>
+                {item.unitPengusul}
+              </option>
+            ))}
+          </select>
 
-            <select
-              name="statusSirup"
-              defaultValue={statusSirup ?? ""}
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">Semua Status</option>
-              <option value="BELUM_INPUT">Draft Usulan</option>
-              <option value="PROSES_VERIFIKASI">Menunggu Kepala Unit</option>
-              <option value="MENUNGGU_PPTK">Menunggu PPTK</option>
-              <option value="MENUNGGU_PPK">Menunggu PPK</option>
-              <option value="MENUNGGU_KPA_PA">Menunggu KPA/PA</option>
-              <option value="REVISI_PAGU">Perlu Revisi</option>
-              <option value="SUDAH_TAYANG">Siap RUP/SIRUP</option>
-              <option value="DITARIK">Ditolak</option>
-            </select>
+          <select
+            name="statusSirup"
+            defaultValue={statusSirup ?? ""}
+            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="">Semua Status</option>
+            <option value="BELUM_INPUT">Draft Usulan</option>
+            <option value="PROSES_VERIFIKASI">Menunggu Kepala Unit</option>
+            <option value="MENUNGGU_PPTK">Menunggu PPTK</option>
+            <option value="MENUNGGU_PPK">Menunggu PPK</option>
+            <option value="MENUNGGU_KPA_PA">Menunggu KPA/PA</option>
+            <option value="REVISI_PAGU">Perlu Revisi</option>
+            <option value="SUDAH_TAYANG">Siap RUP/SIRUP</option>
+            <option value="DITARIK">Ditolak</option>
+          </select>
 
-            <label className="flex h-9 w-full items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500 focus-within:border-[#08783f] focus-within:ring-2 focus-within:ring-emerald-100 sm:col-span-2 lg:col-span-4 xl:col-span-1">
-              <Search className="h-4 w-4" />
-              <input
-                name="q"
-                defaultValue={q ?? ""}
-                placeholder="Cari usulan pengadaan..."
-                className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
-              />
-            </label>
+          <label className="flex h-9 w-full items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500 focus-within:border-[#08783f] focus-within:ring-2 focus-within:ring-emerald-100 sm:col-span-2 lg:col-span-4 xl:col-span-1">
+            <Search className="h-4 w-4" />
+            <input
+              name="q"
+              defaultValue={q ?? ""}
+              placeholder="Cari usulan pengadaan..."
+              className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
+            />
+          </label>
         </div>
       </form>
 
@@ -1235,7 +1400,10 @@ async function PlanningModuleView({
             {
               label: "Siap RUP/SIRUP",
               value: readyCount.toLocaleString("id-ID"),
-              helper: revisionCount > 0 ? `${revisionCount} perlu revisi` : "Bisa dilanjutkan",
+              helper:
+                revisionCount > 0
+                  ? `${revisionCount} perlu revisi`
+                  : "Bisa dilanjutkan",
               tone: "border-l-[#43a047]",
             },
           ].map((item) => (
@@ -1349,7 +1517,8 @@ async function PlanningModuleView({
                         <span
                           className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[item.statusSirup] ?? "bg-slate-100 text-slate-600"}`}
                         >
-                          {planningStatusLabels[item.statusSirup] ?? humanize(item.statusSirup)}
+                          {planningStatusLabels[item.statusSirup] ??
+                            humanize(item.statusSirup)}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-right">
@@ -1370,7 +1539,8 @@ async function PlanningModuleView({
                         Belum ada usulan perencanaan
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-500">
-                        Tambahkan usulan kebutuhan, KAK, HPS, sumber dana, dan jadwal pemilihan.
+                        Tambahkan usulan kebutuhan, KAK, HPS, sumber dana, dan
+                        jadwal pemilihan.
                       </p>
                     </td>
                   </tr>
@@ -1427,24 +1597,38 @@ async function PlanningModuleView({
               <p className="mt-1 text-xs font-bold text-slate-500">
                 Status:{" "}
                 {selectedProposal
-                  ? planningStatusLabels[selectedProposal.statusSirup] ??
-                    humanize(selectedProposal.statusSirup)
+                  ? (planningStatusLabels[selectedProposal.statusSirup] ??
+                    humanize(selectedProposal.statusSirup))
                   : "-"}
               </p>
               <p className="mt-1 text-xs font-bold text-slate-500">
                 Role login:{" "}
                 {currentUserRoles.length > 0
-                  ? currentUserRoles.map((role) => roleWorkflowMatrix.find((item) => item.code === role)?.name ?? role).join(", ")
+                  ? currentUserRoles
+                      .map(
+                        (role) =>
+                          roleWorkflowMatrix.find((item) => item.code === role)
+                            ?.name ?? role,
+                      )
+                      .join(", ")
                   : "-"}
               </p>
               {selectedProposal && !canActOnSelectedProposal ? (
                 <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">
-                  Akun ini belum bisa approve status ini. Pilih usulan yang sedang menunggu role login.
+                  Akun ini belum bisa approve status ini. Pilih usulan yang
+                  sedang menunggu role login.
                 </p>
               ) : null}
             </div>
-            <form action={updatePlanningApprovalAction} className="mt-4 grid gap-2">
-              <input type="hidden" name="id" value={selectedProposal?.id ?? ""} />
+            <form
+              action={updatePlanningApprovalAction}
+              className="mt-4 grid gap-2"
+            >
+              <input
+                type="hidden"
+                name="id"
+                value={selectedProposal?.id ?? ""}
+              />
               <button
                 name="action"
                 value="approve"
@@ -1479,7 +1663,11 @@ async function PlanningModuleView({
   );
 }
 
-function tableCellContent(column: string, value: string, rowIndex: number): ReactNode {
+function tableCellContent(
+  column: string,
+  value: string,
+  rowIndex: number,
+): ReactNode {
   const normalizedColumn = column.toLowerCase();
   const normalizedValue = value.toLowerCase();
 
@@ -1522,7 +1710,9 @@ function tableCellContent(column: string, value: string, rowIndex: number): Reac
             : "bg-slate-100 text-slate-600";
 
     return (
-      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${className}`}>
+      <span
+        className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${className}`}
+      >
         {value}
       </span>
     );
@@ -1537,6 +1727,339 @@ function tableCellContent(column: string, value: string, rowIndex: number): Reac
   }
 
   return value;
+}
+
+async function RealisasiBelanjaView() {
+  const dashboard = await getDashboardData();
+  const years = await prisma.paketPengadaan.findMany({
+    distinct: ["tahunAnggaran"],
+    orderBy: { tahunAnggaran: "desc" },
+    select: { tahunAnggaran: true },
+  });
+  const sourceFunds = await getActiveSumberDanaOptions();
+  const units = await prisma.paketPengadaan.findMany({
+    distinct: ["unitPemohon"],
+    orderBy: { unitPemohon: "asc" },
+    select: { unitPemohon: true },
+  });
+  const statuses = await prisma.paketPengadaan.findMany({
+    distinct: ["statusPaket"],
+    orderBy: { statusPaket: "asc" },
+    select: { statusPaket: true },
+  });
+  const realizationGroups = await prisma.realisasiBelanja.groupBy({
+    by: ["sumberDana"],
+    _sum: {
+      nilaiPagu: true,
+      nilaiHps: true,
+      nilaiKontrak: true,
+      nilaiRealisasi: true,
+    },
+    orderBy: { sumberDana: "asc" },
+  });
+
+  const summary = dashboard.summary;
+  const hasRealizationRows = realizationGroups.length > 0;
+  const realisasiTotals = realizationGroups.reduce(
+    (total, item) => ({
+      pagu: total.pagu + decimalNumber(item._sum.nilaiPagu),
+      hps: total.hps + decimalNumber(item._sum.nilaiHps),
+      kontrak: total.kontrak + decimalNumber(item._sum.nilaiKontrak),
+      realisasi: total.realisasi + decimalNumber(item._sum.nilaiRealisasi),
+    }),
+    { pagu: 0, hps: 0, kontrak: 0, realisasi: 0 },
+  );
+  const totalPagu = hasRealizationRows ? realisasiTotals.pagu : summary.totalPagu || 0;
+  const totalHps = hasRealizationRows ? realisasiTotals.hps : summary.totalHps;
+  const totalKontrak = hasRealizationRows
+    ? realisasiTotals.kontrak
+    : summary.totalNilaiKontrak;
+  const realisasiBayar = hasRealizationRows
+    ? realisasiTotals.realisasi
+    : dashboard.monthlyRealization.reduce((sum, item) => sum + item.realisasi, 0) ||
+      Math.round(summary.totalNilaiKontrak * 0.71);
+  const efisiensi = Math.max(totalHps - totalKontrak, 0);
+  const sisaAnggaran = Math.max(totalPagu - realisasiBayar, 0);
+  const totalSerapan =
+    totalPagu > 0 ? Math.round((realisasiBayar / totalPagu) * 100) : 0;
+  const tableRows = hasRealizationRows
+    ? realizationGroups.map((item) => {
+        const pagu = decimalNumber(item._sum.nilaiPagu);
+        const nilaiKontrak = decimalNumber(item._sum.nilaiKontrak);
+        const realisasi = decimalNumber(item._sum.nilaiRealisasi);
+        const sisa = Math.max(pagu - realisasi, 0);
+        const serapan = pagu > 0 ? Math.round((realisasi / pagu) * 100) : 0;
+
+        return {
+          label: item.sumberDana,
+          pagu,
+          nilaiKontrak,
+          realisasi,
+          sisa,
+          serapan,
+        };
+      })
+    : dashboard.sourceFunds.map((item) => {
+    const pagu = item.amount;
+    const nilaiKontrak = ratioValue(
+      pagu,
+      totalPagu,
+      totalKontrak,
+    );
+    const realisasi = ratioValue(pagu, totalPagu, realisasiBayar);
+    const sisa = Math.max(pagu - realisasi, 0);
+    const serapan = pagu > 0 ? Math.round((realisasi / pagu) * 100) : 0;
+
+    return {
+      label: item.label,
+      pagu,
+      nilaiKontrak,
+      realisasi,
+      sisa,
+      serapan,
+    };
+  });
+  const exportColumns = [
+    "Sumber Dana",
+    "Pagu",
+    "Nilai Kontrak",
+    "Realisasi Bayar",
+    "Sisa",
+    "Serapan",
+  ];
+  const exportRows = tableRows
+    .map((item) => [
+      item.label,
+      formatCurrency(item.pagu),
+      formatCurrency(item.nilaiKontrak),
+      formatCurrency(item.realisasi),
+      formatCurrency(item.sisa),
+      `${item.serapan}%`,
+    ])
+    .concat([
+      [
+        "TOTAL",
+        formatCurrency(totalPagu),
+        formatCurrency(totalKontrak),
+        formatCurrency(realisasiBayar),
+        formatCurrency(sisaAnggaran),
+        `${totalSerapan}%`,
+      ],
+    ]);
+  const kpis = [
+    ["Total Pagu", formatCompactCurrency(totalPagu), "", "border-l-[#1976d2]"],
+    ["Total HPS", formatCompactCurrency(totalHps), "", "border-l-[#1976d2]"],
+    [
+      "Nilai Kontrak",
+      formatCompactCurrency(totalKontrak),
+      "",
+      "border-l-[#43a047]",
+    ],
+    [
+      "Realisasi Bayar",
+      formatCompactCurrency(realisasiBayar),
+      "",
+      "border-l-[#43a047]",
+    ],
+    ["Efisiensi", formatCompactCurrency(efisiensi), "vs HPS", "border-l-[#00897b]"],
+    [
+      "Sisa Anggaran",
+      formatCompactCurrency(sisaAnggaran),
+      "",
+      "border-l-[#f57c00]",
+    ],
+  ];
+
+  return (
+    <main className="min-h-screen bg-[#f4f7f5]">
+      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="shrink-0 text-sm font-black text-slate-400">
+            Filter:
+          </span>
+
+          <select
+            name="tahunAnggaran"
+            defaultValue=""
+            className="h-9 min-w-[130px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="">Semua Tahun</option>
+            {years.map((year) => (
+              <option key={year.tahunAnggaran} value={year.tahunAnggaran}>
+                TA {year.tahunAnggaran}
+              </option>
+            ))}
+          </select>
+
+          <select
+            name="sumberDana"
+            defaultValue=""
+            className="h-9 min-w-[200px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="">Semua Sumber Dana</option>
+            {sourceFunds.map((item) => (
+              <option key={item.kode} value={item.kode}>
+                {item.nama}
+              </option>
+            ))}
+          </select>
+
+          <select
+            name="unitPemohon"
+            defaultValue=""
+            className="h-9 min-w-[170px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="">Semua Unit</option>
+            {units.map((item) => (
+              <option key={item.unitPemohon} value={item.unitPemohon}>
+                {item.unitPemohon}
+              </option>
+            ))}
+          </select>
+
+          <select
+            name="statusPaket"
+            defaultValue=""
+            className="h-9 min-w-[160px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="">Semua Status</option>
+            {statuses.map((item) => (
+              <option key={item.statusPaket} value={item.statusPaket}>
+                {humanize(item.statusPaket)}
+              </option>
+            ))}
+          </select>
+
+          <div className="ml-auto flex shrink-0 gap-2">
+            <ExportExcelButton
+              columns={exportColumns}
+              rows={exportRows}
+              fileName="realisasi-belanja"
+            />
+            <button
+              type="button"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-sky-200 bg-white px-3 text-xs font-black text-[#1976d2] transition hover:bg-sky-50"
+            >
+              PDF
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <section className="space-y-5 px-4 py-5 sm:px-6 lg:px-8">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          {kpis.map(([label, value, helper, border]) => (
+            <div
+              key={label}
+              className={`min-h-[96px] rounded-lg border border-l-4 border-slate-200 bg-white px-5 py-4 shadow-sm ${border}`}
+            >
+              <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+                {label}
+              </p>
+              <p className="mt-2 text-2xl font-black leading-none text-[#16227c]">
+                {value}
+              </p>
+              {helper ? (
+                <p className="mt-2 text-xs font-bold text-slate-400">
+                  {helper}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center gap-2">
+              <CircleDollarSign className="h-5 w-5 text-[#08783f]" />
+              <h2 className="text-lg font-black text-[#16227c]">
+                Rekap Realisasi per Sumber Dana
+              </h2>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
+                  <th className="px-4 py-3">Sumber Dana</th>
+                  <th className="px-4 py-3">Pagu</th>
+                  <th className="px-4 py-3">Nilai Kontrak</th>
+                  <th className="px-4 py-3">Realisasi Bayar</th>
+                  <th className="px-4 py-3">Sisa</th>
+                  <th className="px-4 py-3">Serapan</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {tableRows.map((item, index) => (
+                  <tr key={item.label} className="hover:bg-slate-50">
+                    <td className="px-4 py-4 font-black text-slate-600">
+                      {item.label}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {formatCurrency(item.pagu)}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {formatCurrency(item.nilaiKontrak)}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {formatCurrency(item.realisasi)}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {formatCurrency(item.sisa)}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-32">
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className={`h-full rounded-full ${
+                              index === 1
+                                ? "bg-[#43a047]"
+                                : index === 2
+                                  ? "bg-[#f57c00]"
+                                  : "bg-[#1976d2]"
+                            }`}
+                            style={{ width: `${Math.min(item.serapan, 100)}%` }}
+                          />
+                        </div>
+                        <p className="mt-1 text-xs font-bold text-slate-600">
+                          {item.serapan}%
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-sky-50 font-black text-slate-700">
+                  <td className="px-4 py-4">TOTAL</td>
+                  <td className="px-4 py-4">
+                    {formatCurrency(summary.totalPagu)}
+                  </td>
+                  <td className="px-4 py-4">
+                    {formatCurrency(summary.totalNilaiKontrak)}
+                  </td>
+                  <td className="px-4 py-4">{formatCurrency(realisasiBayar)}</td>
+                  <td className="px-4 py-4">{formatCurrency(sisaAnggaran)}</td>
+                  <td className="px-4 py-4">
+                    <div className="w-32">
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-[#1976d2]"
+                          style={{ width: `${Math.min(totalSerapan, 100)}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-xs font-black text-slate-700">
+                        {totalSerapan}%
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  );
 }
 
 function ModuleAction({
@@ -1562,6 +2085,885 @@ function ModuleAction({
       />
     );
   }
+
+  return null;
+}
+
+function TopFilterBar() {
+  return (
+    <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="shrink-0 text-sm font-black text-slate-400">
+          Filter:
+        </span>
+        <select className="h-9 min-w-[128px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600">
+          <option>TA 2025</option>
+          <option>TA 2024</option>
+          <option>TA 2023</option>
+        </select>
+        <select className="h-9 min-w-[210px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600">
+          <option>Semua Sumber Dana</option>
+          <option>APBD</option>
+          <option>BLUD</option>
+          <option>DBHCHT</option>
+        </select>
+        <select className="h-9 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600">
+          <option>Semua Unit</option>
+          <option>Subbag TU</option>
+          <option>Seksi Kimia</option>
+          <option>Seksi Mikrobiologi</option>
+          <option>Seksi Patologi</option>
+        </select>
+        <select className="h-9 min-w-[170px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600">
+          <option>Semua Status</option>
+          <option>Selesai</option>
+          <option>Berjalan</option>
+          <option>Bermasalah</option>
+          <option>Belum Mulai</option>
+        </select>
+        <div className="ml-auto flex gap-2">
+          <button
+            type="button"
+            className="h-9 rounded-md border border-emerald-200 bg-white px-3 text-sm font-black text-[#08783f]"
+          >
+            Excel
+          </button>
+          <button
+            type="button"
+            className="h-9 rounded-md border border-emerald-200 bg-white px-3 text-sm font-black text-[#08783f]"
+          >
+            PDF
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+function SimplePageShell({ children }: { children: ReactNode }) {
+  return (
+    <main className="min-h-screen bg-[#f4f7f5]">
+      <TopFilterBar />
+      <section className="px-4 py-6 sm:px-6 lg:px-8">{children}</section>
+    </main>
+  );
+}
+
+function SimpleCard({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="flex min-h-[58px] items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <h2 className="text-lg font-black text-[#16227c]">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function StatusBadge({ children }: { children: ReactNode }) {
+  const text = String(children).toLowerCase();
+  const tone =
+    text.includes("selesai") ||
+    text.includes("siap") ||
+    text.includes("aktif") ||
+    text.includes("rendah")
+      ? "bg-emerald-100 text-emerald-700"
+      : text.includes("belum") ||
+          text.includes("tidak") ||
+          text.includes("tinggi")
+        ? "bg-red-100 text-red-700"
+        : "bg-amber-100 text-amber-700";
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${tone}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function SimpleProgress({ value }: { value: number }) {
+  const color =
+    value >= 90 ? "bg-[#43a047]" : value >= 50 ? "bg-[#f57c00]" : "bg-red-600";
+
+  return (
+    <div>
+      <div className="h-2 w-full max-w-[190px] overflow-hidden rounded-full bg-slate-100">
+        <div
+          className={`h-full rounded-full ${color}`}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+      <span className="mt-1 block text-xs font-bold text-slate-500">
+        {value}%
+      </span>
+    </div>
+  );
+}
+
+async function RiskMitigationView() {
+  const [packages, rows] = await Promise.all([
+    prisma.paketPengadaan.findMany({
+      orderBy: { namaPaket: "asc" },
+      select: { id: true, namaPaket: true },
+      take: 100,
+    }),
+    prisma.risikoMitigasi.findMany({
+      include: {
+        paket: {
+          select: {
+            namaPaket: true,
+            unitPemohon: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+  ]);
+
+  return (
+    <SimplePageShell>
+      <SimpleCard
+        title="Daftar Risiko & Mitigasi"
+        action={
+          <AddRiskModalButton
+            packages={packages.map((item) => ({
+              id: item.id,
+              name: item.namaPaket,
+            }))}
+          />
+        }
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+              <tr>
+                {[
+                  "No",
+                  "Risiko",
+                  "Paket",
+                  "Level",
+                  "Mitigasi",
+                  "PIC",
+                  "Deadline",
+                  "Status",
+                ].map((item) => (
+                  <th key={item} className="px-4 py-3">
+                    {item}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.length > 0 ? (
+                rows.map((item, index) => (
+                  <tr key={item.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {item.risiko}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {item.paket?.namaPaket ?? "-"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <StatusBadge>{humanize(item.level)}</StatusBadge>
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {item.mitigasi}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {item.pic || item.paket?.unitPemohon || "-"}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {item.deadline
+                        ? item.deadline.toLocaleDateString("id-ID")
+                        : "-"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <StatusBadge>{humanize(item.status)}</StatusBadge>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-10 text-center text-sm font-semibold text-slate-400"
+                  >
+                    Belum ada paket berisiko dari database.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </SimpleCard>
+    </SimplePageShell>
+  );
+}
+
+async function AuditReadinessView() {
+  const dashboard = await getDashboardData();
+  const auditRows = await prisma.auditChecklist.findMany({
+    include: { paket: { select: { namaPaket: true } } },
+    orderBy: { updatedAt: "desc" },
+    take: 200,
+  });
+  const groupedAuditRows = Array.from(
+    auditRows
+      .reduce(
+        (map, item) => {
+          const key = item.paket?.namaPaket ?? "Tanpa Paket";
+          const current = map.get(key) ?? { name: key, total: 0, complete: 0 };
+          current.total += 1;
+          if (item.status === "LENGKAP") current.complete += 1;
+          map.set(key, current);
+          return map;
+        },
+        new Map<string, { name: string; total: number; complete: number }>(),
+      )
+      .values(),
+  ).map((item) => {
+    const value = item.total > 0 ? Math.round((item.complete / item.total) * 100) : 0;
+    return {
+      name: item.name,
+      value,
+      status:
+        value >= 90 ? "Siap Audit" : value >= 50 ? "Perlu Dilengkapi" : "Tidak Siap",
+    };
+  });
+
+  return (
+    <SimplePageShell>
+      <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <SimpleCard title="Kelengkapan Dokumen">
+          <div className="p-5">
+            <div className="mb-5 text-center">
+              <div className="text-4xl font-black text-[#08783f]">
+                {dashboard.auditReadiness.percent}%
+              </div>
+              <p className="mt-1 text-sm font-semibold text-slate-400">
+                Kesiapan audit dari data paket dan kontrak
+              </p>
+              <div className="mt-3">
+                <SimpleProgress value={dashboard.auditReadiness.percent} />
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {dashboard.auditReadiness.items.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between gap-4 py-3"
+                >
+                  <span className="text-sm font-semibold text-slate-600">
+                    {item.label}
+                  </span>
+                  <StatusBadge>
+                    {item.complete}/{item.total}
+                  </StatusBadge>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SimpleCard>
+        <SimpleCard title="Status Siap Audit per Paket">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+                <tr>
+                  <th className="px-4 py-3">Paket</th>
+                  <th className="px-4 py-3">Kelengkapan</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {groupedAuditRows.length > 0 ? (
+                  groupedAuditRows.map((row) => (
+                  <tr key={row.name}>
+                    <td className="px-4 py-4 font-semibold text-slate-600">
+                      {row.name}
+                    </td>
+                    <td className="px-4 py-4">
+                      <SimpleProgress value={row.value} />
+                    </td>
+                    <td className="px-4 py-4">
+                      <StatusBadge>{row.status}</StatusBadge>
+                    </td>
+                  </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-4 py-10 text-center text-sm font-semibold text-slate-400"
+                    >
+                      Belum ada paket dari database.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </SimpleCard>
+      </div>
+    </SimplePageShell>
+  );
+}
+
+async function TimelineView() {
+  const timelineEvents = await prisma.timelineEvent.findMany({
+    include: {
+      paket: { select: { namaPaket: true, unitPemohon: true, metodePengadaan: true } },
+    },
+    orderBy: [{ tanggalMulai: "asc" }, { createdAt: "desc" }],
+    take: 100,
+  });
+
+  return (
+    <SimplePageShell>
+      <SimpleCard title="Timeline & Kalender Pengadaan">
+        <div className="grid gap-5 p-5 xl:grid-cols-[.9fr_1.1fr]">
+          <div className="space-y-4">
+            {timelineEvents.length > 0 ? (
+              timelineEvents.map((item) => (
+              <div key={item.id} className="relative pl-8">
+                <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-[#08783f] ring-4 ring-emerald-100" />
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-900">
+                        {item.judul}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                        {item.tanggalMulai
+                          ? item.tanggalMulai.toLocaleDateString("id-ID")
+                          : "-"}
+                        {item.tanggalSelesai
+                          ? ` - ${item.tanggalSelesai.toLocaleDateString("id-ID")}`
+                          : ""}
+                      </p>
+                    </div>
+                    <StatusBadge>{humanize(item.status)}</StatusBadge>
+                  </div>
+                </div>
+              </div>
+              ))
+            ) : (
+              <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center text-sm font-semibold text-slate-400">
+                Belum ada event timeline yang tersimpan.
+              </div>
+            )}
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="w-full min-w-[680px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+                <tr>
+                  <th className="px-4 py-3">Paket</th>
+                  <th className="px-4 py-3">Unit</th>
+                  <th className="px-4 py-3">Metode</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {timelineEvents.length > 0 ? (
+                  timelineEvents.map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-4 py-4 font-semibold text-slate-700">
+                        {item.paket?.namaPaket ?? item.judul}
+                      </td>
+                      <td className="px-4 py-4 font-semibold text-slate-500">
+                        {item.unitKerja ?? item.paket?.unitPemohon ?? "-"}
+                      </td>
+                      <td className="px-4 py-4 font-semibold text-slate-500">
+                        {item.paket?.metodePengadaan
+                          ? methodLabel(item.paket.metodePengadaan)
+                          : item.tahap}
+                      </td>
+                      <td className="px-4 py-4">
+                        <StatusBadge>{humanize(item.status)}</StatusBadge>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-4 py-10 text-center text-sm font-semibold text-slate-400"
+                    >
+                      Belum ada timeline paket dari database.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </SimpleCard>
+    </SimplePageShell>
+  );
+}
+
+async function VendorMarketView() {
+  const vendors = await prisma.penyedia.findMany({
+    orderBy: { nama: "asc" },
+    take: 100,
+  });
+  const contractStats = await prisma.kontrak.groupBy({
+    by: ["penyedia"],
+    _count: { _all: true },
+    _sum: { nilaiKontrak: true },
+    orderBy: { penyedia: "asc" },
+    take: 100,
+  });
+  const contractMap = new Map(
+    contractStats.map((item) => [
+      item.penyedia,
+      {
+        count: item._count._all,
+        value: decimalNumber(item._sum.nilaiKontrak),
+      },
+    ]),
+  );
+  const totalNilai = vendors.reduce(
+    (total, item) => total + (contractMap.get(item.nama)?.value ?? 0),
+    0,
+  );
+
+  return (
+    <SimplePageShell>
+      <SimpleCard title="Vendor & Market Intelligence">
+        <div className="grid gap-3 p-5 sm:grid-cols-3">
+          <div className="rounded-lg border border-slate-200 border-l-4 border-l-[#1976d2] bg-white p-4">
+            <p className="text-xs font-black uppercase text-slate-400">
+              Total Vendor
+            </p>
+            <p className="mt-2 text-2xl font-black text-[#16227c]">
+              {vendors.length.toLocaleString("id-ID")}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 border-l-4 border-l-[#43a047] bg-white p-4">
+            <p className="text-xs font-black uppercase text-slate-400">
+              Nilai Kontrak
+            </p>
+            <p className="mt-2 text-2xl font-black text-[#16227c]">
+              {formatCompactCurrency(totalNilai)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 border-l-4 border-l-[#f57c00] bg-white p-4">
+            <p className="text-xs font-black uppercase text-slate-400">
+              Kontrak Vendor
+            </p>
+            <p className="mt-2 text-2xl font-black text-[#16227c]">
+              {vendors
+                .reduce((total, item) => total + (contractMap.get(item.nama)?.count ?? 0), 0)
+                .toLocaleString("id-ID")}
+            </p>
+          </div>
+        </div>
+        <div className="overflow-x-auto border-t border-slate-100">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+              <tr>
+                <th className="px-4 py-3">Vendor</th>
+                <th className="px-4 py-3">Jumlah Kontrak</th>
+                <th className="px-4 py-3">Total Nilai</th>
+                <th className="px-4 py-3">Status Pasar</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {vendors.length > 0 ? (
+                vendors.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-4 py-4 font-black text-slate-700">
+                      {item.nama}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-500">
+                      {(contractMap.get(item.nama)?.count ?? 0).toLocaleString("id-ID")}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-500">
+                      {formatCompactCurrency(contractMap.get(item.nama)?.value ?? 0)}
+                    </td>
+                    <td className="px-4 py-4">
+                      <StatusBadge>{humanize(item.status)}</StatusBadge>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-4 py-10 text-center text-sm font-semibold text-slate-400"
+                  >
+                    Belum ada data vendor dari kontrak.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </SimpleCard>
+    </SimplePageShell>
+  );
+}
+
+async function ClinicView() {
+  const [userUnits, paketUnits, rupUnits, consultationTypes, consultations] =
+    await Promise.all([
+      prisma.user.findMany({
+        distinct: ["unitKerja"],
+        where: { unitKerja: { not: null } },
+        select: { unitKerja: true },
+        orderBy: { unitKerja: "asc" },
+      }),
+      prisma.paketPengadaan.findMany({
+        distinct: ["unitPemohon"],
+        select: { unitPemohon: true },
+        orderBy: { unitPemohon: "asc" },
+      }),
+      prisma.rencanaUmumPengadaan.findMany({
+        distinct: ["unitPengusul"],
+        select: { unitPengusul: true },
+        orderBy: { unitPengusul: "asc" },
+      }),
+      prisma.klinikKonsultasi.findMany({
+        distinct: ["jenis"],
+        select: { jenis: true },
+        orderBy: { jenis: "asc" },
+      }),
+      prisma.klinikKonsultasi.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }),
+    ]);
+  const units = Array.from(
+    new Set([
+      ...userUnits.map((item) => item.unitKerja).filter(Boolean),
+      ...paketUnits.map((item) => item.unitPemohon),
+      ...rupUnits.map((item) => item.unitPengusul),
+    ]),
+  ) as string[];
+
+  return (
+    <SimplePageShell>
+      <div className="grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
+        <SimpleCard title="Form Konsultasi Pengadaan">
+          <ClinicConsultationForm
+            units={units}
+            types={consultationTypes.map((item) => item.jenis)}
+          />
+        </SimpleCard>
+        <SimpleCard title="Riwayat Konsultasi">
+          <div className="divide-y divide-slate-100">
+            {consultations.length > 0 ? (
+              consultations.map((item) => (
+                <div key={item.id} className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-black text-slate-800">
+                      {item.unitKerja}
+                    </p>
+                    <StatusBadge>{humanize(item.status)}</StatusBadge>
+                  </div>
+                  <p className="mt-1 text-xs font-black uppercase text-slate-400">
+                    {item.jenis}
+                  </p>
+                  <p className="mt-2 line-clamp-2 text-sm font-semibold text-slate-500">
+                    {item.pertanyaan}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="flex min-h-[260px] items-center justify-center p-6 text-center text-sm font-semibold text-slate-400">
+                Belum ada data konsultasi yang tersimpan.
+              </div>
+            )}
+          </div>
+        </SimpleCard>
+      </div>
+    </SimplePageShell>
+  );
+}
+
+async function DocumentTemplateView() {
+  const documents = await prisma.dokumenTemplate.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  return (
+    <SimplePageShell>
+      <SimpleCard title="Dokumen & Template">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+              <tr>
+                <th className="px-4 py-3">Nama</th>
+                <th className="px-4 py-3">Jenis</th>
+                <th className="px-4 py-3">Kategori</th>
+                <th className="px-4 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {documents.length > 0 ? (
+                documents.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-4 py-4 font-black text-slate-700">
+                      {item.nama}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-500">
+                      {humanize(item.jenis)}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-slate-500">
+                      {item.kategori ?? "-"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <StatusBadge>{humanize(item.status)}</StatusBadge>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-4 py-10 text-center text-sm font-semibold text-slate-400"
+                  >
+                    Belum ada data dokumen atau template yang tersimpan.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </SimpleCard>
+    </SimplePageShell>
+  );
+}
+
+async function ReportView() {
+  const dashboard = await getDashboardData();
+  const storedReports = await prisma.laporanTersimpan.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+
+  return (
+    <SimplePageShell>
+      <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <SimpleCard title="Ringkasan Laporan">
+          <div className="grid gap-3 p-5 sm:grid-cols-2">
+            {[
+              ["Total Paket", dashboard.summary.totalPaket.toLocaleString("id-ID")],
+              ["Total Pagu", formatCompactCurrency(dashboard.summary.totalPagu)],
+              [
+                "Nilai Kontrak",
+                formatCompactCurrency(dashboard.summary.totalNilaiKontrak),
+              ],
+              [
+                "Paket Bermasalah",
+                dashboard.summary.paketBermasalah.toLocaleString("id-ID"),
+              ],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="rounded-lg border border-slate-200 bg-white p-4"
+              >
+                <p className="text-xs font-black uppercase text-slate-400">
+                  {label}
+                </p>
+                <p className="mt-2 text-xl font-black text-[#16227c]">
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </SimpleCard>
+        <SimpleCard title="Parameter Laporan">
+          <div className="space-y-4 p-5">
+            <label className="block text-sm font-black text-slate-400">
+              Periode
+              <select className="mt-1 h-9 w-full rounded-md border border-slate-300 bg-white px-3 font-semibold text-slate-600">
+                <option>TA {dashboard.summary.tahunAnggaran}</option>
+              </select>
+            </label>
+            <label className="block text-sm font-black text-slate-400">
+              Sumber Dana
+              <select className="mt-1 h-9 w-full rounded-md border border-slate-300 bg-white px-3 font-semibold text-slate-600">
+                <option>Semua</option>
+                {dashboard.sourceFunds.map((item) => (
+                  <option key={item.label}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <div>
+              <p className="mb-2 text-sm font-black text-slate-400">
+                Format Ekspor
+              </p>
+              <div className="flex gap-3">
+                <button className="h-10 rounded-md bg-[#08783f] px-5 text-sm font-black text-white">
+                  Excel
+                </button>
+                <button className="h-10 rounded-md border border-emerald-200 bg-white px-5 text-sm font-black text-[#08783f]">
+                  PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </SimpleCard>
+      </div>
+      <div className="mt-5">
+        <SimpleCard title="Laporan Tersimpan">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+                <tr>
+                  <th className="px-4 py-3">Judul</th>
+                  <th className="px-4 py-3">Jenis</th>
+                  <th className="px-4 py-3">Periode</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {storedReports.length > 0 ? (
+                  storedReports.map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-4 py-4 font-black text-slate-700">
+                        {item.judul}
+                      </td>
+                      <td className="px-4 py-4 font-semibold text-slate-500">
+                        {humanize(item.jenis)}
+                      </td>
+                      <td className="px-4 py-4 font-semibold text-slate-500">
+                        {item.periode ?? item.tahunAnggaran ?? "-"}
+                      </td>
+                      <td className="px-4 py-4">
+                        <StatusBadge>{humanize(item.status)}</StatusBadge>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-4 py-10 text-center text-sm font-semibold text-slate-400"
+                    >
+                      Belum ada laporan yang tersimpan.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </SimpleCard>
+      </div>
+    </SimplePageShell>
+  );
+}
+
+async function SettingsView() {
+  const [users, userUnits, paketUnits, paketSatuanKerja, rupUnits] =
+    await Promise.all([
+    prisma.user.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        unitKerja: true,
+      },
+    }),
+    prisma.user.groupBy({
+      by: ["unitKerja"],
+      where: {
+        unitKerja: {
+          not: null,
+        },
+      },
+      _count: { _all: true },
+    }),
+    prisma.paketPengadaan.groupBy({
+      by: ["unitPemohon"],
+      _count: { _all: true },
+    }),
+    prisma.paketPengadaan.groupBy({
+      by: ["satuanKerja"],
+      where: {
+        satuanKerja: {
+          not: null,
+        },
+      },
+      _count: { _all: true },
+    }),
+    prisma.rencanaUmumPengadaan.groupBy({
+      by: ["unitPengusul"],
+      _count: { _all: true },
+    }),
+  ]);
+
+  const unitMap = new Map<string, UnitOption>();
+
+  function ensureUnit(name: string) {
+    if (!unitMap.has(name)) {
+      unitMap.set(name, {
+        name,
+        userCount: 0,
+        paketCount: 0,
+        rupCount: 0,
+        satuanKerjaCount: 0,
+      });
+    }
+
+    return unitMap.get(name)!;
+  }
+
+  userUnits.forEach((item) => {
+    if (!item.unitKerja) return;
+    ensureUnit(item.unitKerja).userCount = item._count._all;
+  });
+
+  paketUnits.forEach((item) => {
+    ensureUnit(item.unitPemohon).paketCount = item._count._all;
+  });
+
+  paketSatuanKerja.forEach((item) => {
+    if (!item.satuanKerja) return;
+    ensureUnit(item.satuanKerja).satuanKerjaCount = item._count._all;
+  });
+
+  rupUnits.forEach((item) => {
+    ensureUnit(item.unitPengusul).rupCount = item._count._all;
+  });
+
+  return (
+    <SimplePageShell>
+      <UnitManagementPanel
+        units={Array.from(unitMap.values())}
+        users={users}
+      />
+    </SimplePageShell>
+  );
+}
+
+async function CustomStaticModuleView({ pageKey }: { pageKey: string }) {
+  if (pageKey === "warning") return <RiskMitigationView />;
+  if (pageKey === "audit") return <AuditReadinessView />;
+  if (pageKey === "timeline") return <TimelineView />;
+  if (pageKey === "penyedia") return <VendorMarketView />;
+  if (pageKey === "klinik") return <ClinicView />;
+  if (pageKey === "dokumen") return <DocumentTemplateView />;
+  if (pageKey === "laporan") return <ReportView />;
+  if (pageKey === "pengaturan") return <SettingsView />;
 
   return null;
 }
@@ -1601,9 +3003,14 @@ async function AdminUsersView() {
   const inactiveCount = users.length - activeCount;
   const multiRoleCount = users.filter((user) => user.roles.length > 1).length;
   const approvalRoleCount = roles.filter((role) =>
-    ["PA", "KPA", "PPK", "PROCUREMENT_OFFICER", "SELECTION_WORKGROUP", "UKPBJ"].includes(
-      role.code,
-    ),
+    [
+      "PA",
+      "KPA",
+      "PPK",
+      "PROCUREMENT_OFFICER",
+      "SELECTION_WORKGROUP",
+      "UKPBJ",
+    ].includes(role.code),
   ).length;
 
   return (
@@ -1661,7 +3068,10 @@ async function AdminUsersView() {
                 Manajemen User & Role
               </h2>
             </div>
-            <GenericInputModalButton label="Tambah User" moduleName="Manajemen User" />
+            <GenericInputModalButton
+              label="Tambah User"
+              moduleName="Manajemen User"
+            />
           </div>
 
           <div className="overflow-x-auto">
@@ -1882,15 +3292,21 @@ async function AdminRolesView() {
             <div className="mt-4 grid gap-2 border-t border-slate-100 pt-4 text-xs font-bold text-slate-500">
               <div className="flex justify-between gap-3">
                 <span>Tahap</span>
-                <span className="text-right text-slate-800">{role.approvalStep}</span>
+                <span className="text-right text-slate-800">
+                  {role.approvalStep}
+                </span>
               </div>
               <div className="flex justify-between gap-3">
                 <span>Modul</span>
-                <span className="text-right text-slate-800">{role.modules}</span>
+                <span className="text-right text-slate-800">
+                  {role.modules}
+                </span>
               </div>
               <div className="flex justify-between gap-3">
                 <span>Kode</span>
-                <span className="text-right font-mono text-slate-800">{role.code}</span>
+                <span className="text-right font-mono text-slate-800">
+                  {role.code}
+                </span>
               </div>
             </div>
             <div className="mt-4 border-t border-slate-100 pt-4">
@@ -1995,7 +3411,9 @@ async function ModuleListView({
   const unitPemohon = getParam(searchParams, "unitPemohon") ?? "";
   const statusPaket = getParam(searchParams, "statusPaket") ?? "";
   const years =
-    moduleKey === "paket" || moduleKey === "katalog" || moduleKey === "pemilihan"
+    moduleKey === "paket" ||
+    moduleKey === "katalog" ||
+    moduleKey === "pemilihan"
       ? await prisma.paketPengadaan.findMany({
           distinct: ["tahunAnggaran"],
           orderBy: { tahunAnggaran: "desc" },
@@ -2003,11 +3421,15 @@ async function ModuleListView({
         })
       : [];
   const sourceFunds =
-    moduleKey === "paket" || moduleKey === "katalog" || moduleKey === "pemilihan"
+    moduleKey === "paket" ||
+    moduleKey === "katalog" ||
+    moduleKey === "pemilihan"
       ? await getActiveSumberDanaOptions()
       : [];
   const units =
-    moduleKey === "paket" || moduleKey === "katalog" || moduleKey === "pemilihan"
+    moduleKey === "paket" ||
+    moduleKey === "katalog" ||
+    moduleKey === "pemilihan"
       ? await prisma.paketPengadaan.findMany({
           distinct: ["unitPemohon"],
           orderBy: { unitPemohon: "asc" },
@@ -2015,7 +3437,9 @@ async function ModuleListView({
         })
       : [];
   const statuses =
-    moduleKey === "paket" || moduleKey === "katalog" || moduleKey === "pemilihan"
+    moduleKey === "paket" ||
+    moduleKey === "katalog" ||
+    moduleKey === "pemilihan"
       ? await prisma.paketPengadaan.findMany({
           distinct: ["statusPaket"],
           orderBy: { statusPaket: "asc" },
@@ -2027,80 +3451,126 @@ async function ModuleListView({
             orderBy: { status: "asc" },
             select: { status: true },
           })
-      : [];
-  const showKpis = moduleKey !== "pemilihan";
+        : [];
+  const showKpis = true;
+  const isPemilihan = moduleKey === "pemilihan";
+  const isKontrak = moduleKey === "kontrak";
+  const tenderRows = table.rows.filter((row) => row[4] === "Tender");
+  const nonTenderRows = table.rows.filter((row) => row[4] === "Non Tender");
+  const activeKontrakCount =
+    kpis.find((item) => item.label === "Aktif")?.value ?? "0";
+  const followUpKontrakCount =
+    kpis.find((item) => item.label === "Perlu Tindak Lanjut")?.value ?? "0";
+
+  const filterAttachedToHeader = true;
 
   return (
-    <main className="bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-2 sm:px-6 lg:px-8">
-        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(120px,140px)_minmax(190px,220px)_minmax(140px,180px)] xl:grid-cols-[auto_minmax(120px,140px)_minmax(190px,220px)_minmax(140px,180px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
-            <span className="self-center text-sm font-black text-slate-400 sm:col-span-2 lg:col-span-1">
-              Filter:
-            </span>
-            <select
-              name="tahunAnggaran"
-              defaultValue={tahunAnggaran}
-              className="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-            >
-              <option value="">Semua Tahun</option>
-              {years.map((year) => (
-                <option key={year.tahunAnggaran} value={year.tahunAnggaran}>
-                  TA {year.tahunAnggaran}
-                </option>
-              ))}
-            </select>
-            <select
-              name="sumberDana"
-              defaultValue={sumberDana}
-              className="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-            >
-              <option value="">Semua Sumber Dana</option>
-              {sourceFunds.map((item) => (
-                <option key={item.kode} value={item.kode}>
-                  {item.nama}
-                </option>
-              ))}
-            </select>
-            <select
-              name="unitPemohon"
-              defaultValue={unitPemohon}
-              className="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-            >
-              <option value="">Semua Unit</option>
-              {units.map((item) => (
-                <option key={item.unitPemohon} value={item.unitPemohon}>
-                  {item.unitPemohon}
-                </option>
-              ))}
-            </select>
-            <select
-              name="statusPaket"
-              defaultValue={statusPaket}
-              className="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-            >
-              <option value="">Semua Status</option>
-              {statuses.map((item) => (
-                <option
-                  key={"statusPaket" in item ? item.statusPaket : item.status}
-                  value={"statusPaket" in item ? item.statusPaket : item.status}
-                >
-                  {humanize("statusPaket" in item ? item.statusPaket : item.status)}
-                </option>
-              ))}
-            </select>
-            <label className="flex h-8 min-w-0 items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500 sm:col-span-2 lg:col-span-4 xl:col-span-1">
-              <Search className="h-4 w-4" />
-              <input
-                name="q"
-                defaultValue={q}
-                placeholder="Cari paket pengadaan..."
-                className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
+    <main className="min-h-screen bg-[#f4f7f5]">
+      <div
+        className={
+          filterAttachedToHeader
+            ? "space-y-4 px-4 pb-4 sm:px-6 lg:px-8"
+            : "space-y-4 px-4 py-4 sm:px-6 lg:px-8"
+        }
+      >
+        <form
+          className={
+            isPemilihan
+              ? "-mx-4 border-b border-slate-200 bg-white sm:-mx-6 lg:-mx-8"
+              : "-mx-4 border-b border-slate-200 bg-white px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+          }
+        >
+          {isPemilihan ? (
+            <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                  UKPBJ / Pemilihan Penyedia
+                </p>
+                <h1 className="mt-1 text-lg font-black text-[#16227c]">
+                  Tender & Non Tender
+                </h1>
+              </div>
+              <ExportExcelButton
+                columns={table.columns}
+                rows={table.rows}
+                fileName="tender-non-tender"
               />
-            </label>
-        </div>
-      </form>
+            </div>
+          ) : null}
 
-      <div className="space-y-4 px-4 py-5 sm:px-6 lg:px-8">
+          <div className={isPemilihan ? "px-5 py-3" : ""}>
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <span className="shrink-0 text-sm font-black text-slate-400">
+                Filter:
+              </span>
+              <select
+                name="tahunAnggaran"
+                defaultValue={tahunAnggaran}
+                className="h-9 min-w-[150px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
+              >
+                <option value="">Semua Tahun</option>
+                {years.map((year) => (
+                  <option key={year.tahunAnggaran} value={year.tahunAnggaran}>
+                    TA {year.tahunAnggaran}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="sumberDana"
+                defaultValue={sumberDana}
+                className="h-9 min-w-[220px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
+              >
+                <option value="">Semua Sumber Dana</option>
+                {sourceFunds.map((item) => (
+                  <option key={item.kode} value={item.kode}>
+                    {item.nama}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="unitPemohon"
+                defaultValue={unitPemohon}
+                className="h-9 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
+              >
+                <option value="">Semua Unit</option>
+                {units.map((item) => (
+                  <option key={item.unitPemohon} value={item.unitPemohon}>
+                    {item.unitPemohon}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="statusPaket"
+                defaultValue={statusPaket}
+                className="h-9 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
+              >
+                <option value="">Semua Status</option>
+                {statuses.map((item) => (
+                  <option
+                    key={"statusPaket" in item ? item.statusPaket : item.status}
+                    value={
+                      "statusPaket" in item ? item.statusPaket : item.status
+                    }
+                  >
+                    {humanize(
+                      "statusPaket" in item ? item.statusPaket : item.status,
+                    )}
+                  </option>
+                ))}
+              </select>
+              <label className="flex h-9 min-w-[260px] flex-1 items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500">
+                <Search className="h-4 w-4" />
+                <input
+                  name="q"
+                  defaultValue={q}
+                  placeholder="Cari paket pengadaan..."
+                  className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
+                />
+              </label>
+            </div>
+          </div>
+        </form>
+
         {showKpis ? (
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {kpis.map((item) => (
@@ -2124,17 +3594,260 @@ async function ModuleListView({
           </section>
         ) : null}
 
+        {isPemilihan ? (
+          <>
+            <section className="grid gap-4 lg:grid-cols-2">
+              {[
+                {
+                  title: "Tender",
+                  icon: "⚖",
+                  count: tenderRows.length,
+                  value:
+                    kpis.find((item) => item.label === "Tender")?.helper ??
+                    "Rp 0",
+                  steps: [
+                    "Pengumuman",
+                    "Aanwijzing",
+                    "Evaluasi",
+                    "Klarifikasi",
+                    "Sanggah",
+                    "SPPBJ",
+                  ],
+                },
+                {
+                  title: "Non Tender",
+                  icon: "📋",
+                  count: nonTenderRows.length,
+                  value:
+                    kpis.find((item) => item.label === "Non Tender")?.helper ??
+                    "Rp 0",
+                  steps: [
+                    "Undangan",
+                    "Penawaran",
+                    "Negosiasi",
+                    "BA Hasil",
+                    "Penetapan",
+                    "SPPBJ",
+                  ],
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+                >
+                  <div className="flex min-h-[56px] items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="text-base" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      <h2 className="truncate text-sm font-black text-[#16227c]">
+                        {item.title}
+                      </h2>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
+                      {item.count} paket
+                    </span>
+                  </div>
+
+                  <div className="grid gap-2 px-5 py-4 sm:grid-cols-3">
+                    {item.steps.map((step, index) => (
+                      <div
+                        key={`${item.title}-${step}`}
+                        className="min-h-[58px] rounded-md border border-slate-200 bg-[#f4f7f5] px-3 py-2"
+                      >
+                        <span className="text-[10px] font-black uppercase text-slate-400">
+                          Tahap {index + 1}
+                        </span>
+                        <p className="mt-1 text-xs font-black text-slate-700">
+                          {step}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3">
+                    <span className="text-xs font-black uppercase text-slate-400">
+                      Total Pagu
+                    </span>
+                    <span className="text-sm font-black text-slate-900">
+                      {item.value}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </section>
+
+            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-5 py-3">
+                <div className="flex items-center gap-2">
+                  <ListChecks className="h-5 w-5 text-[#08783f]" />
+                  <h2 className="text-sm font-black text-[#16227c]">
+                    Workflow Pemilihan
+                  </h2>
+                </div>
+              </div>
+              <div className="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {[
+                  ["1", "Dokumen", "Dokumen pemilihan dan HPS final"],
+                  ["2", "Publikasi", "Tender tayang atau undangan dikirim"],
+                  ["3", "Penawaran", "Penyedia submit dokumen penawaran"],
+                  ["4", "Evaluasi", "Administrasi, teknis, harga"],
+                  ["5", "Penetapan", "BA hasil dan pemenang/penyedia"],
+                  ["6", "SPPBJ", "Siap masuk kontrak atau surat pesanan"],
+                ].map(([number, title, helper]) => (
+                  <div
+                    key={number}
+                    className="min-h-[86px] rounded-md border border-slate-200 bg-[#f4f7f5] p-3"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-black text-white">
+                      {number}
+                    </span>
+                    <p className="mt-2 text-xs font-black text-slate-900">
+                      {title}
+                    </p>
+                    <p className="mt-1 text-[11px] font-semibold leading-4 text-slate-500">
+                      {helper}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        ) : null}
+
+        {isKontrak ? (
+          <>
+            <section className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
+              <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                <div className="flex min-h-[58px] items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileCheck2 className="h-5 w-5 shrink-0 text-[#08783f]" />
+                    <h2 className="truncate text-sm font-black text-[#16227c]">
+                      Struktur Kontrak & Surat Pesanan
+                    </h2>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
+                    {activeKontrakCount} aktif
+                  </span>
+                </div>
+
+                <div className="grid gap-2 p-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    ["01", "SPPBJ", "Dasar penunjukan penyedia sebelum kontrak/SP."],
+                    ["02", "SP / SPK", "Nomor, nilai, penyedia, dan masa berlaku."],
+                    ["03", "Adendum", "Perubahan waktu, nilai, atau ruang lingkup."],
+                    ["04", "Penutupan", "BAST/BAPB, faktur, pembayaran, dan arsip."],
+                  ].map(([number, title, helper]) => (
+                    <div
+                      key={title}
+                      className="min-h-[104px] rounded-md border border-slate-200 bg-[#f4f7f5] p-3"
+                    >
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-black text-white">
+                        {number}
+                      </span>
+                      <p className="mt-3 text-xs font-black text-slate-900">
+                        {title}
+                      </p>
+                      <p className="mt-1 text-[11px] font-semibold leading-4 text-slate-500">
+                        {helper}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-100 px-5 py-3">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-[#08783f]" />
+                    <h2 className="text-sm font-black text-[#16227c]">
+                      Kontrol Status
+                    </h2>
+                  </div>
+                </div>
+                <div className="space-y-3 p-4">
+                  {[
+                    ["Kontrak aktif", activeKontrakCount, "bg-emerald-100 text-[#08783f]"],
+                    [
+                      "Perlu tindak lanjut",
+                      followUpKontrakCount,
+                      "bg-red-100 text-red-700",
+                    ],
+                    ["Dokumen arsip", table.rows.length.toLocaleString("id-ID"), "bg-slate-100 text-slate-700"],
+                  ].map(([label, value, tone]) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3"
+                    >
+                      <span className="text-xs font-black text-slate-600">
+                        {label}
+                      </span>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-black ${tone}`}
+                      >
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-5 py-3">
+                <div className="flex items-center gap-2">
+                  <ListChecks className="h-5 w-5 text-[#08783f]" />
+                  <h2 className="text-sm font-black text-[#16227c]">
+                    Alur Dokumen Kontrak
+                  </h2>
+                </div>
+              </div>
+              <div className="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {[
+                  ["1", "SPPBJ", "Penunjukan penyedia"],
+                  ["2", "Draft", "Rancangan SP/SPK"],
+                  ["3", "TTD", "Kontrak ditandatangani"],
+                  ["4", "Pelaksanaan", "Masa kerja berjalan"],
+                  ["5", "BAST/BAPB", "Pemeriksaan hasil"],
+                  ["6", "Bayar", "Faktur dan penutupan"],
+                ].map(([number, title, helper]) => (
+                  <div
+                    key={number}
+                    className="min-h-[86px] rounded-md border border-slate-200 bg-[#f4f7f5] p-3"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-black text-white">
+                      {number}
+                    </span>
+                    <p className="mt-2 text-xs font-black text-slate-900">
+                      {title}
+                    </p>
+                    <p className="mt-1 text-[11px] font-semibold leading-4 text-slate-500">
+                      {helper}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        ) : null}
+
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2">
-              <config.icon className="h-5 w-5 shrink-0 text-[#16227c]" />
+              <config.icon className="h-5 w-5 shrink-0 text-[#08783f]" />
               <h2 className="truncate text-lg font-black text-[#16227c]">
                 {moduleKey === "katalog"
                   ? "Daftar Paket e-Katalog V6 & V5"
+                  : moduleKey === "pemilihan"
+                    ? "Daftar Paket Tender & Non Tender"
                   : config.title}
               </h2>
             </div>
-            <ModuleAction config={config} moduleKey={moduleKey} pageKey={pageKey} />
+            <ModuleAction
+              config={config}
+              moduleKey={moduleKey}
+              pageKey={pageKey}
+            />
           </div>
 
           <div className="overflow-x-auto">
@@ -2154,7 +3867,10 @@ async function ModuleListView({
               <tbody className="divide-y divide-slate-100">
                 {table.rows.length > 0 ? (
                   table.rows.map((row, rowIndex) => (
-                    <tr key={`${row[0]}-${rowIndex}`} className="hover:bg-slate-50">
+                    <tr
+                      key={`${row[0]}-${rowIndex}`}
+                      className="hover:bg-slate-50"
+                    >
                       {table.columns.map((column, columnIndex) => (
                         <td
                           key={`${column}-${columnIndex}`}
@@ -2162,7 +3878,11 @@ async function ModuleListView({
                             column === "Aksi" ? "text-right" : ""
                           }`}
                         >
-                          {tableCellContent(column, row[columnIndex] ?? "-", rowIndex)}
+                          {tableCellContent(
+                            column,
+                            row[columnIndex] ?? "-",
+                            rowIndex,
+                          )}
                         </td>
                       ))}
                     </tr>
@@ -2173,7 +3893,8 @@ async function ModuleListView({
                       colSpan={table.columns.length}
                       className="px-4 py-16 text-center text-sm font-semibold text-slate-500"
                     >
-                      Data {config.title.toLowerCase()} belum tersedia di database.
+                      Data {config.title.toLowerCase()} belum tersedia di
+                      database.
                     </td>
                   </tr>
                 )}
@@ -2225,7 +3946,9 @@ function ProcurementStages({
     },
     {
       label: "Perlu tindak lanjut",
-      value: (summary.paketBermasalah + summary.deadlineDekat).toLocaleString("id-ID"),
+      value: (summary.paketBermasalah + summary.deadlineDekat).toLocaleString(
+        "id-ID",
+      ),
       helper: "Risiko/deadline dekat",
       icon: AlertTriangle,
     },
@@ -2234,7 +3957,8 @@ function ProcurementStages({
   const stages = [
     {
       title: "Perencanaan & RUP",
-      description: "Input kebutuhan, kode RUP, sumber dana, pagu, HPS, dan jadwal pemilihan.",
+      description:
+        "Input kebutuhan, kode RUP, sumber dana, pagu, HPS, dan jadwal pemilihan.",
       count: perencanaanCount,
       icon: Landmark,
       href: "/rup",
@@ -2242,7 +3966,8 @@ function ProcurementStages({
     },
     {
       title: "Persiapan Pengadaan",
-      description: "Lengkapi KAK, spesifikasi teknis, HPS, TKDN, dan dokumen persiapan.",
+      description:
+        "Lengkapi KAK, spesifikasi teknis, HPS, TKDN, dan dokumen persiapan.",
       count: perencanaanCount,
       icon: FileSearch,
       href: "/pengadaan/perencanaan",
@@ -2250,35 +3975,22 @@ function ProcurementStages({
     },
     {
       title: "Pemilihan Penyedia",
-      description: "Proses e-katalog, tender, non tender, evaluasi, dan negosiasi.",
-      count: pemilihanCount + summary.paketEKatalogV6 + summary.paketTenderNonTender,
+      description:
+        "Proses e-katalog, tender, non tender, evaluasi, dan negosiasi.",
+      count:
+        pemilihanCount + summary.paketEKatalogV6 + summary.paketTenderNonTender,
       icon: ShoppingCart,
       href: "/pengadaan/pemilihan",
       tone: "bg-amber-50 text-amber-700 border-amber-200",
     },
     {
       title: "Hasil Pemilihan",
-      description: "Penetapan pemenang, SPPBJ, harga nego, dan kesiapan surat pesanan.",
+      description:
+        "Penetapan pemenang, SPPBJ, harga nego, dan kesiapan surat pesanan.",
       count: kontrakCount,
       icon: ShieldCheck,
       href: "/kontrak",
       tone: "bg-violet-50 text-violet-700 border-violet-200",
-    },
-    {
-      title: "Kontrak & Pelaksanaan",
-      description: "SP/SPK, masa kontrak, pengiriman, progres fisik, dan kendala pelaksanaan.",
-      count: kontrakCount,
-      icon: FileCheck2,
-      href: "/progres",
-      tone: "bg-teal-50 text-teal-700 border-teal-200",
-    },
-    {
-      title: "Serah Terima & Realisasi",
-      description: "BAST/BAPB, pemeriksaan barang, pembayaran, dan penutupan paket.",
-      count: selesaiCount,
-      icon: Handshake,
-      href: "/serah-terima",
-      tone: "bg-slate-50 text-slate-700 border-slate-200",
     },
   ];
 
@@ -2318,7 +4030,9 @@ function ProcurementStages({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-black text-slate-500">{card.label}</p>
+                  <p className="text-sm font-black text-slate-500">
+                    {card.label}
+                  </p>
                   <p className="mt-3 text-3xl font-black text-slate-950">
                     {card.value}
                   </p>
@@ -2346,7 +4060,9 @@ function ProcurementStages({
               className="group rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               <div className="flex items-start justify-between gap-4">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-lg border ${stage.tone}`}>
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-lg border ${stage.tone}`}
+                >
                   <Icon className="h-6 w-6" strokeWidth={2.3} />
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
@@ -2472,7 +4188,11 @@ export default async function ProcurementModulePage({
   const config = resolveConfig(pageKey);
   const isProcurementStage = config.title === "Tahapan Pengadaan";
 
-  if (pageKey === "admin-users" || pageKey === "admin-users-tambah" || pageKey === "admin-users-detail") {
+  if (
+    pageKey === "admin-users" ||
+    pageKey === "admin-users-tambah" ||
+    pageKey === "admin-users-detail"
+  ) {
     return (
       <>
         <AppHeader
@@ -2523,7 +4243,11 @@ export default async function ProcurementModulePage({
             rightLabel={config.rightLabel}
           />
           <ModuleListView
-            config={{ ...config, title: content.title, subtitle: content.subtitle }}
+            config={{
+              ...config,
+              title: content.title,
+              subtitle: content.subtitle,
+            }}
             moduleKey="pemilihan"
             pageKey={pageKey}
             searchParams={searchParams}
@@ -2546,6 +4270,34 @@ export default async function ProcurementModulePage({
     );
   }
 
+  const customView = await CustomStaticModuleView({ pageKey });
+
+  if (customView) {
+    return (
+      <>
+        <AppHeader
+          title={config.title}
+          subtitle={`UKPBJ › ${config.title.replace(" & ", " / ")}`}
+          rightLabel={config.rightLabel}
+        />
+        {customView}
+      </>
+    );
+  }
+
+  if (pageKey === "realisasi") {
+    return (
+      <>
+        <AppHeader
+          title="Realisasi Belanja"
+          subtitle="UKPBJ › Realisasi"
+          rightLabel={config.rightLabel}
+        />
+        <RealisasiBelanjaView />
+      </>
+    );
+  }
+
   return (
     <>
       <AppHeader
@@ -2558,6 +4310,7 @@ export default async function ProcurementModulePage({
         config={config}
         moduleKey={getModuleKey(pageKey)}
         pageKey={pageKey}
+        searchParams={searchParams}
       />
     </>
   );

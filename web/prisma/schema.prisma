@@ -95,6 +95,68 @@ enum KontrakStatus {
   BATAL
 }
 
+enum RisikoLevel {
+  RENDAH
+  SEDANG
+  TINGGI
+}
+
+enum RisikoStatus {
+  PERLU_TINDAK_LANJUT
+  PROSES
+  SELESAI
+}
+
+enum PenyediaStatus {
+  AKTIF
+  NONAKTIF
+  BLACKLIST
+}
+
+enum TimelineStatus {
+  RENCANA
+  BERJALAN
+  SELESAI
+  TERLAMBAT
+}
+
+enum AuditDokumenStatus {
+  BELUM_ADA
+  PROSES
+  LENGKAP
+}
+
+enum KlinikStatus {
+  BARU
+  DIPROSES
+  SELESAI
+}
+
+enum DokumenJenis {
+  DOKUMEN
+  TEMPLATE
+}
+
+enum DokumenStatus {
+  DRAFT
+  AKTIF
+  NONAKTIF
+}
+
+enum LaporanJenis {
+  PAKET
+  REALISASI
+  KONTRAK
+  RISIKO
+  AUDIT
+}
+
+enum LaporanStatus {
+  DRAFT
+  TERBIT
+  ARSIP
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Char(36)
   name         String     @db.VarChar(160)
@@ -215,6 +277,13 @@ model PaketPengadaan {
   createdAt          DateTime             @default(now()) @map("created_at")
   updatedAt          DateTime             @updatedAt @map("updated_at")
 
+  risikoMitigasi RisikoMitigasi[]
+  realisasi      RealisasiBelanja[]
+  progres        ProgresPaket[]
+  serahTerima    SerahTerima[]
+  timelineEvents TimelineEvent[]
+  auditDokumen   AuditChecklist[]
+
   @@index([namaPaket])
   @@index([unitPemohon])
   @@index([tahunAnggaran])
@@ -238,6 +307,10 @@ model Kontrak {
   catatan        String?       @db.Text
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  realisasi      RealisasiBelanja[]
+  serahTerima    SerahTerima[]
+  timelineEvents TimelineEvent[]
 
   @@index([paketId])
   @@index([namaPaket])
@@ -281,4 +354,200 @@ model SumberDana {
   @@index([nama])
   @@index([aktif])
   @@map("sumber_dana")
+}
+
+model RisikoMitigasi {
+  id        String       @id @default(uuid()) @db.Char(36)
+  paketId   String?      @map("paket_id") @db.Char(36)
+  risiko    String       @db.Text
+  level     RisikoLevel  @default(SEDANG)
+  mitigasi  String       @db.Text
+  pic       String       @db.VarChar(160)
+  deadline  DateTime?    @db.Date
+  status    RisikoStatus @default(PERLU_TINDAK_LANJUT)
+  catatan   String?      @db.Text
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  paket PaketPengadaan? @relation(fields: [paketId], references: [id], onDelete: SetNull)
+
+  @@index([paketId])
+  @@index([level])
+  @@index([status])
+  @@index([deadline])
+  @@map("risiko_mitigasi")
+}
+
+model Penyedia {
+  id           String         @id @default(uuid()) @db.Char(36)
+  nama         String         @unique @db.VarChar(180)
+  npwp         String?        @db.VarChar(40)
+  alamat       String?        @db.Text
+  kontakPerson String?        @map("kontak_person") @db.VarChar(120)
+  email        String?        @db.VarChar(180)
+  telepon      String?        @db.VarChar(40)
+  kategori     String?        @db.VarChar(100)
+  status       PenyediaStatus @default(AKTIF)
+  catatan      String?        @db.Text
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@index([nama])
+  @@index([status])
+  @@map("penyedia")
+}
+
+model RealisasiBelanja {
+  id             String    @id @default(uuid()) @db.Char(36)
+  paketId        String?   @map("paket_id") @db.Char(36)
+  kontrakId      String?   @map("kontrak_id") @db.Char(36)
+  sumberDana     String    @map("sumber_dana") @db.VarChar(120)
+  tahunAnggaran  Int       @map("tahun_anggaran")
+  nilaiPagu      Decimal   @default(0) @map("nilai_pagu") @db.Decimal(18, 2)
+  nilaiHps       Decimal   @default(0) @map("nilai_hps") @db.Decimal(18, 2)
+  nilaiKontrak   Decimal   @default(0) @map("nilai_kontrak") @db.Decimal(18, 2)
+  nilaiRealisasi Decimal   @default(0) @map("nilai_realisasi") @db.Decimal(18, 2)
+  tanggalBayar   DateTime? @map("tanggal_bayar") @db.Date
+  nomorBukti     String?   @map("nomor_bukti") @db.VarChar(100)
+  catatan        String?   @db.Text
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  paket   PaketPengadaan? @relation(fields: [paketId], references: [id], onDelete: SetNull)
+  kontrak Kontrak?        @relation(fields: [kontrakId], references: [id], onDelete: SetNull)
+
+  @@index([paketId])
+  @@index([kontrakId])
+  @@index([sumberDana])
+  @@index([tahunAnggaran])
+  @@map("realisasi_belanja")
+}
+
+model ProgresPaket {
+  id         String         @id @default(uuid()) @db.Char(36)
+  paketId    String?        @map("paket_id") @db.Char(36)
+  tahap      String         @db.VarChar(120)
+  persentase Int            @default(0)
+  status     TimelineStatus @default(BERJALAN)
+  tanggal    DateTime?      @db.Date
+  catatan    String?        @db.Text
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  paket PaketPengadaan? @relation(fields: [paketId], references: [id], onDelete: SetNull)
+
+  @@index([paketId])
+  @@index([status])
+  @@map("progres_paket")
+}
+
+model SerahTerima {
+  id             String         @id @default(uuid()) @db.Char(36)
+  paketId        String?        @map("paket_id") @db.Char(36)
+  kontrakId      String?        @map("kontrak_id") @db.Char(36)
+  nomorDokumen   String         @unique @map("nomor_dokumen") @db.VarChar(100)
+  tanggalDokumen DateTime?      @map("tanggal_dokumen") @db.Date
+  pemeriksa      String?        @db.VarChar(160)
+  status         TimelineStatus @default(BERJALAN)
+  catatan        String?        @db.Text
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  paket   PaketPengadaan? @relation(fields: [paketId], references: [id], onDelete: SetNull)
+  kontrak Kontrak?        @relation(fields: [kontrakId], references: [id], onDelete: SetNull)
+
+  @@index([paketId])
+  @@index([kontrakId])
+  @@index([status])
+  @@map("serah_terima")
+}
+
+model TimelineEvent {
+  id             String         @id @default(uuid()) @db.Char(36)
+  paketId        String?        @map("paket_id") @db.Char(36)
+  kontrakId      String?        @map("kontrak_id") @db.Char(36)
+  judul          String         @db.VarChar(180)
+  tahap          String         @db.VarChar(120)
+  unitKerja      String?        @map("unit_kerja") @db.VarChar(160)
+  tanggalMulai   DateTime?      @map("tanggal_mulai") @db.Date
+  tanggalSelesai DateTime?      @map("tanggal_selesai") @db.Date
+  status         TimelineStatus @default(RENCANA)
+  catatan        String?        @db.Text
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  paket   PaketPengadaan? @relation(fields: [paketId], references: [id], onDelete: SetNull)
+  kontrak Kontrak?        @relation(fields: [kontrakId], references: [id], onDelete: SetNull)
+
+  @@index([paketId])
+  @@index([kontrakId])
+  @@index([status])
+  @@map("timeline_events")
+}
+
+model AuditChecklist {
+  id        String             @id @default(uuid()) @db.Char(36)
+  paketId   String?            @map("paket_id") @db.Char(36)
+  dokumen   String             @db.VarChar(160)
+  status    AuditDokumenStatus @default(BELUM_ADA)
+  catatan   String?            @db.Text
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  paket PaketPengadaan? @relation(fields: [paketId], references: [id], onDelete: SetNull)
+
+  @@unique([paketId, dokumen])
+  @@index([status])
+  @@map("audit_checklist")
+}
+
+model KlinikKonsultasi {
+  id         String       @id @default(uuid()) @db.Char(36)
+  unitKerja  String       @map("unit_kerja") @db.VarChar(160)
+  jenis      String       @db.VarChar(120)
+  pertanyaan String       @db.Text
+  jawaban    String?      @db.Text
+  status     KlinikStatus @default(BARU)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  @@index([unitKerja])
+  @@index([jenis])
+  @@index([status])
+  @@map("klinik_konsultasi")
+}
+
+model DokumenTemplate {
+  id        String        @id @default(uuid()) @db.Char(36)
+  nama      String        @db.VarChar(180)
+  jenis     DokumenJenis  @default(DOKUMEN)
+  kategori  String?       @db.VarChar(120)
+  fileUrl   String?       @map("file_url") @db.VarChar(255)
+  status    DokumenStatus @default(AKTIF)
+  catatan   String?       @db.Text
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@index([nama])
+  @@index([jenis])
+  @@index([status])
+  @@map("dokumen_template")
+}
+
+model LaporanTersimpan {
+  id            String        @id @default(uuid()) @db.Char(36)
+  judul         String        @db.VarChar(180)
+  jenis         LaporanJenis
+  tahunAnggaran Int?          @map("tahun_anggaran")
+  periode       String?       @db.VarChar(80)
+  fileUrl       String?       @map("file_url") @db.VarChar(255)
+  status        LaporanStatus @default(DRAFT)
+  catatan       String?       @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@index([jenis])
+  @@index([tahunAnggaran])
+  @@index([status])
+  @@map("laporan_tersimpan")
 }

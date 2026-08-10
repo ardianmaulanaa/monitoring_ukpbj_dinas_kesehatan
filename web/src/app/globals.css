@@ -35,6 +35,62 @@ input {
   font: inherit;
 }
 
+button,
+a[role="button"],
+a[class*="rounded"][class*="px-"],
+a[class*="rounded"][class*="h-"],
+[type="button"],
+[type="submit"],
+[type="reset"] {
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease;
+  will-change: transform;
+}
+
+button:not(:disabled):hover,
+a[role="button"]:hover,
+a[class*="rounded"][class*="px-"]:hover,
+a[class*="rounded"][class*="h-"]:hover,
+[type="button"]:not(:disabled):hover,
+[type="submit"]:not(:disabled):hover,
+[type="reset"]:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+button:not(:disabled):active,
+a[role="button"]:active,
+a[class*="rounded"][class*="px-"]:active,
+a[class*="rounded"][class*="h-"]:active,
+[type="button"]:not(:disabled):active,
+[type="submit"]:not(:disabled):active,
+[type="reset"]:not(:disabled):active {
+  transform: translateY(0) scale(0.98);
+}
+
+button:focus-visible,
+a[role="button"]:focus-visible,
+a[class*="rounded"][class*="px-"]:focus-visible,
+a[class*="rounded"][class*="h-"]:focus-visible,
+[type="button"]:focus-visible,
+[type="submit"]:focus-visible,
+[type="reset"]:focus-visible {
+  outline: 2px solid rgba(8, 120, 63, 0.35);
+  outline-offset: 3px;
+}
+
+button:disabled,
+[type="button"]:disabled,
+[type="submit"]:disabled,
+[type="reset"]:disabled {
+  transform: none;
+  will-change: auto;
+}
+
 @keyframes brandEnter {
   from {
     opacity: 0;
@@ -100,6 +156,22 @@ input {
   animation: shapeFloat 8s ease-in-out infinite;
 }
 
+@keyframes toastAlertIn {
+  from {
+    opacity: 0;
+    transform: translate(14px, -10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.toast-alert {
+  animation: toastAlertIn 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
@@ -107,4 +179,163 @@ input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
   caret-color: #16372b;
   transition: background-color 9999s ease-in-out 0s;
+}
+
+@keyframes pageTransitionIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.page-transition {
+  animation: pageTransitionIn 220ms ease-out both;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.page-transition :where(main, section, article, div, form, aside) {
+  min-width: 0;
+}
+
+.page-transition :where(main, section, article, div, form, aside)[class*="grid"],
+.page-transition :where(main, section, article, div, form, aside)[class*="flex"] {
+  max-width: 100%;
+}
+
+.page-transition :where(section, article, div, form, aside)[class*="rounded"]:not([class*="rounded-full"]) {
+  max-width: 100%;
+}
+
+.page-transition :where(div)[class*="overflow-x-auto"] {
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.page-transition
+  :is(section, article, div, form, aside)[class*="rounded"]:not([class*="rounded-full"]),
+.page-transition
+  :is(input, select, textarea)[class*="rounded"]:not([class*="rounded-full"]) {
+  border-radius: 1rem;
+}
+
+.page-transition
+  :is(section, article, div, form, aside)[class*="rounded-2xl"]:not([class*="rounded-full"]) {
+  border-radius: 1.25rem;
+}
+
+.page-transition
+  :is(section, article, div, form, aside)[class*="overflow-hidden"][class*="border"] {
+  border-radius: 1rem;
+}
+
+@keyframes cardTransitionIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.page-transition :where(section, article, div)[class*="rounded"][class*="border"],
+.page-transition :where(section, article, div)[class*="shadow-sm"],
+.page-transition :where(section, article, div)[class*="shadow-md"] {
+  animation: cardTransitionIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+  will-change: transform;
+}
+
+.page-transition :where(section, article, div)[class*="rounded"][class*="border"]:hover,
+.page-transition :where(section, article, div)[class*="shadow-sm"]:hover,
+.page-transition :where(section, article, div)[class*="shadow-md"]:hover {
+  transform: translateY(-2px);
+}
+
+.page-transition :where(table, tbody, thead, tr, label, button, a, input, select, textarea, svg, [role="dialog"], [aria-modal="true"]) {
+  animation: none;
+  will-change: auto;
+}
+
+[role="dialog"],
+[role="dialog"] :where(div, form, label, fieldset, section, article) {
+  min-width: 0;
+}
+
+[role="dialog"] :where(input, select, textarea) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+[role="dialog"] :where(form, label, input, select, textarea, button) {
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  [role="dialog"] :where(input, select, textarea) {
+    width: 100%;
+  }
+}
+
+.page-transition > *:nth-child(1),
+.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.page-transition > *:nth-child(2),
+.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(2) {
+  animation-delay: 35ms;
+}
+
+.page-transition > *:nth-child(3),
+.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(3) {
+  animation-delay: 70ms;
+}
+
+.page-transition > *:nth-child(4),
+.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(4) {
+  animation-delay: 105ms;
+}
+
+.page-transition > *:nth-child(5),
+.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(5) {
+  animation-delay: 140ms;
+}
+
+.page-transition > *:nth-child(6),
+.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(6) {
+  animation-delay: 175ms;
+}
+
+.page-transition > *:nth-child(n + 7),
+.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(n + 7) {
+  animation-delay: 210ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition,
+  .toast-alert,
+  .page-transition :where(section, article, div)[class*="rounded"][class*="border"],
+  .page-transition :where(section, article, div)[class*="shadow-sm"],
+  .page-transition :where(section, article, div)[class*="shadow-md"] {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
 }

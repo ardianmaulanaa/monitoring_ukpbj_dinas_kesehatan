@@ -13,6 +13,15 @@ type NavBarProps = {
   onOpenMenu: () => void;
 };
 
+type NotificationItem = {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+  count: number;
+  tone: "info" | "warning" | "danger";
+};
+
 export default function NavBar({
   title,
   subtitle,
@@ -24,30 +33,35 @@ export default function NavBar({
     name: string;
     email: string;
   } | null>(null);
-  const [notificationCount, setNotificationCount] = useState(8);
+  const [notifications, setNotifications] = useState<{
+    total: number;
+    items: NotificationItem[];
+  }>({ total: 0, items: [] });
 
   useEffect(() => {
     let active = true;
 
     async function loadHeaderData() {
       try {
-        const userResponse = await fetch("/api/auth/me");
+        const [userResponse, notificationResponse] = await Promise.all([
+          fetch("/api/auth/me"),
+          fetch("/api/notifications"),
+        ]);
 
         if (active && userResponse.ok) {
           const payload = await userResponse.json();
           setCurrentUser(payload.data?.user ?? null);
         }
 
-        const warningResponse = await fetch("/api/warning");
-
-        if (active && warningResponse.ok) {
-          const payload = await warningResponse.json();
-          setNotificationCount(payload.meta?.total ?? 8);
+        if (active && notificationResponse.ok) {
+          const payload = await notificationResponse.json();
+          setNotifications({
+            total: payload.data?.total ?? 0,
+            items: payload.data?.items ?? [],
+          });
         }
       } catch {
-        if (active) {
-          setNotificationCount(8);
-        }
+        // Header stays usable even when secondary endpoints are temporarily unavailable.
       }
     }
 
@@ -140,25 +154,27 @@ export default function NavBar({
               </div>
             ) : null}
 
-            <Link
-              href="/warning"
-              className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-[#08783f]"
-              aria-label="Lihat notifikasi"
-              title="Notifikasi"
-            >
-              <Bell className="h-4 w-4" strokeWidth={2.4} />
-              {notificationCount > 0 ? (
-                <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-black leading-none text-white ring-2 ring-white">
-                  {notificationCount > 99 ? "99+" : notificationCount}
-                </span>
-              ) : null}
-            </Link>
+            <div className="relative">
+              <Link
+                href="/notifications"
+                className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-[#08783f]"
+                aria-label="Lihat notifikasi"
+                title="Notifikasi"
+              >
+                <Bell className="h-4 w-4" strokeWidth={2.4} />
+                {notifications.total > 0 ? (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white">
+                    {notifications.total > 99 ? "99+" : notifications.total}
+                  </span>
+                ) : null}
+              </Link>
+            </div>
 
             <Link
               href="/profile"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#08783f] text-sm font-black text-white shadow-sm ring-1 ring-emerald-100 transition hover:bg-[#066532] focus:outline-none focus:ring-4 focus:ring-emerald-100"
-              aria-label="Buka profil"
-              title={currentUser?.name ?? "Profil Admin"}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#08783f] text-sm font-black text-white shadow-sm ring-1 ring-emerald-100 transition hover:bg-[#066532] focus:outline-none focus:ring-2 focus:ring-[#08783f] focus:ring-offset-2"
+              aria-label="Profil pengguna"
+              title={currentUser?.name ?? "Admin"}
             >
               {profileInitial}
             </Link>

@@ -16,7 +16,7 @@ type SidebarState = {
 const SidebarStateContext = createContext<SidebarState | null>(null);
 
 export function SidebarStateProvider({ children }: { children: ReactNode }) {
-  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(true);
 
   const value = useMemo(
     () => ({

@@ -5,17 +5,11 @@ import { usePathname } from "next/navigation";
 import type { RoleCode } from "@prisma/client";
 import {
   AlertTriangle,
-  Archive,
-  BarChart3,
-  Building2,
   CalendarDays,
   ClipboardList,
-  Database,
   FileBarChart2,
   FileCheck2,
-  FileText,
   FolderOpen,
-  Handshake,
   LayoutDashboard,
   Menu,
   MessageSquareText,
@@ -25,7 +19,6 @@ import {
   ShieldCheck,
   ShoppingCart,
   Truck,
-  UsersRound,
   WalletCards,
   X,
   type LucideIcon,
@@ -45,7 +38,6 @@ type NavigationItem = {
   href: string;
   label: string;
   icon: LucideIcon;
-  badge?: string;
 };
 
 type NavigationSection = {
@@ -58,7 +50,7 @@ const sections: NavigationSection[] = [
     title: "Utama",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/rup", label: "SIRUP / RUP", icon: ClipboardList, badge: "3" },
+      { href: "/rup", label: "SIRUP / RUP", icon: ClipboardList },
       { href: "/pengadaan/perencanaan", label: "Perencanaan", icon: Ruler },
     ],
   },
@@ -71,11 +63,7 @@ const sections: NavigationSection[] = [
         label: "Tender & Non Tender",
         icon: PackageSearch,
       },
-      { href: "/paket", label: "Paket Pengadaan", icon: ClipboardList },
-      { href: "/data-barang", label: "Data Barang", icon: Database },
-      { href: "/kontrak", label: "Kontrak & SP", icon: FileCheck2, badge: "2" },
-      { href: "/progres", label: "Progres", icon: BarChart3 },
-      { href: "/serah-terima", label: "Serah Terima", icon: Handshake },
+      { href: "/kontrak", label: "Kontrak & SP", icon: FileCheck2 },
       { href: "/realisasi", label: "Realisasi Belanja", icon: WalletCards },
     ],
   },
@@ -86,7 +74,6 @@ const sections: NavigationSection[] = [
         href: "/warning",
         label: "Risiko & Mitigasi",
         icon: AlertTriangle,
-        badge: "5",
       },
       { href: "/audit", label: "Audit Readiness", icon: ShieldCheck },
       { href: "/timeline", label: "Timeline", icon: CalendarDays },
@@ -100,16 +87,10 @@ const sections: NavigationSection[] = [
         href: "/klinik",
         label: "Klinik UKPBJ",
         icon: MessageSquareText,
-        badge: "1",
       },
       { href: "/dokumen", label: "Dokumen & Template", icon: FolderOpen },
       { href: "/laporan", label: "Laporan", icon: FileBarChart2 },
-      { href: "/master/instansi", label: "Master Data", icon: Building2 },
       { href: "/pengaturan", label: "Pengaturan", icon: Settings },
-      { href: "/admin/users", label: "Users", icon: UsersRound },
-      { href: "/admin/roles", label: "Roles", icon: ShieldCheck },
-      { href: "/admin/audit-log", label: "Audit Log", icon: Archive },
-      { href: "/profile", label: "Profile", icon: FileText },
     ],
   },
 ];
@@ -252,17 +233,6 @@ export default function Sidebar({
                         >
                           {item.label}
                         </span>
-                        {item.badge && !(collapsed && isDesktop) ? (
-                          <span
-                            className={`ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-black ${
-                              active
-                                ? "bg-white text-[#08783f]"
-                                : "bg-red-500 text-white"
-                            }`}
-                          >
-                            {item.badge}
-                          </span>
-                        ) : null}
                       </Link>
                     );
                   })}

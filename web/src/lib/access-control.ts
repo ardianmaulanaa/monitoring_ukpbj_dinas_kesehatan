@@ -80,6 +80,7 @@ const reportingRoles: AppRoleCode[] = [
 
 const routeAccess: { prefix: string; roles: AppRoleCode[] }[] = [
   { prefix: "/dashboard", roles: allRoles },
+  { prefix: "/notifications", roles: allRoles },
   { prefix: "/profile", roles: allRoles },
   { prefix: "/pengadaan/perencanaan", roles: planningRoles },
   { prefix: "/rup", roles: [...planningRoles, "LPSE_ADMIN", "VIEWER", "AUDITOR"] },

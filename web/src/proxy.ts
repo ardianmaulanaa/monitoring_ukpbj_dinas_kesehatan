@@ -5,6 +5,7 @@ const sessionCookieName = "dinkes_pbj_session";
 
 const protectedPrefixes = [
   "/dashboard",
+  "/notifications",
   "/data-barang",
   "/paket",
   "/pengadaan",
@@ -20,14 +21,38 @@ const protectedPrefixes = [
   "/profile",
 ];
 
+const removedRoutePrefixes = [
+  "/admin/users",
+  "/admin/roles",
+  "/admin/audit-log",
+];
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname === "/login") {
+    const response = NextResponse.next();
+    response.cookies.delete(sessionCookieName);
+    return response;
+  }
+
   const isProtectedRoute = protectedPrefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 
   if (!isProtectedRoute) {
     return NextResponse.next();
+  }
+
+  const isRemovedRoute = removedRoutePrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+
+  if (isRemovedRoute) {
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = "/dashboard";
+    dashboardUrl.search = "";
+    return NextResponse.redirect(dashboardUrl);
   }
 
   const hasSession = Boolean(request.cookies.get(sessionCookieName)?.value);
@@ -75,7 +100,9 @@ function readRolesFromJwtPayload(token: string) {
 
 export const config = {
   matcher: [
+    "/login",
     "/dashboard/:path*",
+    "/notifications/:path*",
     "/data-barang/:path*",
     "/paket/:path*",
     "/pengadaan/:path*",
