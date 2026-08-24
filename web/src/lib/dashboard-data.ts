@@ -183,6 +183,10 @@ type SourceFundMasterRow = {
   kode: string | null;
   nama: string | null;
 };
+type SchemaColumnRow = {
+  tableName: string;
+  columnName: string;
+};
 type RecentPackageRow = {
   code: string | null;
   name: string | null;
@@ -191,6 +195,12 @@ type RecentPackageRow = {
   budget: bigint | number | string | null;
   status: string | null;
 };
+
+type SchemaCatalog = Map<string, Set<string>>;
+
+const schemaCatalogTtlMs = 5 * 60 * 1000;
+let schemaCatalogPromise: Promise<SchemaCatalog> | null = null;
+let schemaCatalogExpiresAt = 0;
 
 function quoteIdentifier(identifier: string) {
   return `\`${identifier.replaceAll("`", "``")}\``;
@@ -227,41 +237,55 @@ function buildExactOrLikeWhere(column: string, values: readonly string[]) {
   };
 }
 
-async function tableExists(tableName: string) {
-  const rows = await prisma.$queryRawUnsafe<CountRow[]>(
-    "SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?",
-    tableName,
-  );
+function getSchemaCatalog() {
+  const now = Date.now();
 
-  return toNumber(rows[0]?.count) > 0;
+  if (!schemaCatalogPromise || now >= schemaCatalogExpiresAt) {
+    schemaCatalogExpiresAt = now + schemaCatalogTtlMs;
+    schemaCatalogPromise = prisma
+      .$queryRawUnsafe<SchemaColumnRow[]>(
+        `SELECT table_name AS tableName, column_name AS columnName
+         FROM information_schema.columns
+         WHERE table_schema = DATABASE()`,
+      )
+      .then((rows) => {
+        const catalog: SchemaCatalog = new Map();
+
+        for (const row of rows) {
+          const columns = catalog.get(row.tableName) ?? new Set<string>();
+          columns.add(row.columnName);
+          catalog.set(row.tableName, columns);
+        }
+
+        return catalog;
+      })
+      .catch((error) => {
+        schemaCatalogPromise = null;
+        schemaCatalogExpiresAt = 0;
+        throw error;
+      });
+  }
+
+  return schemaCatalogPromise;
 }
 
-async function columnExists(tableName: string, columnName: string) {
-  const rows = await prisma.$queryRawUnsafe<CountRow[]>(
-    "SELECT COUNT(*) AS count FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?",
-    tableName,
-    columnName,
-  );
-
-  return toNumber(rows[0]?.count) > 0;
+async function tableExists(tableName: string) {
+  const catalog = await getSchemaCatalog();
+  return catalog.has(tableName);
 }
 
 async function findTable(candidates: readonly string[]) {
-  for (const table of candidates) {
-    if (await tableExists(table)) return table;
-  }
-
-  return null;
+  const catalog = await getSchemaCatalog();
+  return candidates.find((table) => catalog.has(table)) ?? null;
 }
 
 async function findColumn(tableName: string | null, candidates: readonly string[]) {
   if (!tableName) return null;
 
-  for (const column of candidates) {
-    if (await columnExists(tableName, column)) return column;
-  }
+  const catalog = await getSchemaCatalog();
+  const columns = catalog.get(tableName);
 
-  return null;
+  return candidates.find((column) => columns?.has(column)) ?? null;
 }
 
 async function countRows(tableName: string | null) {
@@ -332,12 +356,10 @@ async function countBooleanTrue(
 async function countNearDeadline(tableName: string | null) {
   if (!tableName) return 0;
 
-  const dueColumn = await findColumn(tableName, [
-    "rencana_selesai",
-    "tanggal_selesai",
-    "due_date",
+  const [dueColumn, statusColumn] = await Promise.all([
+    findColumn(tableName, ["rencana_selesai", "tanggal_selesai", "due_date"]),
+    findColumn(tableName, statusColumns),
   ]);
-  const statusColumn = await findColumn(tableName, statusColumns);
 
   if (!dueColumn) return 0;
 
@@ -399,26 +421,28 @@ async function getStages(tableName: string | null, totalPaket: number) {
     },
   ];
 
-  const stages = [];
+  const stages = await Promise.all(
+    stageConfig.map(async (stage) => {
+      const count = await countMatching(tableName, statusColumn, stage.words);
 
-  for (const stage of stageConfig) {
-    const count = await countMatching(tableName, statusColumn, stage.words);
-
-    stages.push({
-      label: stage.label,
-      count,
-      percent: Math.round((count / totalPaket) * 100),
-      color: stage.color,
-    });
-  }
+      return {
+        label: stage.label,
+        count,
+        percent: Math.round((count / totalPaket) * 100),
+        color: stage.color,
+      };
+    }),
+  );
 
   return stages.filter((stage) => stage.count > 0);
 }
 
 async function getCategories(packageTable: string | null, goodsTable: string | null) {
   const tableName = goodsTable ?? packageTable;
-  const categoryColumn = await findColumn(tableName, categoryColumns);
-  const amountColumn = await findColumn(tableName, amountColumns);
+  const [categoryColumn, amountColumn] = await Promise.all([
+    findColumn(tableName, categoryColumns),
+    findColumn(tableName, amountColumns),
+  ]);
 
   if (!tableName || !categoryColumn) return [];
 
@@ -534,13 +558,23 @@ async function getSourceFundBreakdown(
 async function getRecentPackages(tableName: string | null) {
   if (!tableName) return [];
 
-  const codeColumn = await findColumn(tableName, codeColumns);
-  const nameColumn = await findColumn(tableName, nameColumns);
-  const unitColumn = await findColumn(tableName, unitColumns);
-  const methodColumn = await findColumn(tableName, methodColumns);
-  const budgetColumn = await findColumn(tableName, budgetColumns);
-  const statusColumn = await findColumn(tableName, statusColumns);
-  const createdColumn = await findColumn(tableName, createdColumns);
+  const [
+    codeColumn,
+    nameColumn,
+    unitColumn,
+    methodColumn,
+    budgetColumn,
+    statusColumn,
+    createdColumn,
+  ] = await Promise.all([
+    findColumn(tableName, codeColumns),
+    findColumn(tableName, nameColumns),
+    findColumn(tableName, unitColumns),
+    findColumn(tableName, methodColumns),
+    findColumn(tableName, budgetColumns),
+    findColumn(tableName, statusColumns),
+    findColumn(tableName, createdColumns),
+  ]);
 
   if (!nameColumn) return [];
 
@@ -575,15 +609,14 @@ async function getRecentPackages(tableName: string | null) {
 async function getPriorities(tableName: string | null) {
   if (!tableName) return [];
 
-  const codeColumn = await findColumn(tableName, codeColumns);
-  const nameColumn = await findColumn(tableName, nameColumns);
-  const unitColumn = await findColumn(tableName, unitColumns);
-  const statusColumn = await findColumn(tableName, statusColumns);
-  const dueColumn = await findColumn(tableName, [
-    "rencana_selesai",
-    "tanggal_selesai",
-    "due_date",
-  ]);
+  const [codeColumn, nameColumn, unitColumn, statusColumn, dueColumn] =
+    await Promise.all([
+      findColumn(tableName, codeColumns),
+      findColumn(tableName, nameColumns),
+      findColumn(tableName, unitColumns),
+      findColumn(tableName, statusColumns),
+      findColumn(tableName, ["rencana_selesai", "tanggal_selesai", "due_date"]),
+    ]);
 
   if (!nameColumn || !statusColumn) return [];
 
@@ -659,8 +692,10 @@ async function getMonthlyRealization(
     : "0";
 
   if (!dateColumn) {
-    const totalPagu = await sumColumn(tableName, budgetColumnName);
-    const totalRealisasi = hpsColumnName ? await sumColumn(tableName, hpsColumnName) : 0;
+    const [totalPagu, totalRealisasi] = await Promise.all([
+      sumColumn(tableName, budgetColumnName),
+      hpsColumnName ? sumColumn(tableName, hpsColumnName) : Promise.resolve(0),
+    ]);
 
     return monthLabels.map((month, index) => ({
       month,
@@ -793,89 +828,99 @@ function buildAuditReadiness(
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const packageTable = await findTable(packageTables);
-  const goodsTable = await findTable(goodsTables);
-  const contractTable = await findTable(contractTables);
-
-  const budgetColumn = await findColumn(packageTable, budgetColumns);
-  const hpsColumn = await findColumn(packageTable, hpsColumns);
-  const contractValueColumn = await findColumn(contractTable, contractValueColumns);
-  const packageCategoryColumn = await findColumn(packageTable, categoryColumns);
-  const sourceFundColumn = await findColumn(packageTable, [
-    "sumber_dana",
-    "source_fund",
-    "funding_source",
+  const [packageTable, goodsTable, contractTable] = await Promise.all([
+    findTable(packageTables),
+    findTable(goodsTables),
+    findTable(contractTables),
   ]);
-  const methodColumn = await findColumn(packageTable, methodColumns);
-  const pdnColumn = await findColumn(goodsTable, ["is_pdn", "pdn"]);
 
-  const totalPaket = await countRows(packageTable);
-  const totalPagu = await sumColumn(packageTable, budgetColumn);
-  const totalHps = await sumColumn(packageTable, hpsColumn);
-  const totalNilaiKontrak = await sumColumn(contractTable, contractValueColumn);
-  const totalBarangKesehatan = await countRows(goodsTable);
-  const totalPdn = await countBooleanTrue(goodsTable, pdnColumn);
-  const deadlineDekat = await countNearDeadline(packageTable);
-
-  const totalPaketBarangKesehatan = packageCategoryColumn
-    ? await countMatching(packageTable, packageCategoryColumn, [
-        "kesehatan",
-        "alkes",
-        "obat",
-        "bmhp",
-        "reagen",
-        "laboratorium",
-      ])
-    : totalBarangKesehatan;
-  const statusColumn = await findColumn(packageTable, statusColumns);
-  const selesaiCount = await countExactOrLike(packageTable, statusColumn, ["SELESAI"]);
-  const kontrakCount = await countExactOrLike(packageTable, statusColumn, ["KONTRAK"]);
-  const paketTerlambat = await countMatching(
-    packageTable,
-    statusColumn,
-    delayedWords,
-  );
-  const paketBermasalah = await countMatching(
-    packageTable,
-    statusColumn,
-    problemWords,
-  );
-  const paketEKatalogV6 = await countExactOrLike(
-    packageTable,
-    methodColumn,
-    eCatalogWords,
-  );
-  const paketTenderNonTender = await countExactOrLike(
-    packageTable,
-    methodColumn,
-    tenderNonTenderWords,
-  );
-  const realisasiKontrakPercent =
-    totalPagu > 0 ? Number(((totalNilaiKontrak / totalPagu) * 100).toFixed(1)) : 0;
-
-  const tahunAnggaran = await latestYear(packageTable);
-  const stages = await getStages(packageTable, totalPaket);
-  const categories = await getCategories(packageTable, goodsTable);
-  const sourceFunds = await getSourceFundBreakdown(
-    packageTable,
-    sourceFundColumn,
-    budgetColumn,
-    totalPaket,
-  );
-  const methods = await getBreakdown(
-    packageTable,
-    methodColumn,
-    budgetColumn,
-    totalPaket,
-  );
-  const priorities = await getPriorities(packageTable);
-  const recentPackages = await getRecentPackages(packageTable);
-  const monthlyRealization = await getMonthlyRealization(
-    packageTable,
+  const [
     budgetColumn,
     hpsColumn,
+    contractValueColumn,
+    packageCategoryColumn,
+    sourceFundColumn,
+    methodColumn,
+    pdnColumn,
+    statusColumn,
+  ] = await Promise.all([
+    findColumn(packageTable, budgetColumns),
+    findColumn(packageTable, hpsColumns),
+    findColumn(contractTable, contractValueColumns),
+    findColumn(packageTable, categoryColumns),
+    findColumn(packageTable, ["sumber_dana", "source_fund", "funding_source"]),
+    findColumn(packageTable, methodColumns),
+    findColumn(goodsTable, ["is_pdn", "pdn"]),
+    findColumn(packageTable, statusColumns),
+  ]);
+
+  const [
+    totalPaket,
+    totalPagu,
+    totalHps,
+    totalNilaiKontrak,
+    totalBarangKesehatan,
+    totalPdn,
+    deadlineDekat,
     tahunAnggaran,
-  );
+  ] = await Promise.all([
+    countRows(packageTable),
+    sumColumn(packageTable, budgetColumn),
+    sumColumn(packageTable, hpsColumn),
+    sumColumn(contractTable, contractValueColumn),
+    countRows(goodsTable),
+    countBooleanTrue(goodsTable, pdnColumn),
+    countNearDeadline(packageTable),
+    latestYear(packageTable),
+  ]);
+
+  const [
+    totalPaketBarangKesehatan,
+    selesaiCount,
+    kontrakCount,
+    paketTerlambat,
+    paketBermasalah,
+    paketEKatalogV6,
+    paketTenderNonTender,
+    stages,
+    categories,
+    sourceFunds,
+    methods,
+    priorities,
+    recentPackages,
+    monthlyRealization,
+  ] = await Promise.all([
+    packageCategoryColumn
+      ? countMatching(packageTable, packageCategoryColumn, [
+          "kesehatan",
+          "alkes",
+          "obat",
+          "bmhp",
+          "reagen",
+          "laboratorium",
+        ])
+      : Promise.resolve(totalBarangKesehatan),
+    countExactOrLike(packageTable, statusColumn, ["SELESAI"]),
+    countExactOrLike(packageTable, statusColumn, ["KONTRAK"]),
+    countMatching(packageTable, statusColumn, delayedWords),
+    countMatching(packageTable, statusColumn, problemWords),
+    countExactOrLike(packageTable, methodColumn, eCatalogWords),
+    countExactOrLike(packageTable, methodColumn, tenderNonTenderWords),
+    getStages(packageTable, totalPaket),
+    getCategories(packageTable, goodsTable),
+    getSourceFundBreakdown(
+      packageTable,
+      sourceFundColumn,
+      budgetColumn,
+      totalPaket,
+    ),
+    getBreakdown(packageTable, methodColumn, budgetColumn, totalPaket),
+    getPriorities(packageTable),
+    getRecentPackages(packageTable),
+    getMonthlyRealization(packageTable, budgetColumn, hpsColumn, tahunAnggaran),
+  ]);
+  const realisasiKontrakPercent =
+    totalPagu > 0 ? Number(((totalNilaiKontrak / totalPagu) * 100).toFixed(1)) : 0;
   const timeline = buildTimeline(stages, totalPaket);
   const auditReadiness = buildAuditReadiness(
     totalPaket,
