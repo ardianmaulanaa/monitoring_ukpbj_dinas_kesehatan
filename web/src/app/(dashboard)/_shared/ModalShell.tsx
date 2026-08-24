@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 type ModalShellProps = {
@@ -38,11 +39,14 @@ export default function ModalShell({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  const portalTarget =
+    typeof document === "undefined" ? null : document.body;
 
-  return (
+  if (!isOpen || !portalTarget) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex h-[100dvh] items-center justify-center overflow-hidden bg-slate-950/40 px-3 py-4 sm:px-6 sm:py-6"
+      className="modal-backdrop-enter fixed inset-0 z-[1000] flex h-[100dvh] items-center justify-center overflow-hidden bg-slate-950/40 px-3 py-4 sm:px-6 sm:py-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -55,7 +59,7 @@ export default function ModalShell({
       />
 
       <div
-        className={`relative flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] min-w-0 max-w-[calc(100vw-1.5rem)] ${maxWidthClassName} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:w-full sm:max-w-[calc(100vw-3rem)]`}
+        className={`modal-panel-enter relative flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] min-w-0 max-w-[calc(100vw-1.5rem)] ${maxWidthClassName} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:w-full sm:max-w-[calc(100vw-3rem)]`}
       >
         <div className="flex shrink-0 items-center justify-between gap-4 rounded-t-2xl border-b border-slate-200 bg-white px-5 py-4">
           <div className="min-w-0">
@@ -83,6 +87,7 @@ export default function ModalShell({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    portalTarget,
   );
 }

@@ -141,6 +141,107 @@ button:disabled,
   animation: dinkesTitleEnter 0.9s ease-out 0.2s both;
 }
 
+@keyframes introPanelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes introLogoEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.84);
+  }
+
+  62% {
+    opacity: 1;
+    transform: translateY(0) scale(1.04);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes introProgress {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.intro-shell {
+  isolation: isolate;
+}
+
+.intro-pattern {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(243, 248, 244, 0.6)),
+    radial-gradient(#8fb39d 0.65px, transparent 0.65px);
+  background-size:
+    auto,
+    26px 26px;
+  opacity: 0.9;
+}
+
+.intro-panel {
+  animation: introPanelEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.intro-logo-wrap {
+  animation: introLogoEnter 760ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+
+.intro-kicker,
+.intro-title,
+.intro-copy,
+.intro-action {
+  animation: introPanelEnter 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.intro-kicker {
+  animation-delay: 360ms;
+}
+
+.intro-title {
+  animation-delay: 460ms;
+}
+
+.intro-copy {
+  animation-delay: 560ms;
+}
+
+.intro-action {
+  animation-delay: 820ms;
+}
+
+.intro-progress span {
+  animation: introProgress 2.45s cubic-bezier(0.22, 1, 0.36, 1) 240ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-panel,
+  .intro-logo-wrap,
+  .intro-kicker,
+  .intro-title,
+  .intro-copy,
+  .intro-action,
+  .intro-progress span {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
+
 @keyframes shapeFloat {
   0%,
   100% {
@@ -170,6 +271,37 @@ button:disabled,
 
 .toast-alert {
   animation: toastAlertIn 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes modalBackdropEnter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPanelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-backdrop-enter {
+  animation: modalBackdropEnter 180ms ease-out both;
+}
+
+.modal-panel-enter {
+  animation: modalPanelEnter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center;
 }
 
 input:-webkit-autofill,
@@ -331,6 +463,8 @@ input:-webkit-autofill:focus {
 @media (prefers-reduced-motion: reduce) {
   .page-transition,
   .toast-alert,
+  .modal-backdrop-enter,
+  .modal-panel-enter,
   .page-transition :where(section, article, div)[class*="rounded"][class*="border"],
   .page-transition :where(section, article, div)[class*="shadow-sm"],
   .page-transition :where(section, article, div)[class*="shadow-md"] {

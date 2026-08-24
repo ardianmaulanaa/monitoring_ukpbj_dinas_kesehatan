@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { ClipboardList, Search } from "lucide-react";
 import AppHeader from "@/app/(dashboard)/_shared/AppHeader";
+import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
 import AddRupModalButton from "./AddRupModalButton";
+import RupDetailModalButton from "./RupDetailModalButton";
 
 type RupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -19,6 +20,17 @@ const statusStyles = {
   SUDAH_TAYANG: "bg-emerald-100 text-emerald-700",
   REVISI_PAGU: "bg-orange-100 text-orange-700",
   DITARIK: "bg-red-100 text-red-700",
+};
+
+const statusLabels = {
+  BELUM_INPUT: "Belum Input",
+  PROSES_VERIFIKASI: "Proses Verifikasi",
+  MENUNGGU_PPTK: "Menunggu PPTK",
+  MENUNGGU_PPK: "Menunggu PPK",
+  MENUNGGU_KPA_PA: "Menunggu KPA/PA",
+  SUDAH_TAYANG: "Sudah Tayang",
+  REVISI_PAGU: "Perlu Revisi",
+  DITARIK: "Ditarik",
 };
 
 function getParam(
@@ -56,6 +68,10 @@ function sourceFundClass(value: string) {
   if (normalized.includes("DBHCHT")) return "bg-red-100 text-red-700";
 
   return "bg-emerald-100 text-emerald-700";
+}
+
+function normalizeUnit(value?: string | null) {
+  return value?.trim().toLowerCase() ?? "";
 }
 
 export default async function Page({ searchParams }: RupPageProps) {
@@ -110,6 +126,13 @@ export default async function Page({ searchParams }: RupPageProps) {
     orderBy: { unitPengusul: "asc" },
     select: { unitPengusul: true },
   });
+  const currentUser = await getCurrentUser();
+  const currentUserProfile = currentUser
+    ? await prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: { unitKerja: true },
+      })
+    : null;
 
   return (
     <>
@@ -258,12 +281,36 @@ export default async function Page({ searchParams }: RupPageProps) {
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-4 py-4 text-right">
-                          <Link
-                            href={`/rup/${item.id}`}
-                            className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50"
-                          >
-                            Detail
-                          </Link>
+                          <RupDetailModalButton
+                            item={{
+                              id: item.id,
+                              kodeRup: item.kodeRup,
+                              namaPaket: item.namaPaket,
+                              unitPengusul: item.unitPengusul,
+                              sumberDana: item.sumberDana,
+                              pagu: item.pagu.toString(),
+                              metodePengadaan: item.metodePengadaan,
+                              jadwalPemilihan: item.jadwalPemilihan,
+                              tahunAnggaran: item.tahunAnggaran,
+                              statusSirup: item.statusSirup,
+                              catatan: item.catatan,
+                            }}
+                            statusLabel={
+                              statusLabels[item.statusSirup] ??
+                              labelize(item.statusSirup)
+                            }
+                            statusStyle={
+                              statusStyles[item.statusSirup] ??
+                              "bg-slate-100 text-slate-600"
+                            }
+                            canEditRevision={
+                              currentUser?.roles.includes("SUPER_ADMIN") ||
+                              normalizeUnit(currentUserProfile?.unitKerja) ===
+                                normalizeUnit(item.unitPengusul) ||
+                              normalizeUnit(currentUser?.name) ===
+                                normalizeUnit(item.unitPengusul)
+                            }
+                          />
                         </td>
                       </tr>
                     ))

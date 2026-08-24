@@ -2,7 +2,7 @@ import { defineConfig } from "prisma/config";
 
 const databaseUrl =
   process.env.DATABASE_URL ??
-  "mysql://root@127.0.0.1:3306/health_procurement_dashboard";
+  "mysql://root@127.0.0.1:3306/ukpbj_kesehatan_db";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

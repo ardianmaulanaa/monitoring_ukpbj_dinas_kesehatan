@@ -74,8 +74,8 @@ export default async function NotificationsPage() {
             </p>
             <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-500">
               Notifikasi di kanan atas tetap tampil sebagai penanda cepat.
-              Detail pengajuan baru, draft, deadline, dan tindak lanjut masuk
-              ke halaman ini.
+              Detail pengajuan baru, draft, deadline, dan tindak lanjut masuk ke
+              halaman ini.
             </p>
           </div>
         </section>
@@ -110,7 +110,9 @@ export default async function NotificationsPage() {
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${tone.dot}`}
+                        />
                         <h3 className="text-sm font-black text-slate-900">
                           {item.title}
                         </h3>

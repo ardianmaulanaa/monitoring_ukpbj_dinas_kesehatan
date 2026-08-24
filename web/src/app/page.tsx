@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import IntroPageClient from "./IntroPageClient";
 
 export default function LandingPage() {
-  redirect("/login");
+  return <IntroPageClient />;
 }
