@@ -128,7 +128,7 @@ export default function Sidebar({
     <>
       {!isDesktop ? (
         <div
-          className={`fixed inset-0 z-40 bg-slate-950/30 transition lg:hidden ${
+          className={`fixed inset-0 z-40 h-[100dvh] max-h-[100dvh] bg-slate-950/30 transition lg:hidden ${
             open ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
           onClick={onClose}
@@ -144,7 +144,7 @@ export default function Sidebar({
                   ? "w-[76px]"
                   : "w-[260px] shadow-2xl shadow-slate-950/10"
               }`
-            : `fixed flex w-[300px] lg:hidden ${open ? "translate-x-0" : "-translate-x-full"}`
+            : `fixed flex h-[100dvh] max-h-[100dvh] w-[300px] overflow-hidden overscroll-contain lg:hidden ${open ? "translate-x-0" : "-translate-x-full"}`
         }`}
       >
         <div className="grid h-1.5 grid-cols-3">
@@ -192,7 +192,11 @@ export default function Sidebar({
           </button>
         </div>
 
-        <nav className={`min-h-0 flex-1 overflow-y-auto py-4 ${collapsed && isDesktop ? "px-2" : "px-3"}`}>
+        <nav
+          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain py-4 ${collapsed && isDesktop ? "px-2" : "px-3"} ${
+            isDesktop ? "" : "pb-[max(1rem,env(safe-area-inset-bottom))]"
+          }`}
+        >
           <div className="space-y-4">
             {visibleSections.map((section) => (
               <section key={section.title}>
