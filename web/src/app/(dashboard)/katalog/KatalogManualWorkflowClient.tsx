@@ -92,48 +92,51 @@ export default function KatalogManualWorkflowClient({
   });
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ManualCatalogDraft;
-        setDraft(parsed);
+    const timeoutId = window.setTimeout(() => {
+      try {
+        const raw = window.localStorage.getItem(storageKey);
 
-        if (parsed.product) {
-          setProductForm({
-            namaProduk: parsed.product.namaProduk,
-            merk: parsed.product.merk,
-            jumlah: String(parsed.product.jumlah),
-            satuan: parsed.product.satuan,
-          });
+        if (raw) {
+          const parsed = JSON.parse(raw) as ManualCatalogDraft;
+          setDraft(parsed);
+
+          if (parsed.product) {
+            setProductForm({
+              namaProduk: parsed.product.namaProduk,
+              merk: parsed.product.merk,
+              jumlah: String(parsed.product.jumlah),
+              satuan: parsed.product.satuan,
+            });
+          }
+
+          if (parsed.provider) {
+            setProviderForm({
+              namaPenyedia: parsed.provider.namaPenyedia,
+              hargaTayang: String(parsed.provider.hargaTayang),
+              estimasiPengiriman: parsed.provider.estimasiPengiriman,
+            });
+          }
+
+          if (parsed.negotiation) {
+            setNegotiationForm({
+              hargaPenawaran: String(parsed.negotiation.hargaPenawaran),
+              hargaKesepakatan: String(parsed.negotiation.hargaKesepakatan),
+              catatan: parsed.negotiation.catatan,
+            });
+          }
+
+          if (!parsed.product) setActiveStep(2);
+          else if (!parsed.provider) setActiveStep(3);
+          else setActiveStep(4);
         }
-
-        if (parsed.provider) {
-          setProviderForm({
-            namaPenyedia: parsed.provider.namaPenyedia,
-            hargaTayang: String(parsed.provider.hargaTayang),
-            estimasiPengiriman: parsed.provider.estimasiPengiriman,
-          });
-        }
-
-        if (parsed.negotiation) {
-          setNegotiationForm({
-            hargaPenawaran: String(parsed.negotiation.hargaPenawaran),
-            hargaKesepakatan: String(parsed.negotiation.hargaKesepakatan),
-            catatan: parsed.negotiation.catatan,
-          });
-        }
-
-        if (!parsed.product) setActiveStep(2);
-        else if (!parsed.provider) setActiveStep(3);
-        else if (!parsed.negotiation) setActiveStep(4);
-        else setActiveStep(4);
+      } catch {
+        setDraft({});
+      } finally {
+        setLoaded(true);
       }
-    } catch {
-      // Jika localStorage rusak, mulai dari draft kosong.
-      setDraft({});
-    } finally {
-      setLoaded(true);
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [storageKey]);
 
   function persist(next: ManualCatalogDraft) {
