@@ -213,19 +213,7 @@ export default function LoginPage() {
             </div>
 
             {/* Footer panel */}
-            <footer className="flex shrink-0 items-center gap-4 border-t border-white/15 pt-5 xl:pt-6">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#f5bd20]">
-                <ShieldCheck className="h-6 w-6" strokeWidth={2} />
-              </div>
-
-              <div>
-                <p className="text-sm font-bold">Pengadaan Barang/Jasa</p>
-
-                <p className="mt-1 text-xs text-green-100">
-                  Dinas Kesehatan Provinsi Jawa Barat
-                </p>
-              </div>
-            </footer>
+            <footer className="flex shrink-0 items-center gap-4 border-t border-white/15 pt-5 xl:pt-6"></footer>
           </div>
 
           {/* Pemisah lengkung */}
@@ -248,50 +236,40 @@ export default function LoginPage() {
             Tingginya tetap dibatasi viewport.
           */}
           <div className="relative z-10 h-full min-h-0 overflow-y-auto overscroll-contain [scrollbar-width:thin]">
-            <div className="flex min-h-full w-full items-center justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-14">
+            <div className="flex min-h-full w-full items-start lg:items-center justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-14">
               <div className="w-full max-w-[470px]">
                 {/* Identitas mobile */}
-                <header className="mb-4 flex items-center justify-between gap-3 lg:hidden">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-[0_8px_22px_rgba(8,120,63,0.12)] ring-1 ring-green-100 sm:h-14 sm:w-14 sm:rounded-2xl">
-                      <Image
-                        src="/app/logo-dinkes.png"
-                        alt="Logo Dinas Kesehatan Jawa Barat"
-                        width={52}
-                        height={52}
-                        priority
-                        className="h-full w-full object-contain"
-                      />
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="truncate text-[9px] font-black uppercase tracking-[0.16em] text-[#08783f] sm:text-[10px]">
-                        Pemerintah Provinsi Jawa Barat
-                      </p>
-
-                      <h1 className="mt-0.5 truncate text-base font-black text-slate-950 sm:text-lg">
-                        Dinkes Jabar
-                      </h1>
-
-                      <p className="truncate text-[11px] font-medium text-slate-500 sm:text-xs">
-                        Pengadaan Barang/Jasa
-                      </p>
-                    </div>
+                <header className="mb-6 flex items-center gap-3 lg:hidden">
+                  {/* Logo kiri */}
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-sm ring-1 ring-green-100 sm:h-14 sm:w-14">
+                    <Image
+                      src="/app/logo-dinkes.png"
+                      alt="Logo Dinas Kesehatan Jawa Barat"
+                      width={52}
+                      height={52}
+                      priority
+                      className="h-full w-full object-contain"
+                    />
                   </div>
 
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#08783f] text-white shadow-[0_8px_20px_rgba(8,120,63,0.18)] sm:h-11 sm:w-11">
-                    <ShieldCheck className="h-5 w-5" strokeWidth={2.2} />
+                  {/* Teks kanan logo */}
+                  <div className="min-w-0 text-left">
+                    <p className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.16em] text-[#08783f]">
+                      Pemerintah Provinsi Jawa Barat
+                    </p>
+
+                    <h1 className="mt-1 text-base font-bold text-slate-950 sm:text-lg">
+                      Dinkes Jabar
+                    </h1>
+
+                    <p className="mt-0.5 text-[11px] text-slate-500 sm:text-xs">
+                      Pengadaan Barang/Jasa
+                    </p>
                   </div>
                 </header>
 
                 {/* Kartu login */}
-                <div className="overflow-hidden rounded-[1.65rem] border border-white bg-white shadow-[0_24px_65px_rgba(4,94,50,0.14)] sm:rounded-[2rem]">
-                  <div className="grid grid-cols-3">
-                    <div className="h-1.5 bg-[#08783f] sm:h-2" />
-                    <div className="h-1.5 bg-[#f5bd20] sm:h-2" />
-                    <div className="h-1.5 bg-[#159cc3] sm:h-2" />
-                  </div>
-
+                <div className="mt-20 overflow-hidden rounded-[1.65rem] border border-white bg-white shadow-[0_24px_65px_rgba(4,94,50,0.14)] sm:rounded-[2rem]">
                   <div className="px-5 py-5 sm:px-8 sm:py-7 xl:px-9 xl:py-8">
                     {/* Header form */}
                     <div className="mb-5 sm:mb-6">
@@ -302,28 +280,24 @@ export default function LoginPage() {
                       <h2 className="text-2xl font-black tracking-[-0.04em] text-slate-950 sm:text-3xl">
                         Masuk ke sistem
                       </h2>
-
-                      <p className="mt-1.5 text-xs leading-5 text-slate-500 sm:mt-2 sm:text-sm sm:leading-6">
-                        Masukkan email dan password akun Anda.
-                      </p>
                     </div>
 
                     <form
                       onSubmit={handleLogin}
-                      className="space-y-3.5 sm:space-y-4"
+                      className="space-y-5 sm:space-y-4"
                     >
                       {/* Email */}
                       <div>
                         <label
                           htmlFor="email"
-                          className="mb-1.5 block text-xs font-bold text-slate-700 sm:mb-2 sm:text-sm"
+                          className="mb-2 block text-xs font-bold text-slate-700 sm:text-sm"
                         >
                           Email
                         </label>
 
                         <div className="group relative">
                           <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-[#08783f]">
-                            <Mail className="h-5 w-5" strokeWidth={2} />
+                            <Mail className="h-20 w-5" strokeWidth={2} />
                           </div>
 
                           <input
@@ -349,7 +323,7 @@ export default function LoginPage() {
                       <div>
                         <label
                           htmlFor="password"
-                          className="mb-1.5 block text-xs font-bold text-slate-700 sm:mb-2 sm:text-sm"
+                          className="mb-2 block text-xs font-bold text-slate-700 sm:text-sm"
                         >
                           Password
                         </label>
@@ -405,9 +379,11 @@ export default function LoginPage() {
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#08783f] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(8,120,63,0.23)] transition duration-300 hover:bg-[#066532] active:scale-[0.98] sm:h-14 sm:gap-3 sm:rounded-2xl"
+                        className="!mt-8 group flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#08783f] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(8,120,63,0.23)] transition duration-300 hover:bg-[#066532] active:scale-[0.98] sm:h-14 sm:gap-3 sm:rounded-2xl"
                       >
-                        {isSubmitting ? "Memeriksa akun..." : "Masuk ke Dashboard"}
+                        {isSubmitting
+                          ? "Memeriksa akun..."
+                          : "Masuk ke Dashboard"}
                         <ArrowRight
                           className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
                           strokeWidth={2.2}

@@ -186,7 +186,11 @@ button:disabled,
 
 .intro-pattern {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(243, 248, 244, 0.6)),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.84),
+      rgba(243, 248, 244, 0.6)
+    ),
     radial-gradient(#8fb39d 0.65px, transparent 0.65px);
   background-size:
     auto,
@@ -328,22 +332,31 @@ input:-webkit-autofill:focus {
 }
 
 .page-transition {
-  animation: pageTransitionIn 220ms ease-out both;
+  animation: pageTransitionIn 220ms ease-out;
   max-width: 100%;
   min-width: 0;
   overflow-x: clip;
+
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 
 .page-transition :where(main, section, article, div, form, aside) {
   min-width: 0;
 }
 
-.page-transition :where(main, section, article, div, form, aside)[class*="grid"],
-.page-transition :where(main, section, article, div, form, aside)[class*="flex"] {
+.page-transition
+  :where(main, section, article, div, form, aside)[class*="grid"],
+.page-transition
+  :where(main, section, article, div, form, aside)[class*="flex"] {
   max-width: 100%;
 }
 
-.page-transition :where(section, article, div, form, aside)[class*="rounded"]:not([class*="rounded-full"]) {
+.page-transition
+  :where(section, article, div, form, aside)[class*="rounded"]:not(
+    [class*="rounded-full"]
+  ) {
   max-width: 100%;
 }
 
@@ -354,19 +367,29 @@ input:-webkit-autofill:focus {
 }
 
 .page-transition
-  :is(section, article, div, form, aside)[class*="rounded"]:not([class*="rounded-full"]),
+  :is(section, article, div, form, aside)[class*="rounded"]:not(
+    [class*="rounded-full"]
+  ),
 .page-transition
   :is(input, select, textarea)[class*="rounded"]:not([class*="rounded-full"]) {
   border-radius: 1rem;
 }
 
 .page-transition
-  :is(section, article, div, form, aside)[class*="rounded-2xl"]:not([class*="rounded-full"]) {
+  :is(section, article, div, form, aside)[class*="rounded-2xl"]:not(
+    [class*="rounded-full"]
+  ) {
   border-radius: 1.25rem;
 }
 
 .page-transition
-  :is(section, article, div, form, aside)[class*="overflow-hidden"][class*="border"] {
+  :is(
+    section,
+    article,
+    div,
+    form,
+    aside
+  )[class*="overflow-hidden"][class*="border"] {
   border-radius: 1rem;
 }
 
@@ -382,7 +405,8 @@ input:-webkit-autofill:focus {
   }
 }
 
-.page-transition :where(section, article, div)[class*="rounded"][class*="border"],
+.page-transition
+  :where(section, article, div)[class*="rounded"][class*="border"],
 .page-transition :where(section, article, div)[class*="shadow-sm"],
 .page-transition :where(section, article, div)[class*="shadow-md"] {
   animation: cardTransitionIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -394,13 +418,29 @@ input:-webkit-autofill:focus {
   will-change: transform;
 }
 
-.page-transition :where(section, article, div)[class*="rounded"][class*="border"]:hover,
+.page-transition
+  :where(section, article, div)[class*="rounded"][class*="border"]:hover,
 .page-transition :where(section, article, div)[class*="shadow-sm"]:hover,
 .page-transition :where(section, article, div)[class*="shadow-md"]:hover {
   transform: translateY(-2px);
 }
 
-.page-transition :where(table, tbody, thead, tr, label, button, a, input, select, textarea, svg, [role="dialog"], [aria-modal="true"]) {
+.page-transition
+  :where(
+    table,
+    tbody,
+    thead,
+    tr,
+    label,
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    svg,
+    [role="dialog"],
+    [aria-modal="true"]
+  ) {
   animation: none;
   will-change: auto;
 }
@@ -426,37 +466,51 @@ input:-webkit-autofill:focus {
 }
 
 .page-transition > *:nth-child(1),
-.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(1) {
+.page-transition
+  :where(main, section, article, div)[class*="grid"]
+  > *:nth-child(1) {
   animation-delay: 0ms;
 }
 
 .page-transition > *:nth-child(2),
-.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(2) {
+.page-transition
+  :where(main, section, article, div)[class*="grid"]
+  > *:nth-child(2) {
   animation-delay: 35ms;
 }
 
 .page-transition > *:nth-child(3),
-.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(3) {
+.page-transition
+  :where(main, section, article, div)[class*="grid"]
+  > *:nth-child(3) {
   animation-delay: 70ms;
 }
 
 .page-transition > *:nth-child(4),
-.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(4) {
+.page-transition
+  :where(main, section, article, div)[class*="grid"]
+  > *:nth-child(4) {
   animation-delay: 105ms;
 }
 
 .page-transition > *:nth-child(5),
-.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(5) {
+.page-transition
+  :where(main, section, article, div)[class*="grid"]
+  > *:nth-child(5) {
   animation-delay: 140ms;
 }
 
 .page-transition > *:nth-child(6),
-.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(6) {
+.page-transition
+  :where(main, section, article, div)[class*="grid"]
+  > *:nth-child(6) {
   animation-delay: 175ms;
 }
 
 .page-transition > *:nth-child(n + 7),
-.page-transition :where(main, section, article, div)[class*="grid"] > *:nth-child(n + 7) {
+.page-transition
+  :where(main, section, article, div)[class*="grid"]
+  > *:nth-child(n + 7) {
   animation-delay: 210ms;
 }
 
@@ -465,7 +519,8 @@ input:-webkit-autofill:focus {
   .toast-alert,
   .modal-backdrop-enter,
   .modal-panel-enter,
-  .page-transition :where(section, article, div)[class*="rounded"][class*="border"],
+  .page-transition
+    :where(section, article, div)[class*="rounded"][class*="border"],
   .page-transition :where(section, article, div)[class*="shadow-sm"],
   .page-transition :where(section, article, div)[class*="shadow-md"] {
     animation: none;

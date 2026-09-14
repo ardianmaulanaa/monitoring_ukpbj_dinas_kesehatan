@@ -139,29 +139,36 @@ export default function Sidebar({
       <aside
         className={`inset-y-0 left-0 z-50 flex-col border-r border-slate-200 bg-white text-slate-700 transition-all duration-300 ${
           isDesktop
-            ? `fixed top-0 hidden h-dvh lg:flex ${
+            ? `fixed top-0 hidden h-dvh overflow-hidden lg:flex ${
                 collapsed
                   ? "w-[76px]"
                   : "w-[260px] shadow-2xl shadow-slate-950/10"
               }`
-            : `fixed flex h-[100dvh] max-h-[100dvh] w-[300px] overflow-hidden overscroll-contain lg:hidden ${open ? "translate-x-0" : "-translate-x-full"}`
+            : `fixed flex h-dvh max-h-dvh w-[300px] overflow-hidden lg:hidden ${
+                open ? "translate-x-0" : "-translate-x-full"
+              }`
         }`}
       >
-        <div className="grid h-1.5 grid-cols-3">
+        {/* GARIS WARNA */}
+        <div className="grid h-1.5 shrink-0 grid-cols-3">
           <div className="bg-[#08783f]" />
           <div className="bg-[#f5bd20]" />
           <div className="bg-[#159cc3]" />
         </div>
 
+        {/* HEADER */}
         <div
-          className={`flex min-h-[96px] items-center border-b border-slate-100 ${
-            collapsed && isDesktop ? "justify-center px-3" : "justify-between px-5"
+          className={`flex min-h-[96px] shrink-0 items-center border-b border-slate-100 ${
+            collapsed && isDesktop
+              ? "justify-center px-3"
+              : "justify-between px-5"
           }`}
         >
           <div className={`min-w-0 ${collapsed && isDesktop ? "hidden" : ""}`}>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#08783f]">
               Dinkes Jabar
             </p>
+
             <h2 className="mt-2 text-xl font-black tracking-[-0.03em] text-slate-950">
               Monitoring PBJ
             </h2>
@@ -179,23 +186,24 @@ export default function Sidebar({
             </button>
           ) : null}
 
-          <button
-            type="button"
-            onClick={onClose}
-            className={`h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#08783f] ${
-              isDesktop ? "hidden" : "flex"
-            }`}
-            aria-label="Tutup menu"
-            title="Tutup menu"
-          >
-            <X className="h-5 w-5" strokeWidth={2.4} />
-          </button>
+          {!isDesktop ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#08783f]"
+              aria-label="Tutup menu"
+              title="Tutup menu"
+            >
+              <X className="h-5 w-5" strokeWidth={2.4} />
+            </button>
+          ) : null}
         </div>
 
+        {/* HANYA BAGIAN INI YANG BOLEH SCROLL */}
         <nav
-          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain py-4 ${collapsed && isDesktop ? "px-2" : "px-3"} ${
-            isDesktop ? "" : "pb-[max(1rem,env(safe-area-inset-bottom))]"
-          }`}
+          className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain py-4 ${
+            collapsed && isDesktop ? "px-2" : "px-3"
+          } ${isDesktop ? "" : "pb-[max(2rem,env(safe-area-inset-bottom))]"}`}
         >
           <div className="space-y-4">
             {visibleSections.map((section) => (
@@ -207,6 +215,7 @@ export default function Sidebar({
                 >
                   {section.title}
                 </p>
+
                 <div className="mt-2 space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
@@ -228,12 +237,12 @@ export default function Sidebar({
                             : "border-transparent text-slate-600 hover:border-[#08783f]/25 hover:bg-[#f4f7f5] hover:text-[#08783f]"
                         }`}
                       >
-                        <Icon
-                          className="h-5 w-5 shrink-0"
-                          strokeWidth={2.2}
-                        />
+                        <Icon className="h-5 w-5 shrink-0" strokeWidth={2.2} />
+
                         <span
-                          className={`truncate ${collapsed && isDesktop ? "sr-only" : ""}`}
+                          className={`truncate ${
+                            collapsed && isDesktop ? "sr-only" : ""
+                          }`}
                         >
                           {item.label}
                         </span>

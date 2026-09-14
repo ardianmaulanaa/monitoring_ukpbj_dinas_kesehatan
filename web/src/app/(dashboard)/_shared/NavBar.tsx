@@ -178,16 +178,6 @@ export default function NavBar({
             >
               {profileInitial}
             </Link>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-              aria-label="Logout"
-              title="Logout"
-            >
-              <LogOut className="h-4 w-4" strokeWidth={2.3} />
-            </button>
           </div>
         </div>
       </header>
