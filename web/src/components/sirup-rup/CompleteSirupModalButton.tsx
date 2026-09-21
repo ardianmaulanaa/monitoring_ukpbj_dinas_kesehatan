@@ -46,6 +46,7 @@ type CompleteSirupItem = {
 
 type CompleteSirupModalButtonProps = {
   item: CompleteSirupItem;
+  label?: string;
 };
 
 const initialState: SirupPublicationState = {
@@ -75,6 +76,7 @@ function methodLabel(value: string) {
 
 export default function CompleteSirupModalButton({
   item,
+  label = "Lengkapi SIRUP",
 }: CompleteSirupModalButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -123,14 +125,14 @@ export default function CompleteSirupModalButton({
         className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532]"
       >
         <ClipboardCheck className="h-4 w-4" strokeWidth={2.4} />
-        Lengkapi SIRUP
+        {label}
       </button>
 
       <ModalShell
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         eyebrow="SIRUP / RUP"
-        title="Lengkapi Data SIRUP"
+        title={label}
         maxWidthClassName="max-w-4xl"
       >
         <form action={formAction} className="grid gap-5">

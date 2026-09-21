@@ -21,6 +21,8 @@ type RupFormProps = {
   onSaved?: () => void;
   variant?: "page" | "modal";
   mode?: "rup" | "planning";
+  initialData?: Record<string, string | number | null | undefined>;
+  submitLabel?: string;
 };
 
 function onlyDigits(value: string) {
@@ -72,11 +74,14 @@ export default function RupForm({
   onSaved,
   variant = "page",
   mode = "rup",
+  initialData,
+  submitLabel,
 }: RupFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [pagu, setPagu] = useState("");
+  const [pagu, setPagu] = useState(onlyDigits(String(initialData?.pagu ?? "")));
+  const isEditing = Boolean(initialData?.id);
 
   const formattedPagu = useMemo(() => {
     const value = Number(pagu);
@@ -95,8 +100,11 @@ export default function RupForm({
     const formData = new FormData(event.currentTarget);
     const payload = Object.fromEntries(formData.entries());
 
-    const response = await fetch("/api/rup", {
-      method: "POST",
+    const url = isEditing
+      ? `/api/rup?id=${encodeURIComponent(String(initialData?.id))}`
+      : "/api/rup";
+    const response = await fetch(url, {
+      method: isEditing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -161,6 +169,7 @@ export default function RupForm({
             name="kodeRup"
             required
             className={inputClass}
+            defaultValue={String(initialData?.kodeRup ?? "")}
             placeholder={mode === "planning" ? "USUL-2025-001" : undefined}
           />
         </label>
@@ -173,30 +182,47 @@ export default function RupForm({
             min="2000"
             required
             className={inputClass}
-            defaultValue={new Date().getFullYear()}
+            defaultValue={Number(initialData?.tahunAnggaran ?? new Date().getFullYear())}
           />
         </label>
 
         <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Unit Pengusul / OPD</span>
-          <input name="unitPengusul" required className={inputClass} />
+          <input
+            name="unitPengusul"
+            required
+            className={inputClass}
+            defaultValue={String(initialData?.unitPengusul ?? "")}
+          />
         </label>
 
         {mode === "planning" ? (
           <>
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Unit / Bidang</span>
-              <input name="unitBidang" className={inputClass} />
+              <input
+                name="unitBidang"
+                className={inputClass}
+                defaultValue={String(initialData?.unitBidang ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Nama PPK / PPTK</span>
-              <input name="ppkPptk" className={inputClass} />
+              <input
+                name="ppkPptk"
+                className={inputClass}
+                defaultValue={String(initialData?.ppkPptk ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Kontak Penanggung Jawab</span>
-              <input name="kontakPenanggungJawab" className={inputClass} />
+              <input
+                name="kontakPenanggungJawab"
+                className={inputClass}
+                defaultValue={String(initialData?.kontakPenanggungJawab ?? "")}
+              />
             </label>
 
             <SectionTitle
@@ -207,27 +233,47 @@ export default function RupForm({
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Program</span>
-              <input name="program" className={inputClass} />
+              <input
+                name="program"
+                className={inputClass}
+                defaultValue={String(initialData?.program ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Kegiatan</span>
-              <input name="kegiatan" className={inputClass} />
+              <input
+                name="kegiatan"
+                className={inputClass}
+                defaultValue={String(initialData?.kegiatan ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Sub Kegiatan</span>
-              <input name="subKegiatan" className={inputClass} />
+              <input
+                name="subKegiatan"
+                className={inputClass}
+                defaultValue={String(initialData?.subKegiatan ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Kode Rekening Belanja</span>
-              <input name="kodeRekening" className={inputClass} />
+              <input
+                name="kodeRekening"
+                className={inputClass}
+                defaultValue={String(initialData?.kodeRekening ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2 md:col-span-2">
               <span className={labelClass}>Uraian Belanja</span>
-              <textarea name="uraianBelanja" className={textareaClass} />
+              <textarea
+                name="uraianBelanja"
+                className={textareaClass}
+                defaultValue={String(initialData?.uraianBelanja ?? "")}
+              />
             </label>
           </>
         ) : null}
@@ -236,12 +282,22 @@ export default function RupForm({
           <span className={labelClass}>
             {mode === "planning" ? "Nama Usulan" : "Nama Paket"}
           </span>
-          <input name="namaPaket" required className={inputClass} />
+          <input
+            name="namaPaket"
+            required
+            className={inputClass}
+            defaultValue={String(initialData?.namaPaket ?? "")}
+          />
         </label>
 
         <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Jenis Belanja</span>
-          <select name="jenisBelanja" required className={inputClass}>
+          <select
+            name="jenisBelanja"
+            required
+            className={inputClass}
+            defaultValue={String(initialData?.jenisBelanja ?? "Barang")}
+          >
             <option value="Barang">Barang</option>
             <option value="Jasa">Jasa</option>
             <option value="Modal">Modal</option>
@@ -251,7 +307,12 @@ export default function RupForm({
 
         <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Lokasi Paket</span>
-          <input name="lokasiPaket" required className={inputClass} />
+          <input
+            name="lokasiPaket"
+            required
+            className={inputClass}
+            defaultValue={String(initialData?.lokasiPaket ?? "")}
+          />
         </label>
 
         <label className="grid min-w-0 gap-2">
@@ -260,7 +321,7 @@ export default function RupForm({
             name="sumberDana"
             required
             className={inputClass}
-            defaultValue={sumberDanaOptions[0]?.kode ?? ""}
+            defaultValue={String(initialData?.sumberDana ?? sumberDanaOptions[0]?.kode ?? "")}
             disabled={sumberDanaOptions.length === 0}
           >
             {sumberDanaOptions.length === 0 ? (
@@ -302,32 +363,56 @@ export default function RupForm({
 
             <label className="grid min-w-0 gap-2 md:col-span-2">
               <span className={labelClass}>Uraian Kebutuhan</span>
-              <textarea name="uraianKebutuhan" className={textareaClass} />
+              <textarea
+                name="uraianKebutuhan"
+                className={textareaClass}
+                defaultValue={String(initialData?.uraianKebutuhan ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Volume / Jumlah</span>
-              <input name="volumeKebutuhan" className={inputClass} />
+              <input
+                name="volumeKebutuhan"
+                className={inputClass}
+                defaultValue={String(initialData?.volumeKebutuhan ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Satuan</span>
-              <input name="satuanKebutuhan" className={inputClass} />
+              <input
+                name="satuanKebutuhan"
+                className={inputClass}
+                defaultValue={String(initialData?.satuanKebutuhan ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2 md:col-span-2">
               <span className={labelClass}>Spesifikasi Awal</span>
-              <textarea name="spesifikasiAwal" className={textareaClass} />
+              <textarea
+                name="spesifikasiAwal"
+                className={textareaClass}
+                defaultValue={String(initialData?.spesifikasiAwal ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2 md:col-span-2">
               <span className={labelClass}>Output yang Diharapkan</span>
-              <textarea name="outputDiharapkan" className={textareaClass} />
+              <textarea
+                name="outputDiharapkan"
+                className={textareaClass}
+                defaultValue={String(initialData?.outputDiharapkan ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Prioritas</span>
-              <select name="prioritas" className={inputClass} defaultValue="NORMAL">
+              <select
+                name="prioritas"
+                className={inputClass}
+                defaultValue={String(initialData?.prioritas ?? "NORMAL")}
+              >
                 <option value="NORMAL">Biasa</option>
                 <option value="STRATEGIS">Strategis</option>
                 <option value="MENDESAK">Mendesak</option>
@@ -336,7 +421,12 @@ export default function RupForm({
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Waktu Kebutuhan</span>
-              <input name="waktuKebutuhan" type="date" className={inputClass} />
+              <input
+                name="waktuKebutuhan"
+                type="date"
+                className={inputClass}
+                defaultValue={String(initialData?.waktuKebutuhan ?? "")}
+              />
             </label>
 
             <SectionTitle
@@ -347,7 +437,11 @@ export default function RupForm({
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Cara Pengadaan</span>
-              <select name="caraPengadaan" className={inputClass} defaultValue="PENYEDIA">
+              <select
+                name="caraPengadaan"
+                className={inputClass}
+                defaultValue={String(initialData?.caraPengadaan ?? "PENYEDIA")}
+              >
                 <option value="PENYEDIA">Penyedia</option>
                 <option value="SWAKELOLA">Swakelola</option>
               </select>
@@ -357,7 +451,12 @@ export default function RupForm({
 
         <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Metode</span>
-          <select name="metodePengadaan" required className={inputClass}>
+          <select
+            name="metodePengadaan"
+            required
+            className={inputClass}
+            defaultValue={String(initialData?.metodePengadaan ?? "E_PURCHASING")}
+          >
             <option value="E_PURCHASING">e-Katalog</option>
             <option value="TENDER">Tender</option>
             <option value="NON_TENDER">Non Tender</option>
@@ -368,7 +467,12 @@ export default function RupForm({
 
         <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Jadwal Pemilihan</span>
-          <input name="jadwalPemilihan" type="date" className={inputClass} />
+          <input
+            name="jadwalPemilihan"
+            type="date"
+            className={inputClass}
+            defaultValue={String(initialData?.jadwalPemilihan ?? "")}
+          />
         </label>
 
         {mode === "planning" ? (
@@ -379,6 +483,7 @@ export default function RupForm({
                 name="jadwalMulaiRencana"
                 type="date"
                 className={inputClass}
+                defaultValue={String(initialData?.jadwalMulaiRencana ?? "")}
               />
             </label>
 
@@ -388,6 +493,7 @@ export default function RupForm({
                 name="jadwalSelesaiRencana"
                 type="date"
                 className={inputClass}
+                defaultValue={String(initialData?.jadwalSelesaiRencana ?? "")}
               />
             </label>
           </>
@@ -397,7 +503,12 @@ export default function RupForm({
           <span className={labelClass}>
             {mode === "planning" ? "Status Approval" : "Status SIRUP"}
           </span>
-          <select name="statusSirup" required className={inputClass}>
+          <select
+            name="statusSirup"
+            required
+            className={inputClass}
+            defaultValue={String(initialData?.statusSirup ?? "BELUM_INPUT")}
+          >
             {mode === "planning" ? (
               <>
                 <option value="BELUM_INPUT">Draft Usulan</option>
@@ -431,35 +542,55 @@ export default function RupForm({
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Status KAK / Spesifikasi</span>
-              <select name="statusKak" className={inputClass}>
+              <select
+                name="statusKak"
+                className={inputClass}
+                defaultValue={String(initialData?.statusKak ?? "BELUM_ADA")}
+              >
                 <DocumentStatusOptions />
               </select>
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Status HPS</span>
-              <select name="statusHps" className={inputClass}>
+              <select
+                name="statusHps"
+                className={inputClass}
+                defaultValue={String(initialData?.statusHps ?? "BELUM_ADA")}
+              >
                 <DocumentStatusOptions />
               </select>
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Status Rancangan Kontrak</span>
-              <select name="statusRancanganKontrak" className={inputClass}>
+              <select
+                name="statusRancanganKontrak"
+                className={inputClass}
+                defaultValue={String(initialData?.statusRancanganKontrak ?? "BELUM_ADA")}
+              >
                 <DocumentStatusOptions />
               </select>
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Status Dokumen Pendukung</span>
-              <select name="statusDokumenPendukung" className={inputClass}>
+              <select
+                name="statusDokumenPendukung"
+                className={inputClass}
+                defaultValue={String(initialData?.statusDokumenPendukung ?? "BELUM_ADA")}
+              >
                 <DocumentStatusOptions />
               </select>
             </label>
 
             <label className="grid min-w-0 gap-2 md:col-span-2">
               <span className={labelClass}>Catatan Kekurangan Dokumen</span>
-              <textarea name="kekuranganDokumen" className={textareaClass} />
+              <textarea
+                name="kekuranganDokumen"
+                className={textareaClass}
+                defaultValue={String(initialData?.kekuranganDokumen ?? "")}
+              />
             </label>
 
             <SectionTitle
@@ -470,24 +601,40 @@ export default function RupForm({
 
             <label className="grid min-w-0 gap-2 md:col-span-2">
               <span className={labelClass}>Kendala</span>
-              <textarea name="kendala" className={textareaClass} />
+              <textarea
+                name="kendala"
+                className={textareaClass}
+                defaultValue={String(initialData?.kendala ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2 md:col-span-2">
               <span className={labelClass}>Tindak Lanjut</span>
-              <textarea name="tindakLanjut" className={textareaClass} />
+              <textarea
+                name="tindakLanjut"
+                className={textareaClass}
+                defaultValue={String(initialData?.tindakLanjut ?? "")}
+              />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>PIC Tindak Lanjut</span>
-              <input name="picTindakLanjut" className={inputClass} />
+              <input
+                name="picTindakLanjut"
+                className={inputClass}
+                defaultValue={String(initialData?.picTindakLanjut ?? "")}
+              />
             </label>
           </>
         ) : null}
 
         <label className="grid min-w-0 gap-2 md:col-span-2">
           <span className={labelClass}>Catatan</span>
-          <textarea name="catatan" className={textareaClass} />
+          <textarea
+            name="catatan"
+            className={textareaClass}
+            defaultValue={String(initialData?.catatan ?? "")}
+          />
         </label>
       </div>
 
@@ -517,9 +664,12 @@ export default function RupForm({
           <Save className="h-4 w-4" />
           {saving
             ? "Menyimpan..."
-            : mode === "planning"
-              ? "Simpan Usulan"
-              : "Simpan RUP"}
+            : submitLabel ??
+              (isEditing
+                ? "Simpan Perubahan"
+                : mode === "planning"
+                  ? "Simpan Usulan"
+                  : "Simpan RUP")}
         </button>
       </div>
     </form>

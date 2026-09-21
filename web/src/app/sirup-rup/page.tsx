@@ -5,7 +5,9 @@ import { formatCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
 import CompleteSirupModalButton from "@/components/sirup-rup/CompleteSirupModalButton";
+import DeleteRupButton from "@/components/sirup-rup/DeleteRupButton";
 import RupDetailModalButton from "@/components/sirup-rup/RupDetailModalButton";
+import { canDeletePlanningProposal } from "@/lib/permissions";
 
 type RupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -129,6 +131,7 @@ export default async function Page({ searchParams }: RupPageProps) {
     select: { unitPengusul: true },
   });
   const currentUser = await getCurrentUser();
+  const canManageRup = canDeletePlanningProposal(currentUser?.roles ?? []);
   const currentUserProfile = currentUser
     ? await prisma.user.findUnique({
         where: { id: currentUser.id },
@@ -365,49 +368,62 @@ export default async function Page({ searchParams }: RupPageProps) {
                                 normalizeUnit(item.unitPengusul)
                             }
                           />
-                          <CompleteSirupModalButton
-                            item={{
-                              id: item.id,
-                              kodeRup: item.kodeRup,
-                              idRupSirup: item.idRupSirup,
-                              jenisKatalog: item.jenisKatalog,
-                              etalaseKatalog: item.etalaseKatalog,
-                              namaProdukKatalog: item.namaProdukKatalog,
-                              spesifikasiProdukKatalog:
-                                item.spesifikasiProdukKatalog,
-                              merekTipeKatalog: item.merekTipeKatalog,
-                              jumlahProdukKatalog: item.jumlahProdukKatalog,
-                              satuanProdukKatalog: item.satuanProdukKatalog,
-                              hargaSatuanKatalog:
-                                item.hargaSatuanKatalog?.toString() ?? null,
-                              totalHargaKatalog:
-                                item.totalHargaKatalog?.toString() ?? null,
-                              namaPenyediaKatalog:
-                                item.namaPenyediaKatalog,
-                              statusNegosiasiKatalog:
-                                item.statusNegosiasiKatalog,
-                              hargaNegosiasiKatalog:
-                                item.hargaNegosiasiKatalog?.toString() ?? null,
-                              nomorSuratPesanan: item.nomorSuratPesanan,
-                              tanggalSuratPesanan:
-                                item.tanggalSuratPesanan,
-                              statusTransaksiKatalog:
-                                item.statusTransaksiKatalog,
-                              catatanKatalog: item.catatanKatalog,
-                              namaPaket: item.namaPaket,
-                              unitPengusul: item.unitPengusul,
-                              sumberDana: item.sumberDana,
-                              pagu: item.pagu.toString(),
-                              metodePengadaan: item.metodePengadaan,
-                              jadwalPemilihan: item.jadwalPemilihan,
-                              tanggalInputSirup: item.tanggalInputSirup,
-                              tanggalTayangSirup: item.tanggalTayangSirup,
-                              linkSirup: item.linkSirup,
-                              tahunAnggaran: item.tahunAnggaran,
-                              statusSirup: item.statusSirup,
-                              catatan: item.catatan,
-                            }}
-                          />
+                          {canManageRup ? (
+                            <>
+                              <CompleteSirupModalButton
+                                label="Edit SIRUP/RUP"
+                                item={{
+                                  id: item.id,
+                                  kodeRup: item.kodeRup,
+                                  idRupSirup: item.idRupSirup,
+                                  jenisKatalog: item.jenisKatalog,
+                                  etalaseKatalog: item.etalaseKatalog,
+                                  namaProdukKatalog: item.namaProdukKatalog,
+                                  spesifikasiProdukKatalog:
+                                    item.spesifikasiProdukKatalog,
+                                  merekTipeKatalog: item.merekTipeKatalog,
+                                  jumlahProdukKatalog:
+                                    item.jumlahProdukKatalog,
+                                  satuanProdukKatalog:
+                                    item.satuanProdukKatalog,
+                                  hargaSatuanKatalog:
+                                    item.hargaSatuanKatalog?.toString() ??
+                                    null,
+                                  totalHargaKatalog:
+                                    item.totalHargaKatalog?.toString() ?? null,
+                                  namaPenyediaKatalog:
+                                    item.namaPenyediaKatalog,
+                                  statusNegosiasiKatalog:
+                                    item.statusNegosiasiKatalog,
+                                  hargaNegosiasiKatalog:
+                                    item.hargaNegosiasiKatalog?.toString() ??
+                                    null,
+                                  nomorSuratPesanan: item.nomorSuratPesanan,
+                                  tanggalSuratPesanan:
+                                    item.tanggalSuratPesanan,
+                                  statusTransaksiKatalog:
+                                    item.statusTransaksiKatalog,
+                                  catatanKatalog: item.catatanKatalog,
+                                  namaPaket: item.namaPaket,
+                                  unitPengusul: item.unitPengusul,
+                                  sumberDana: item.sumberDana,
+                                  pagu: item.pagu.toString(),
+                                  metodePengadaan: item.metodePengadaan,
+                                  jadwalPemilihan: item.jadwalPemilihan,
+                                  tanggalInputSirup: item.tanggalInputSirup,
+                                  tanggalTayangSirup: item.tanggalTayangSirup,
+                                  linkSirup: item.linkSirup,
+                                  tahunAnggaran: item.tahunAnggaran,
+                                  statusSirup: item.statusSirup,
+                                  catatan: item.catatan,
+                                }}
+                              />
+                              <DeleteRupButton
+                                id={item.id}
+                                namaPaket={item.namaPaket}
+                              />
+                            </>
+                          ) : null}
                           </div>
                         </td>
                       </tr>

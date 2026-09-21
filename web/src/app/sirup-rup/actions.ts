@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
+import { canDeletePlanningProposal } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 export type RupRevisionState = {
@@ -112,6 +113,13 @@ export async function updateSirupPublicationAction(
 
   if (!user) {
     return { ok: false, message: "Sesi login tidak ditemukan." };
+  }
+
+  if (!canDeletePlanningProposal(user.roles)) {
+    return {
+      ok: false,
+      message: "Hanya superadmin yang boleh mengubah data SIRUP/RUP.",
+    };
   }
 
   const id = String(formData.get("id") ?? "");

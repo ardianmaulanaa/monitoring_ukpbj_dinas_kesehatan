@@ -10,6 +10,7 @@ import {
 import AppHeader from "@/components/dashboard/AppHeader";
 import AddRupModalButton from "@/components/sirup-rup/AddRupModalButton";
 import DeleteRupButton from "@/components/sirup-rup/DeleteRupButton";
+import EditRupModalButton from "@/components/sirup-rup/EditRupModalButton";
 import RupDetailModalButton from "@/components/sirup-rup/RupDetailModalButton";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
@@ -573,6 +574,59 @@ export default async function Page({ searchParams }: PageProps) {
                                   normalizeUnit(item.unitPengusul)
                               }
                             />
+                            {canDeletePlanning ? (
+                              <EditRupModalButton
+                                sumberDanaOptions={sourceFunds}
+                                label="Edit Perencanaan"
+                                mode="planning"
+                                initialData={{
+                                  id: item.id,
+                                  kodeRup: item.kodeRup,
+                                  namaPaket: item.namaPaket,
+                                  jenisBelanja: item.jenisBelanja,
+                                  lokasiPaket: item.lokasiPaket,
+                                  unitBidang: item.unitBidang,
+                                  ppkPptk: item.ppkPptk,
+                                  kontakPenanggungJawab:
+                                    item.kontakPenanggungJawab,
+                                  program: item.program,
+                                  kegiatan: item.kegiatan,
+                                  subKegiatan: item.subKegiatan,
+                                  kodeRekening: item.kodeRekening,
+                                  uraianBelanja: item.uraianBelanja,
+                                  unitPengusul: item.unitPengusul,
+                                  sumberDana: item.sumberDana,
+                                  pagu: item.pagu.toString(),
+                                  uraianKebutuhan: item.uraianKebutuhan,
+                                  volumeKebutuhan: item.volumeKebutuhan,
+                                  satuanKebutuhan: item.satuanKebutuhan,
+                                  spesifikasiAwal: item.spesifikasiAwal,
+                                  outputDiharapkan: item.outputDiharapkan,
+                                  prioritas: item.prioritas,
+                                  waktuKebutuhan: item.waktuKebutuhan,
+                                  caraPengadaan: item.caraPengadaan,
+                                  metodePengadaan: item.metodePengadaan,
+                                  jadwalPemilihan: item.jadwalPemilihan,
+                                  jadwalMulaiRencana:
+                                    item.jadwalMulaiRencana,
+                                  jadwalSelesaiRencana:
+                                    item.jadwalSelesaiRencana,
+                                  tahunAnggaran: item.tahunAnggaran,
+                                  statusSirup: item.statusSirup,
+                                  statusKak: item.statusKak,
+                                  statusHps: item.statusHps,
+                                  statusRancanganKontrak:
+                                    item.statusRancanganKontrak,
+                                  statusDokumenPendukung:
+                                    item.statusDokumenPendukung,
+                                  kekuranganDokumen: item.kekuranganDokumen,
+                                  kendala: item.kendala,
+                                  tindakLanjut: item.tindakLanjut,
+                                  picTindakLanjut: item.picTindakLanjut,
+                                  catatan: item.catatan,
+                                }}
+                              />
+                            ) : null}
                             {canDeletePlanning ? (
                               <DeleteRupButton
                                 id={item.id}
