@@ -39,6 +39,10 @@ export function canApprovePlanning(userRoles: RoleCode[]) {
   return hasAnyRole(userRoles, ["SUPER_ADMIN", "LEADER", "PPTK", "PA", "KPA", "PPK"]);
 }
 
+export function canDeletePlanningProposal(userRoles: RoleCode[]) {
+  return hasAnyRole(userRoles, ["SUPER_ADMIN"]);
+}
+
 export function canSyncSirup(userRoles: RoleCode[]) {
   return hasAnyRole(userRoles, ["SUPER_ADMIN", "LPSE_ADMIN"]);
 }

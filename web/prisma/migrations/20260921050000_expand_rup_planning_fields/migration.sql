@@ -1,0 +1,30 @@
+ALTER TABLE `rencana_umum_pengadaan`
+ADD COLUMN `unit_bidang` VARCHAR(160) NULL,
+ADD COLUMN `ppk_pptk` VARCHAR(160) NULL,
+ADD COLUMN `kontak_penanggung_jawab` VARCHAR(80) NULL,
+ADD COLUMN `program` VARCHAR(180) NULL,
+ADD COLUMN `kegiatan` VARCHAR(180) NULL,
+ADD COLUMN `sub_kegiatan` VARCHAR(180) NULL,
+ADD COLUMN `kode_rekening` VARCHAR(80) NULL,
+ADD COLUMN `uraian_belanja` TEXT NULL,
+ADD COLUMN `uraian_kebutuhan` TEXT NULL,
+ADD COLUMN `volume_kebutuhan` VARCHAR(80) NULL,
+ADD COLUMN `satuan_kebutuhan` VARCHAR(60) NULL,
+ADD COLUMN `spesifikasi_awal` TEXT NULL,
+ADD COLUMN `output_diharapkan` TEXT NULL,
+ADD COLUMN `prioritas` VARCHAR(80) NULL,
+ADD COLUMN `waktu_kebutuhan` VARCHAR(120) NULL,
+ADD COLUMN `cara_pengadaan` VARCHAR(80) NULL,
+ADD COLUMN `jadwal_mulai_rencana` VARCHAR(120) NULL,
+ADD COLUMN `jadwal_selesai_rencana` VARCHAR(120) NULL,
+ADD COLUMN `status_kak` VARCHAR(80) NULL,
+ADD COLUMN `status_hps` VARCHAR(80) NULL,
+ADD COLUMN `status_rancangan_kontrak` VARCHAR(80) NULL,
+ADD COLUMN `status_dokumen_pendukung` VARCHAR(80) NULL,
+ADD COLUMN `kekurangan_dokumen` TEXT NULL,
+ADD COLUMN `kendala` TEXT NULL,
+ADD COLUMN `tindak_lanjut` TEXT NULL,
+ADD COLUMN `pic_tindak_lanjut` VARCHAR(160) NULL;
+
+CREATE INDEX `rencana_umum_pengadaan_program_idx` ON `rencana_umum_pengadaan`(`program`);
+CREATE INDEX `rencana_umum_pengadaan_kegiatan_idx` ON `rencana_umum_pengadaan`(`kegiatan`);

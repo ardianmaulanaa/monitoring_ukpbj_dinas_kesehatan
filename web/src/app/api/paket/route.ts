@@ -87,6 +87,20 @@ export async function POST(request: Request) {
   } = parsed.data;
 
   try {
+    const sourceRup = await prisma.rencanaUmumPengadaan.findFirst({
+      where: {
+        OR: [
+          { kodeRup: data.kodePaket },
+          {
+            namaPaket: data.namaPaket,
+            unitPengusul: data.unitPemohon,
+            tahunAnggaran: data.tahunAnggaran,
+          },
+        ],
+      },
+      select: { lokasiPaket: true },
+    });
+
     const paket = await prisma.paketPengadaan.create({
       data: {
         ...data,
@@ -96,7 +110,8 @@ export async function POST(request: Request) {
         ppkPenanggungJawab: ppkPenanggungJawab || undefined,
         rencanaMulai: toDate(rencanaMulai),
         rencanaSelesai: toDate(rencanaSelesai),
-        lokasiPelaksanaan: lokasiPelaksanaan || undefined,
+        lokasiPelaksanaan:
+          lokasiPelaksanaan || sourceRup?.lokasiPaket || undefined,
         catatan: catatan || undefined,
       },
     });

@@ -1,1 +1,17 @@
-export const NAVIGATION = ["dashboard", "pengadaan", "kontrak", "realisasi", "penyedia", "warning", "laporan"] as const;
+export const NAVIGATION = [
+  "dashboard",
+  "sirup-rup",
+  "perencanaan",
+  "katalog-v6-v5",
+  "tender-non-tender",
+  "kontrak-sp",
+  "realisasi-belanja",
+  "risiko-mitigasi",
+  "audit-readiness",
+  "timeline",
+  "vendor-pasar",
+  "klinik-ukpbj",
+  "dokumen-template",
+  "laporan",
+  "pengaturan",
+] as const;

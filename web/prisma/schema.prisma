@@ -320,26 +320,78 @@ model Kontrak {
 }
 
 model RencanaUmumPengadaan {
-  id              String               @id @default(uuid()) @db.Char(36)
-  kodeRup         String               @unique @map("kode_rup") @db.VarChar(80)
-  namaPaket       String               @map("nama_paket") @db.VarChar(220)
-  unitPengusul    String               @map("unit_pengusul") @db.VarChar(160)
-  sumberDana      String               @map("sumber_dana") @db.VarChar(120)
-  pagu            Decimal              @default(0) @db.Decimal(18, 2)
-  metodePengadaan PaketMetodePengadaan @map("metode_pengadaan")
-  jadwalPemilihan String?              @map("jadwal_pemilihan") @db.VarChar(120)
-  tahunAnggaran   Int                  @map("tahun_anggaran")
-  statusSirup     RupStatus            @default(BELUM_INPUT) @map("status_sirup")
-  catatan         String?              @db.Text
-  createdAt       DateTime             @default(now()) @map("created_at")
-  updatedAt       DateTime             @updatedAt @map("updated_at")
+  id                       String               @id @default(uuid()) @db.Char(36)
+  kodeRup                  String               @unique @map("kode_rup") @db.VarChar(80)
+  namaPaket                String               @map("nama_paket") @db.VarChar(220)
+  jenisBelanja             String?              @map("jenis_belanja") @db.VarChar(120)
+  unitPengusul             String               @map("unit_pengusul") @db.VarChar(160)
+  unitBidang               String?              @map("unit_bidang") @db.VarChar(160)
+  ppkPptk                  String?              @map("ppk_pptk") @db.VarChar(160)
+  kontakPenanggungJawab    String?              @map("kontak_penanggung_jawab") @db.VarChar(80)
+  program                  String?              @db.VarChar(180)
+  kegiatan                 String?              @db.VarChar(180)
+  subKegiatan              String?              @map("sub_kegiatan") @db.VarChar(180)
+  kodeRekening             String?              @map("kode_rekening") @db.VarChar(80)
+  uraianBelanja            String?              @map("uraian_belanja") @db.Text
+  sumberDana               String               @map("sumber_dana") @db.VarChar(120)
+  pagu                     Decimal              @default(0) @db.Decimal(18, 2)
+  uraianKebutuhan          String?              @map("uraian_kebutuhan") @db.Text
+  volumeKebutuhan          String?              @map("volume_kebutuhan") @db.VarChar(80)
+  satuanKebutuhan          String?              @map("satuan_kebutuhan") @db.VarChar(60)
+  spesifikasiAwal          String?              @map("spesifikasi_awal") @db.Text
+  outputDiharapkan         String?              @map("output_diharapkan") @db.Text
+  prioritas                String?              @db.VarChar(80)
+  waktuKebutuhan           String?              @map("waktu_kebutuhan") @db.VarChar(120)
+  caraPengadaan            String?              @map("cara_pengadaan") @db.VarChar(80)
+  metodePengadaan          PaketMetodePengadaan @map("metode_pengadaan")
+  lokasiPaket              String?              @map("lokasi_paket") @db.VarChar(180)
+  jadwalPemilihan          String?              @map("jadwal_pemilihan") @db.VarChar(120)
+  idRupSirup               String?              @map("id_rup_sirup") @db.VarChar(80)
+  tanggalInputSirup        String?              @map("tanggal_input_sirup") @db.VarChar(120)
+  tanggalTayangSirup       String?              @map("tanggal_tayang_sirup") @db.VarChar(120)
+  linkSirup                String?              @map("link_sirup") @db.VarChar(255)
+  jenisKatalog             String?              @map("jenis_katalog") @db.VarChar(80)
+  etalaseKatalog           String?              @map("etalase_katalog") @db.VarChar(160)
+  namaProdukKatalog        String?              @map("nama_produk_katalog") @db.VarChar(220)
+  spesifikasiProdukKatalog String?              @map("spesifikasi_produk_katalog") @db.Text
+  merekTipeKatalog         String?              @map("merek_tipe_katalog") @db.VarChar(160)
+  jumlahProdukKatalog      String?              @map("jumlah_produk_katalog") @db.VarChar(80)
+  satuanProdukKatalog      String?              @map("satuan_produk_katalog") @db.VarChar(60)
+  hargaSatuanKatalog       Decimal?             @map("harga_satuan_katalog") @db.Decimal(18, 2)
+  totalHargaKatalog        Decimal?             @map("total_harga_katalog") @db.Decimal(18, 2)
+  namaPenyediaKatalog      String?              @map("nama_penyedia_katalog") @db.VarChar(180)
+  statusNegosiasiKatalog   String?              @map("status_negosiasi_katalog") @db.VarChar(80)
+  hargaNegosiasiKatalog    Decimal?             @map("harga_negosiasi_katalog") @db.Decimal(18, 2)
+  nomorSuratPesanan        String?              @map("nomor_surat_pesanan") @db.VarChar(120)
+  tanggalSuratPesanan      String?              @map("tanggal_surat_pesanan") @db.VarChar(120)
+  statusTransaksiKatalog   String?              @map("status_transaksi_katalog") @db.VarChar(80)
+  catatanKatalog           String?              @map("catatan_katalog") @db.Text
+  jadwalMulaiRencana       String?              @map("jadwal_mulai_rencana") @db.VarChar(120)
+  jadwalSelesaiRencana     String?              @map("jadwal_selesai_rencana") @db.VarChar(120)
+  tahunAnggaran            Int                  @map("tahun_anggaran")
+  statusSirup              RupStatus            @default(BELUM_INPUT) @map("status_sirup")
+  statusKak                String?              @map("status_kak") @db.VarChar(80)
+  statusHps                String?              @map("status_hps") @db.VarChar(80)
+  statusRancanganKontrak   String?              @map("status_rancangan_kontrak") @db.VarChar(80)
+  statusDokumenPendukung   String?              @map("status_dokumen_pendukung") @db.VarChar(80)
+  kekuranganDokumen        String?              @map("kekurangan_dokumen") @db.Text
+  kendala                  String?              @db.Text
+  tindakLanjut             String?              @map("tindak_lanjut") @db.Text
+  picTindakLanjut          String?              @map("pic_tindak_lanjut") @db.VarChar(160)
+  catatan                  String?              @db.Text
+  createdAt                DateTime             @default(now()) @map("created_at")
+  updatedAt                DateTime             @updatedAt @map("updated_at")
 
   @@index([namaPaket])
   @@index([unitPengusul])
+  @@index([program])
+  @@index([kegiatan])
   @@index([sumberDana])
   @@index([tahunAnggaran])
   @@index([metodePengadaan])
   @@index([statusSirup])
+  @@index([idRupSirup])
+  @@index([statusTransaksiKatalog])
   @@map("rencana_umum_pengadaan")
 }
 

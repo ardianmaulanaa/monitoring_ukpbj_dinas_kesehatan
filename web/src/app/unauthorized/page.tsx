@@ -1,4 +1,4 @@
-import EmptyState from "@/app/(dashboard)/_shared/EmptyState";
+import EmptyState from "@/components/dashboard/EmptyState";
 
 export default function Page() {
   return (
