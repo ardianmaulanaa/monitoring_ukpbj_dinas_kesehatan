@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import AppHeader from "@/components/dashboard/AppHeader";
+import AppHeader from "@/components/appheader/AppHeader";
 import { formatCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 

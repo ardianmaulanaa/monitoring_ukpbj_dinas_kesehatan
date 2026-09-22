@@ -2,8 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
-import ModalShell from "@/components/dashboard/ModalShell";
+import { Pencil } from "lucide-react";
+import ModalShell from "@/components/modal/ModalShell";
 import RupForm from "@/app/sirup-rup/tambah/rup-form";
 
 type SumberDanaOption = {
@@ -11,17 +11,19 @@ type SumberDanaOption = {
   nama: string;
 };
 
-type AddRupModalButtonProps = {
+type EditRupModalButtonProps = {
+  initialData: Record<string, string | number | null | undefined>;
   sumberDanaOptions: SumberDanaOption[];
   label?: string;
   mode?: "rup" | "planning";
 };
 
-export default function AddRupModalButton({
+export default function EditRupModalButton({
+  initialData,
   sumberDanaOptions,
-  label = "Tambah RUP",
-  mode = "rup",
-}: AddRupModalButtonProps) {
+  label = "Edit",
+  mode = "planning",
+}: EditRupModalButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const close = useCallback(() => setIsOpen(false), []);
@@ -36,9 +38,9 @@ export default function AddRupModalButton({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532]"
+        className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-white px-3 text-sm font-black text-blue-700 transition hover:bg-blue-50"
       >
-        <Plus className="h-4 w-4" strokeWidth={2.5} />
+        <Pencil className="h-4 w-4" strokeWidth={2.4} />
         {label}
       </button>
 
@@ -47,11 +49,14 @@ export default function AddRupModalButton({
         onClose={close}
         eyebrow={mode === "planning" ? "Perencanaan" : "SIRUP / RUP"}
         title={label}
+        maxWidthClassName="max-w-5xl"
       >
         <RupForm
           sumberDanaOptions={sumberDanaOptions}
           mode={mode}
           variant="modal"
+          initialData={initialData}
+          submitLabel="Simpan Perubahan"
           onCancel={close}
           onSaved={handleSaved}
         />

@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import ModalShell from "@/components/dashboard/ModalShell";
+import ModalShell from "@/components/modal/ModalShell";
 import PaketForm from "@/app/paket-pengadaan/tambah/PaketForm";
 
 type AddPaketModalButtonProps = {

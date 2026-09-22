@@ -43,17 +43,17 @@ import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
 import AddKontrakModalButton from "@/app/kontrak-sp/AddKontrakModalButton";
 import AddDataBarangModalButton from "@/app/data-barang/AddDataBarangModalButton";
 import AddPaketModalButton from "@/app/paket-pengadaan/AddPaketModalButton";
-import AddRupModalButton from "@/components/sirup-rup/AddRupModalButton";
-import RupDetailModalButton from "@/components/sirup-rup/RupDetailModalButton";
+import AddRupModalButton from "@/components/button/sirup-rup/AddRupModalButton";
+import RupDetailModalButton from "@/components/button/sirup-rup/RupDetailModalButton";
 import AddRiskModalButton from "@/app/risiko-mitigasi/AddRiskModalButton";
 import ClinicConsultationForm from "@/app/klinik-ukpbj/ClinicConsultationForm";
 import RoleCreateModalButton from "@/app/admin/roles/RoleCreateModalButton";
 import UnitManagementPanel, {
   type UnitOption,
 } from "@/app/pengaturan/UnitManagementPanel";
-import AppHeader from "@/components/dashboard/AppHeader";
-import ExportExcelButton from "@/components/dashboard/ExportExcelButton";
-import GenericInputModalButton from "@/components/dashboard/GenericInputModalButton";
+import AppHeader from "@/components/appheader/AppHeader";
+import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
+import GenericInputModalButton from "@/components/button/shared/GenericInputModalButton";
 import KatalogManualWorkflowClient from "@/app/katalog-v6-v5/KatalogManualWorkflowClient";
 
 type PageConfig = {

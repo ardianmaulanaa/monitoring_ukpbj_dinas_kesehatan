@@ -1,12 +1,11 @@
-import { ClipboardList, Search } from "lucide-react";
-import AppHeader from "@/components/dashboard/AppHeader";
+import { ClipboardList } from "lucide-react";
+import AppHeader from "@/components/appheader/AppHeader";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
-import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
-import CompleteSirupModalButton from "@/components/sirup-rup/CompleteSirupModalButton";
-import DeleteRupButton from "@/components/sirup-rup/DeleteRupButton";
-import RupDetailModalButton from "@/components/sirup-rup/RupDetailModalButton";
+import CompleteSirupModalButton from "@/components/button/sirup-rup/CompleteSirupModalButton";
+import DeleteRupButton from "@/components/button/sirup-rup/DeleteRupButton";
+import RupDetailModalButton from "@/components/button/sirup-rup/RupDetailModalButton";
 import { canDeletePlanningProposal } from "@/lib/permissions";
 
 type RupPageProps = {
@@ -119,17 +118,6 @@ export default async function Page({ searchParams }: RupPageProps) {
     orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
     take: 100,
   });
-  const years = await prisma.rencanaUmumPengadaan.findMany({
-    distinct: ["tahunAnggaran"],
-    orderBy: { tahunAnggaran: "desc" },
-    select: { tahunAnggaran: true },
-  });
-  const sourceFunds = await getActiveSumberDanaOptions();
-  const units = await prisma.rencanaUmumPengadaan.findMany({
-    distinct: ["unitPengusul"],
-    orderBy: { unitPengusul: "asc" },
-    select: { unitPengusul: true },
-  });
   const currentUser = await getCurrentUser();
   const canManageRup = canDeletePlanningProposal(currentUser?.roles ?? []);
   const currentUserProfile = currentUser
@@ -148,79 +136,6 @@ export default async function Page({ searchParams }: RupPageProps) {
       />
 
       <main className="bg-[#f4f7f5]">
-        <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
-          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
-            <span className="self-center text-sm font-black text-slate-400">
-              Filter:
-            </span>
-
-            <select
-              name="tahunAnggaran"
-              defaultValue={tahunAnggaran ?? ""}
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">Semua Tahun</option>
-              {years.map((year) => (
-                <option key={year.tahunAnggaran} value={year.tahunAnggaran}>
-                  TA {year.tahunAnggaran}
-                </option>
-              ))}
-            </select>
-
-            <select
-              name="sumberDana"
-              defaultValue={sumberDana ?? ""}
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">Semua Sumber Dana</option>
-              {sourceFunds.map((item) => (
-                <option key={item.kode} value={item.kode}>
-                  {item.nama}
-                </option>
-              ))}
-            </select>
-
-            <select
-              name="unitPengusul"
-              defaultValue={unitPengusul ?? ""}
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">Semua Unit</option>
-              {units.map((item) => (
-                <option key={item.unitPengusul} value={item.unitPengusul}>
-                  {item.unitPengusul}
-                </option>
-              ))}
-            </select>
-
-            <select
-              name="statusSirup"
-              defaultValue={statusSirup ?? ""}
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">Semua Status</option>
-              <option value="SUDAH_TAYANG">Sudah Tayang</option>
-              <option value="PROSES_VERIFIKASI">Proses Verifikasi</option>
-              <option value="MENUNGGU_PPTK">Menunggu PPTK</option>
-              <option value="MENUNGGU_PPK">Menunggu PPK</option>
-              <option value="MENUNGGU_KPA_PA">Menunggu KPA/PA</option>
-              <option value="BELUM_INPUT">Belum Input</option>
-              <option value="REVISI_PAGU">Revisi Pagu</option>
-              <option value="DITARIK">Ditarik</option>
-            </select>
-
-            <label className="flex h-9 w-full items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500 focus-within:border-[#08783f] focus-within:ring-2 focus-within:ring-emerald-100 sm:col-span-2 lg:col-span-4 xl:col-span-1">
-              <Search className="h-4 w-4" />
-              <input
-                name="q"
-                defaultValue={q ?? ""}
-                placeholder="Cari paket RUP..."
-                className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
-              />
-            </label>
-          </div>
-        </form>
-
         <section className="px-4 py-6 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">

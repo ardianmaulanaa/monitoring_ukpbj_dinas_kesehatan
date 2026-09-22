@@ -44,18 +44,18 @@ import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
 import AddKontrakModalButton from "@/app/kontrak-sp/AddKontrakModalButton";
 import AddDataBarangModalButton from "@/app/data-barang/AddDataBarangModalButton";
 import AddPaketModalButton from "@/app/paket-pengadaan/AddPaketModalButton";
-import AddRupModalButton from "@/components/sirup-rup/AddRupModalButton";
-import DeleteRupButton from "@/components/sirup-rup/DeleteRupButton";
-import RupDetailModalButton from "@/components/sirup-rup/RupDetailModalButton";
+import AddRupModalButton from "@/components/button/sirup-rup/AddRupModalButton";
+import DeleteRupButton from "@/components/button/sirup-rup/DeleteRupButton";
+import RupDetailModalButton from "@/components/button/sirup-rup/RupDetailModalButton";
 import AddRiskModalButton from "@/app/risiko-mitigasi/AddRiskModalButton";
 import ClinicConsultationForm from "@/app/klinik-ukpbj/ClinicConsultationForm";
 import RoleCreateModalButton from "@/app/admin/roles/RoleCreateModalButton";
 import UnitManagementPanel, {
   type UnitOption,
 } from "@/app/pengaturan/UnitManagementPanel";
-import AppHeader from "@/components/dashboard/AppHeader";
-import ExportExcelButton from "@/components/dashboard/ExportExcelButton";
-import GenericInputModalButton from "@/components/dashboard/GenericInputModalButton";
+import AppHeader from "@/components/appheader/AppHeader";
+import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
+import GenericInputModalButton from "@/components/button/shared/GenericInputModalButton";
 
 type PageConfig = {
   title: string;
@@ -3495,53 +3495,6 @@ async function ModuleListView({
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const { kpis, table } = await getModuleData(moduleKey, config, searchParams);
-  const q = getParam(searchParams, "q") ?? "";
-  const tahunAnggaran = getParam(searchParams, "tahunAnggaran") ?? "";
-  const sumberDana = getParam(searchParams, "sumberDana") ?? "";
-  const unitPemohon = getParam(searchParams, "unitPemohon") ?? "";
-  const statusPaket = getParam(searchParams, "statusPaket") ?? "";
-  const years =
-    moduleKey === "paket" ||
-    moduleKey === "katalog" ||
-    moduleKey === "pemilihan"
-      ? await prisma.paketPengadaan.findMany({
-          distinct: ["tahunAnggaran"],
-          orderBy: { tahunAnggaran: "desc" },
-          select: { tahunAnggaran: true },
-        })
-      : [];
-  const sourceFunds =
-    moduleKey === "paket" ||
-    moduleKey === "katalog" ||
-    moduleKey === "pemilihan"
-      ? await getActiveSumberDanaOptions()
-      : [];
-  const units =
-    moduleKey === "paket" ||
-    moduleKey === "katalog" ||
-    moduleKey === "pemilihan"
-      ? await prisma.paketPengadaan.findMany({
-          distinct: ["unitPemohon"],
-          orderBy: { unitPemohon: "asc" },
-          select: { unitPemohon: true },
-        })
-      : [];
-  const statuses =
-    moduleKey === "paket" ||
-    moduleKey === "katalog" ||
-    moduleKey === "pemilihan"
-      ? await prisma.paketPengadaan.findMany({
-          distinct: ["statusPaket"],
-          orderBy: { statusPaket: "asc" },
-          select: { statusPaket: true },
-        })
-      : moduleKey === "kontrak"
-        ? await prisma.kontrak.findMany({
-            distinct: ["status"],
-            orderBy: { status: "asc" },
-            select: { status: true },
-          })
-        : [];
   const showKpis = true;
   const isPemilihan = moduleKey === "pemilihan";
   const isKontrak = moduleKey === "kontrak";
@@ -3552,114 +3505,26 @@ async function ModuleListView({
   const followUpKontrakCount =
     kpis.find((item) => item.label === "Perlu Tindak Lanjut")?.value ?? "0";
 
-  const filterAttachedToHeader = true;
-
   return (
     <main className="min-h-screen bg-[#f4f7f5]">
-      <div
-        className={
-          filterAttachedToHeader
-            ? "space-y-4 px-4 pb-4 sm:px-6 lg:px-8"
-            : "space-y-4 px-4 py-4 sm:px-6 lg:px-8"
-        }
-      >
-        <form
-          className={
-            isPemilihan
-              ? "-mx-4 border-b border-slate-200 bg-white sm:-mx-6 lg:-mx-8"
-              : "-mx-4 border-b border-slate-200 bg-white px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
-          }
-        >
-          {isPemilihan ? (
-            <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  UKPBJ / Pemilihan Penyedia
-                </p>
-                <h1 className="mt-1 text-lg font-black text-[#16227c]">
-                  Tender & Non Tender
-                </h1>
-              </div>
-              <ExportExcelButton
-                columns={table.columns}
-                rows={table.rows}
-                fileName="tender-non-tender"
-              />
+      <div className="space-y-4 px-4 py-4 sm:px-6 lg:px-8">
+        {isPemilihan ? (
+          <section className="-mx-4 flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between lg:-mx-8">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                UKPBJ / Pemilihan Penyedia
+              </p>
+              <h1 className="mt-1 text-lg font-black text-[#16227c]">
+                Tender & Non Tender
+              </h1>
             </div>
-          ) : null}
-
-          <div className={isPemilihan ? "px-5 py-3" : ""}>
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <span className="shrink-0 text-sm font-black text-slate-400">
-                Filter:
-              </span>
-              <select
-                name="tahunAnggaran"
-                defaultValue={tahunAnggaran}
-                className="h-9 min-w-[150px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-              >
-                <option value="">Semua Tahun</option>
-                {years.map((year) => (
-                  <option key={year.tahunAnggaran} value={year.tahunAnggaran}>
-                    TA {year.tahunAnggaran}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="sumberDana"
-                defaultValue={sumberDana}
-                className="h-9 min-w-[220px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-              >
-                <option value="">Semua Sumber Dana</option>
-                {sourceFunds.map((item) => (
-                  <option key={item.kode} value={item.kode}>
-                    {item.nama}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="unitPemohon"
-                defaultValue={unitPemohon}
-                className="h-9 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-              >
-                <option value="">Semua Unit</option>
-                {units.map((item) => (
-                  <option key={item.unitPemohon} value={item.unitPemohon}>
-                    {item.unitPemohon}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="statusPaket"
-                defaultValue={statusPaket}
-                className="h-9 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-              >
-                <option value="">Semua Status</option>
-                {statuses.map((item) => (
-                  <option
-                    key={"statusPaket" in item ? item.statusPaket : item.status}
-                    value={
-                      "statusPaket" in item ? item.statusPaket : item.status
-                    }
-                  >
-                    {humanize(
-                      "statusPaket" in item ? item.statusPaket : item.status,
-                    )}
-                  </option>
-                ))}
-              </select>
-              <label className="flex h-9 min-w-[260px] flex-1 items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500">
-                <Search className="h-4 w-4" />
-                <input
-                  name="q"
-                  defaultValue={q}
-                  placeholder="Cari paket pengadaan..."
-                  className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
-                />
-              </label>
-            </div>
-          </div>
-        </form>
+            <ExportExcelButton
+              columns={table.columns}
+              rows={table.rows}
+              fileName="tender-non-tender"
+            />
+          </section>
+        ) : null}
 
         {showKpis ? (
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

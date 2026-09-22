@@ -7,7 +7,7 @@ import {
   Clock3,
   Info,
 } from "lucide-react";
-import AppHeader from "@/components/dashboard/AppHeader";
+import AppHeader from "@/components/appheader/AppHeader";
 import { getNotificationSummary } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";

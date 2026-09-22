@@ -1,4 +1,4 @@
-import EmptyState from "@/components/dashboard/EmptyState";
+import EmptyState from "@/components/feedback/EmptyState";
 
 export default function Page() {
   return (

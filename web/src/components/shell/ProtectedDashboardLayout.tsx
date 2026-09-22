@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import DashboardShell from "@/components/dashboard/DashboardShell";
+import DashboardShell from "@/components/shell/DashboardShell";
 
 type ProtectedDashboardLayoutProps = {
   children: ReactNode;

@@ -12,7 +12,7 @@ import {
   Trash2,
   UsersRound,
 } from "lucide-react";
-import ModalShell from "@/components/dashboard/ModalShell";
+import ModalShell from "@/components/modal/ModalShell";
 
 type CustomRole = {
   id: string;

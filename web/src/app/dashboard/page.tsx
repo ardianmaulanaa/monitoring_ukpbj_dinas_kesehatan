@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   ShoppingCart,
 } from "lucide-react";
-import AppHeader from "@/components/dashboard/AppHeader";
+import AppHeader from "@/components/appheader/AppHeader";
 import { formatCurrency } from "@/lib/currency";
 import { getDashboardData } from "@/lib/dashboard-data";
 
@@ -193,32 +193,10 @@ export default async function Page() {
 
   return (
     <>
-      {/* Header atas dashboard. Komponennya ada di components/dashboard/AppHeader.tsx. */}
+      {/* Header atas dashboard. Komponennya ada di components/appheader/AppHeader.tsx. */}
       <AppHeader title="Dashboard Utama" />
 
       <main className="bg-[#f4f7f5]">
-        {/* Filter dashboard. Data opsi sumber dana diambil dari dashboard.sourceFunds. */}
-        <section className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex flex-1 flex-wrap items-center gap-3">
-            <span className="text-sm font-black text-slate-400">Filter:</span>
-            <select className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100">
-              <option>TA {summary.tahunAnggaran}</option>
-            </select>
-            <select className="h-9 min-w-44 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100">
-              <option>Semua Sumber Dana</option>
-              {dashboard.sourceFunds.map((item) => (
-                <option key={item.label}>{item.label}</option>
-              ))}
-            </select>
-            <select className="h-9 min-w-40 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100">
-              <option>Semua Unit</option>
-            </select>
-            <select className="h-9 min-w-40 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100">
-              <option>Semua Status</option>
-            </select>
-          </div>
-        </section>
-
         <div className="px-4 py-5 sm:px-6 lg:px-8">
           {/* Kartu KPI utama. Datanya dari summaryCards + methodCards. */}
           <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -401,7 +379,7 @@ export default async function Page() {
                   >
                     <div className="flex min-h-0 flex-1 items-end gap-1">
                       <div
-                        className="w-full rounded-t bg-emerald-500"
+                        className="w-full rounded-t bg-[#08783f]"
                         style={{
                           height: `${Math.max((item.pagu / maxMonthlyAmount) * 100, item.pagu > 0 ? 8 : 0)}%`,
                         }}

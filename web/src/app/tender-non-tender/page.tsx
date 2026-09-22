@@ -3,14 +3,12 @@ import {
   ClipboardCheck,
   FileCheck2,
   ListChecks,
-  Search,
   Scale,
 } from "lucide-react";
-import AppHeader from "@/components/dashboard/AppHeader";
-import ExportExcelButton from "@/components/dashboard/ExportExcelButton";
+import AppHeader from "@/components/appheader/AppHeader";
+import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
 import { formatCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
-import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -121,44 +119,11 @@ export default async function Page({ searchParams }: PageProps) {
       : {}),
   };
 
-  const [paketData, years, sourceFunds, units, statuses] = await Promise.all([
-    prisma.paketPengadaan.findMany({
-      where,
-      orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
-      take: 100,
-    }),
-    prisma.paketPengadaan.findMany({
-      where: {
-        metodePengadaan: {
-          in: [PaketMetodePengadaan.TENDER, PaketMetodePengadaan.NON_TENDER],
-        },
-      },
-      distinct: ["tahunAnggaran"],
-      orderBy: { tahunAnggaran: "desc" },
-      select: { tahunAnggaran: true },
-    }),
-    getActiveSumberDanaOptions(),
-    prisma.paketPengadaan.findMany({
-      where: {
-        metodePengadaan: {
-          in: [PaketMetodePengadaan.TENDER, PaketMetodePengadaan.NON_TENDER],
-        },
-      },
-      distinct: ["unitPemohon"],
-      orderBy: { unitPemohon: "asc" },
-      select: { unitPemohon: true },
-    }),
-    prisma.paketPengadaan.findMany({
-      where: {
-        metodePengadaan: {
-          in: [PaketMetodePengadaan.TENDER, PaketMetodePengadaan.NON_TENDER],
-        },
-      },
-      distinct: ["statusPaket"],
-      orderBy: { statusPaket: "asc" },
-      select: { statusPaket: true },
-    }),
-  ]);
+  const paketData = await prisma.paketPengadaan.findMany({
+    where,
+    orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
+    take: 100,
+  });
 
   const tenderRows = paketData.filter(
     (item) => item.metodePengadaan === "TENDER",
@@ -237,101 +202,22 @@ export default async function Page({ searchParams }: PageProps) {
         rightLabel="Tahapan"
       />
       <main className="min-h-screen bg-[#f4f7f5]">
-        <div className="space-y-4 px-4 pb-4 sm:px-6 lg:px-8">
-          <form className="-mx-4 border-b border-slate-200 bg-white sm:-mx-6 lg:-mx-8">
-            <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  UKPBJ / Pemilihan Penyedia
-                </p>
-                <h1 className="mt-1 text-lg font-black text-[#16227c]">
-                  Tender & Non Tender
-                </h1>
-              </div>
-              <ExportExcelButton
-                columns={tableColumns}
-                rows={tableRows}
-                fileName="tender-non-tender"
-              />
+        <div className="space-y-4 px-4 py-4 sm:px-6 lg:px-8">
+          <section className="-mx-4 flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between lg:-mx-8">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                UKPBJ / Pemilihan Penyedia
+              </p>
+              <h1 className="mt-1 text-lg font-black text-[#16227c]">
+                Tender & Non Tender
+              </h1>
             </div>
-
-            <div className="px-5 py-3">
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <span className="shrink-0 text-sm font-black text-slate-400">
-                  Filter:
-                </span>
-                <select
-                  name="tahunAnggaran"
-                  defaultValue={tahunAnggaran}
-                  className="h-9 min-w-[150px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-                >
-                  <option value="">Semua Tahun</option>
-                  {years.map((year) => (
-                    <option
-                      key={year.tahunAnggaran}
-                      value={year.tahunAnggaran}
-                    >
-                      TA {year.tahunAnggaran}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  name="metode"
-                  defaultValue={metode}
-                  className="h-9 min-w-[170px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-                >
-                  <option value="">Semua Metode</option>
-                  <option value="TENDER">Tender</option>
-                  <option value="NON_TENDER">Non Tender</option>
-                </select>
-                <select
-                  name="sumberDana"
-                  defaultValue={sumberDana}
-                  className="h-9 min-w-[220px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-                >
-                  <option value="">Semua Sumber Dana</option>
-                  {sourceFunds.map((item) => (
-                    <option key={item.kode} value={item.kode}>
-                      {item.nama}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  name="unitPemohon"
-                  defaultValue={unitPemohon}
-                  className="h-9 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-                >
-                  <option value="">Semua Unit</option>
-                  {units.map((item) => (
-                    <option key={item.unitPemohon} value={item.unitPemohon}>
-                      {item.unitPemohon}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  name="statusPaket"
-                  defaultValue={statusPaket}
-                  className="h-9 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-                >
-                  <option value="">Semua Status</option>
-                  {statuses.map((item) => (
-                    <option key={item.statusPaket} value={item.statusPaket}>
-                      {humanize(item.statusPaket)}
-                    </option>
-                  ))}
-                </select>
-                <label className="flex h-9 min-w-[260px] flex-1 items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-500">
-                  <Search className="h-4 w-4" />
-                  <input
-                    name="q"
-                    defaultValue={q}
-                    placeholder="Cari paket tender/non tender..."
-                    className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
-                  />
-                </label>
-              </div>
-            </div>
-          </form>
+            <ExportExcelButton
+              columns={tableColumns}
+              rows={tableRows}
+              fileName="tender-non-tender"
+            />
+          </section>
 
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {kpis.map((item) => (

@@ -1,7 +1,9 @@
 "use client";
 
 import type { RoleCode } from "@prisma/client";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import GlobalFilterPanel from "./GlobalFilterPanel";
 import NavBar from "./NavBar";
 import Sidebar from "./Sidebar";
 
@@ -10,12 +12,14 @@ type AppHeaderProps = {
   title: string;
   subtitle?: string;
   rightLabel?: string;
+  filterPanel?: ReactNode;
 };
 
 export default function AppHeader({
   title,
   subtitle,
   rightLabel,
+  filterPanel,
 }: AppHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roles, setRoles] = useState<RoleCode[]>([]);
@@ -83,6 +87,7 @@ export default function AppHeader({
         title={title}
         subtitle={subtitle}
         rightLabel={rightLabel}
+        filterPanel={filterPanel ?? <GlobalFilterPanel />}
         onOpenMenu={() => setSidebarOpen(true)}
       />
     </>

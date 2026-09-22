@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, RotateCcw, Save } from "lucide-react";
-import ModalShell from "@/components/dashboard/ModalShell";
+import ModalShell from "@/components/modal/ModalShell";
 import { formatCurrency } from "@/lib/currency";
 import {
   updateRupRevisionAction,

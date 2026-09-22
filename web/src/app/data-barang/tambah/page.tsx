@@ -10,7 +10,7 @@ import {
   PackagePlus,
   Save,
 } from "lucide-react";
-import AppHeader from "@/components/dashboard/AppHeader";
+import AppHeader from "@/components/appheader/AppHeader";
 
 type FormState = {
   kodeBarang: string;

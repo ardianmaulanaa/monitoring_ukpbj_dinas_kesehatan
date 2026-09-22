@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Plus, Save } from "lucide-react";
-import ModalShell from "@/components/dashboard/ModalShell";
+import ModalShell from "@/components/modal/ModalShell";
 
 type RiskPackageOption = {
   id: string;

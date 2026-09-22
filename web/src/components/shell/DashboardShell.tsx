@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 import type { RoleCode } from "@prisma/client";
-import Sidebar from "./Sidebar";
-import { SidebarStateProvider, useSidebarState } from "./SidebarState";
+import Sidebar from "@/components/appheader/Sidebar";
+import { SidebarStateProvider, useSidebarState } from "@/components/appheader/SidebarState";
 
 type DashboardShellProps = {
   // children adalah isi halaman dashboard/module yang dibungkus layout ini.

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Edit3, Plus, Save } from "lucide-react";
-import ModalShell from "@/components/dashboard/ModalShell";
+import ModalShell from "@/components/modal/ModalShell";
 
 export type UnitOption = {
   name: string;

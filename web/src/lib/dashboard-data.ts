@@ -89,14 +89,21 @@ export type DashboardData = {
   auditReadiness: DashboardAuditReadiness;
 };
 
-const packageTables = ["paket_pengadaan", "paket", "packages"] as const;
+const packageTables = [
+  "paket_pengadaan",
+  "rencana_umum_pengadaan",
+  "paket",
+  "packages",
+] as const;
 const goodsTables = ["data_barang", "barang_kesehatan", "barang"] as const;
 const contractTables = ["kontrak", "contracts"] as const;
 
-const codeColumns = ["kode_paket", "kode", "code"] as const;
+const codeColumns = ["kode_paket", "kode_rup", "kode", "code"] as const;
 const nameColumns = ["nama_paket", "nama", "name", "title"] as const;
 const unitColumns = [
   "satuan_kerja",
+  "unit_pengusul",
+  "unit_bidang",
   "unit",
   "opd",
   "instansi",
@@ -108,7 +115,7 @@ const methodColumns = [
   "method",
   "jenis_pengadaan",
 ] as const;
-const statusColumns = ["status_paket", "status", "tahap"] as const;
+const statusColumns = ["status_paket", "status_sirup", "status", "tahap"] as const;
 const categoryColumns = ["kategori", "kategori_barang", "jenis_barang"] as const;
 const budgetColumns = ["pagu", "nilai_pagu", "hps", "nilai_hps", "budget"] as const;
 const contractValueColumns = [
@@ -117,7 +124,12 @@ const contractValueColumns = [
   "contract_value",
   "amount",
 ] as const;
-const hpsColumns = ["hps", "nilai_hps"] as const;
+const hpsColumns = [
+  "hps",
+  "nilai_hps",
+  "total_harga_katalog",
+  "harga_negosiasi_katalog",
+] as const;
 const amountColumns = [
   "total_harga",
   "estimasi_total",
@@ -213,6 +225,15 @@ function toNumber(value: unknown) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
   }
+  if (
+    value &&
+    typeof value === "object" &&
+    "toString" in value &&
+    typeof value.toString === "function"
+  ) {
+    const parsed = Number(value.toString());
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
 
   return 0;
 }
@@ -277,6 +298,19 @@ async function tableExists(tableName: string) {
 async function findTable(candidates: readonly string[]) {
   const catalog = await getSchemaCatalog();
   return candidates.find((table) => catalog.has(table)) ?? null;
+}
+
+async function findDashboardPackageTable(candidates: readonly string[]) {
+  const catalog = await getSchemaCatalog();
+  const existingTables = candidates.filter((table) => catalog.has(table));
+
+  for (const table of existingTables) {
+    if ((await countRows(table)) > 0) {
+      return table;
+    }
+  }
+
+  return existingTables[0] ?? null;
 }
 
 async function findColumn(tableName: string | null, candidates: readonly string[]) {
@@ -402,7 +436,17 @@ async function getStages(tableName: string | null, totalPaket: number) {
     {
       label: "Perencanaan",
       color: "bg-sky-500",
-      words: ["perencanaan", "rencana", "draft"],
+      words: [
+        "perencanaan",
+        "rencana",
+        "draft",
+        "belum",
+        "proses_verifikasi",
+        "menunggu",
+        "sudah_tayang",
+        "revisi",
+        "ditarik",
+      ],
     },
     {
       label: "Pemilihan",
@@ -829,7 +873,7 @@ function buildAuditReadiness(
 
 export async function getDashboardData(): Promise<DashboardData> {
   const [packageTable, goodsTable, contractTable] = await Promise.all([
-    findTable(packageTables),
+    findDashboardPackageTable(packageTables),
     findTable(goodsTables),
     findTable(contractTables),
   ]);

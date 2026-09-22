@@ -2,14 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Bell, Menu, Search, ShieldCheck } from "lucide-react";
+import {
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Bell, Filter, Menu, Search, ShieldCheck } from "lucide-react";
 
 type NavBarProps = {
   // title/subtitle/rightLabel berasal dari halaman lewat AppHeader.
   title: string;
   subtitle?: string;
   rightLabel?: string;
+  filterPanel?: ReactNode;
   // Fungsi ini membuka Sidebar mobile dari AppHeader.
   onOpenMenu: () => void;
 };
@@ -27,6 +34,7 @@ export default function NavBar({
   title,
   subtitle,
   rightLabel,
+  filterPanel,
   onOpenMenu,
 }: NavBarProps) {
   const [currentUser, setCurrentUser] = useState<{
@@ -37,6 +45,8 @@ export default function NavBar({
     total: number;
     items: NotificationItem[];
   }>({ total: 0, items: [] });
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Ambil data user dan notifikasi dari API untuk bagian kanan header.
   useEffect(() => {
@@ -73,6 +83,33 @@ export default function NavBar({
     };
   }, []);
 
+  // Tutup dropdown filter saat user klik di luar atau menekan Escape.
+  useEffect(() => {
+    if (!filterOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!filterMenuRef.current?.contains(event.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setFilterOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [filterOpen]);
+
   // Huruf avatar diambil dari nama user, fallback ke email, lalu Admin.
   const profileInitial = useMemo(() => {
     const source = currentUser?.name || currentUser?.email || "Admin";
@@ -89,7 +126,7 @@ export default function NavBar({
           <div className="bg-[#159cc3]" />
         </div>
 
-        <div className="flex min-h-14 items-center justify-between gap-3 overflow-hidden px-4 py-2 sm:px-6 lg:px-8">
+        <div className="flex min-h-14 items-center justify-between gap-3 overflow-visible px-4 py-2 sm:px-6 lg:px-8">
           {/* Bagian kiri: tombol menu mobile, logo, judul, dan subtitle halaman. */}
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <button
@@ -148,6 +185,32 @@ export default function NavBar({
                     {rightLabel}
                   </p>
                 </div>
+              </div>
+            ) : null}
+
+            {filterPanel ? (
+              <div className="relative" ref={filterMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen((open) => !open)}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-[#08783f] focus:outline-none focus:ring-2 focus:ring-[#08783f] focus:ring-offset-2"
+                  aria-expanded={filterOpen}
+                  aria-haspopup="dialog"
+                  aria-label="Buka filter"
+                  title="Filter"
+                >
+                  <Filter className="h-4 w-4" strokeWidth={2.4} />
+                </button>
+
+                {filterOpen ? (
+                  <div
+                    role="dialog"
+                    aria-label="Filter halaman"
+                    className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 shadow-lg shadow-slate-900/10"
+                  >
+                    {filterPanel}
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

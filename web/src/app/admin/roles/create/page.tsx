@@ -1,4 +1,4 @@
-import AppHeader from "@/components/dashboard/AppHeader";
+import AppHeader from "@/components/appheader/AppHeader";
 import { prisma } from "@/lib/prisma";
 import RoleCreateClient from "./role-create-client";
 

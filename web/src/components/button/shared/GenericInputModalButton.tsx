@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Plus, Save } from "lucide-react";
-import ModalShell from "./ModalShell";
+import ModalShell from "@/components/modal/ModalShell";
 
 type GenericInputModalButtonProps = {
   // label dan moduleName dikirim dari halaman module yang memakai modal generik ini.
