@@ -478,13 +478,17 @@ export default function RupForm({
         {mode === "planning" ? (
           <>
             <label className="grid min-w-0 gap-2">
-              <span className={labelClass}>Jadwal Mulai Rencana</span>
+              <span className={labelClass}>Tanggal Masuk Grafik SIRUP/RUP</span>
               <input
                 name="jadwalMulaiRencana"
                 type="date"
                 className={inputClass}
                 defaultValue={String(initialData?.jadwalMulaiRencana ?? "")}
               />
+              <span className="text-xs font-bold text-slate-500">
+                Dipakai sebagai bulan grafik setelah usulan disetujui sampai
+                Siap RUP/SIRUP.
+              </span>
             </label>
 
             <label className="grid min-w-0 gap-2">

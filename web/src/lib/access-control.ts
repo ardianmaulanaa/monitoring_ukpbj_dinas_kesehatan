@@ -15,37 +15,23 @@ export type AppRoleCode =
 
 const allRoles: AppRoleCode[] = [
   "SUPER_ADMIN",
-  "OPERATOR",
   "LEADER",
-  "PPTK",
   "PA",
   "KPA",
   "PPK",
-  "PROCUREMENT_OFFICER",
-  "SELECTION_WORKGROUP",
-  "UKPBJ",
-  "LPSE_ADMIN",
-  "AUDITOR",
-  "VIEWER",
 ];
 
 const planningRoles: AppRoleCode[] = [
   "SUPER_ADMIN",
-  "OPERATOR",
   "LEADER",
-  "PPTK",
   "PA",
   "KPA",
   "PPK",
-  "UKPBJ",
 ];
 
 const procurementRoles: AppRoleCode[] = [
   "SUPER_ADMIN",
   "PPK",
-  "PROCUREMENT_OFFICER",
-  "SELECTION_WORKGROUP",
-  "UKPBJ",
 ];
 
 const contractRoles: AppRoleCode[] = [
@@ -53,9 +39,6 @@ const contractRoles: AppRoleCode[] = [
   "PA",
   "KPA",
   "PPK",
-  "PROCUREMENT_OFFICER",
-  "UKPBJ",
-  "AUDITOR",
 ];
 
 const monitoringRoles: AppRoleCode[] = [
@@ -63,9 +46,6 @@ const monitoringRoles: AppRoleCode[] = [
   "PA",
   "KPA",
   "PPK",
-  "PROCUREMENT_OFFICER",
-  "UKPBJ",
-  "AUDITOR",
 ];
 
 const reportingRoles: AppRoleCode[] = [
@@ -73,9 +53,6 @@ const reportingRoles: AppRoleCode[] = [
   "PA",
   "KPA",
   "PPK",
-  "UKPBJ",
-  "AUDITOR",
-  "VIEWER",
 ];
 
 const routeAccess: { prefix: string; roles: AppRoleCode[] }[] = [
@@ -83,21 +60,21 @@ const routeAccess: { prefix: string; roles: AppRoleCode[] }[] = [
   { prefix: "/notifications", roles: allRoles },
   { prefix: "/profile", roles: allRoles },
   { prefix: "/perencanaan", roles: planningRoles },
-  { prefix: "/sirup-rup", roles: [...planningRoles, "LPSE_ADMIN", "VIEWER", "AUDITOR"] },
+  { prefix: "/sirup-rup", roles: planningRoles },
   { prefix: "/katalog-v6-v5", roles: procurementRoles },
   { prefix: "/tender-non-tender", roles: procurementRoles },
   { prefix: "/paket-pengadaan", roles: [...planningRoles, ...procurementRoles] },
-  { prefix: "/data-barang", roles: ["SUPER_ADMIN", "OPERATOR", "PPK", "UKPBJ"] },
+  { prefix: "/data-barang", roles: ["SUPER_ADMIN", "PPK"] },
   { prefix: "/kontrak-sp", roles: contractRoles },
   { prefix: "/progres-fisik", roles: monitoringRoles },
   { prefix: "/serah-terima", roles: monitoringRoles },
-  { prefix: "/realisasi-belanja", roles: [...monitoringRoles, "VIEWER"] },
+  { prefix: "/realisasi-belanja", roles: monitoringRoles },
   { prefix: "/risiko-mitigasi", roles: monitoringRoles },
-  { prefix: "/audit-readiness", roles: ["SUPER_ADMIN", "PA", "KPA", "UKPBJ", "AUDITOR"] },
+  { prefix: "/audit-readiness", roles: ["SUPER_ADMIN", "PA", "KPA", "PPK"] },
   { prefix: "/timeline", roles: allRoles },
-  { prefix: "/vendor-pasar", roles: ["SUPER_ADMIN", "PPK", "PROCUREMENT_OFFICER", "SELECTION_WORKGROUP", "UKPBJ"] },
-  { prefix: "/klinik-ukpbj", roles: ["SUPER_ADMIN", "OPERATOR", "LEADER", "PPK", "UKPBJ"] },
-  { prefix: "/dokumen-template", roles: [...planningRoles, ...procurementRoles, "AUDITOR"] },
+  { prefix: "/vendor-pasar", roles: [] },
+  { prefix: "/klinik-ukpbj", roles: ["SUPER_ADMIN", "LEADER", "PPK"] },
+  { prefix: "/dokumen-template", roles: [...planningRoles, ...procurementRoles] },
   { prefix: "/laporan", roles: reportingRoles },
   { prefix: "/master-data", roles: ["SUPER_ADMIN"] },
   { prefix: "/pengaturan", roles: ["SUPER_ADMIN"] },

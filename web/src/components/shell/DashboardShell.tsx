@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { RoleCode } from "@prisma/client";
 import Sidebar from "@/components/appheader/Sidebar";
 import { SidebarStateProvider, useSidebarState } from "@/components/appheader/SidebarState";
+import { PageTransition } from "@/components/ui";
 
 type DashboardShellProps = {
   // children adalah isi halaman dashboard/module yang dibungkus layout ini.
@@ -13,7 +14,7 @@ type DashboardShellProps = {
 };
 
 function DashboardContent({ children, roles }: DashboardShellProps) {
-  // State collapsed sidebar desktop disimpan di SidebarStateProvider.
+  // State collapsed sidebar desktop dipakai sebagai drawer terbuka/tertutup.
   const { desktopCollapsed, toggleDesktopSidebar, closeDesktopSidebar } =
     useSidebarState();
 
@@ -30,13 +31,13 @@ function DashboardContent({ children, roles }: DashboardShellProps) {
         <button
           type="button"
           aria-label="Tutup sidebar"
-          className="fixed inset-0 z-40 hidden cursor-default bg-slate-950/25 lg:block"
+          className="fixed inset-0 z-40 hidden cursor-default bg-slate-950/20 backdrop-blur-[1px] lg:block"
           onClick={closeDesktopSidebar}
         />
       ) : null}
-      {/* Area konten halaman tetap di posisi sidebar kecil; sidebar terbuka sebagai drawer overlay. */}
-      <div className="min-w-0 transition-[padding] duration-300 lg:pl-[76px]">
-        {children}
+      {/* Area konten full-width; sidebar desktop sekarang muncul sebagai drawer overlay. */}
+      <div className="min-w-0">
+        <PageTransition>{children}</PageTransition>
       </div>
     </div>
   );

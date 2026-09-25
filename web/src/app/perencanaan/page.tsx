@@ -1,16 +1,11 @@
 import { revalidatePath } from "next/cache";
 import { Prisma, type RoleCode, type RupStatus } from "@prisma/client";
-import {
-  CheckCircle2,
-  FileCheck2,
-  FileSearch,
-  UsersRound,
-} from "lucide-react";
+import { FileSearch } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
 import AddRupModalButton from "@/components/button/sirup-rup/AddRupModalButton";
 import DeleteRupButton from "@/components/button/sirup-rup/DeleteRupButton";
 import EditRupModalButton from "@/components/button/sirup-rup/EditRupModalButton";
-import RupDetailModalButton from "@/components/button/sirup-rup/RupDetailModalButton";
+import PlanningDetailModalButton from "@/app/perencanaan/PlanningDetailModalButton";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
 import { canDeletePlanningProposal } from "@/lib/permissions";
@@ -87,6 +82,44 @@ const planningApprovalFlow = [
   },
 ];
 
+const planningApprovalRoleFlow: {
+  status: RupStatus;
+  label: string;
+  roles: RoleCode[];
+  helper: string;
+}[] = [
+  {
+    status: "BELUM_INPUT",
+    label: "Unit Pengusul",
+    roles: ["OPERATOR"],
+    helper: "Ajukan usulan awal ke Kepala Unit.",
+  },
+  {
+    status: "PROSES_VERIFIKASI",
+    label: "Kepala Unit",
+    roles: ["LEADER"],
+    helper: "Validasi kebutuhan unit dan kelengkapan awal.",
+  },
+  {
+    status: "MENUNGGU_PPTK",
+    label: "PPTK",
+    roles: ["PPTK"],
+    helper: "Cek kegiatan, output, jadwal, dan anggaran.",
+  },
+  {
+    status: "MENUNGGU_PPK",
+    label: "PPK",
+    roles: ["PPK"],
+    helper: "Review KAK, spesifikasi, HPS, dan metode.",
+  },
+  {
+    status: "MENUNGGU_KPA_PA",
+    label: "KPA/PA",
+    roles: ["KPA", "PA"],
+    helper: "Approval akhir sebelum siap RUP/SIRUP.",
+  },
+];
+
 const roleNames: Partial<Record<RoleCode, string>> = {
   SUPER_ADMIN: "Super Admin",
   LPSE_ADMIN: "Admin LPSE",
@@ -143,10 +176,6 @@ function sourceFundClass(value: string) {
   return "bg-emerald-100 text-emerald-700";
 }
 
-function normalizeUnit(value?: string | null) {
-  return value?.trim().toLowerCase() ?? "";
-}
-
 function canActOnPlanningStatus(userRoles: RoleCode[], status: RupStatus) {
   if (userRoles.includes("SUPER_ADMIN")) {
     return Boolean(planningNextStatus[status]);
@@ -164,6 +193,7 @@ async function updatePlanningApprovalAction(formData: FormData) {
 
   const id = String(formData.get("id") ?? "");
   const action = String(formData.get("action") ?? "");
+  const actionNote = String(formData.get("catatanAksi") ?? "").trim();
   const proposal = await prisma.rencanaUmumPengadaan.findUnique({
     where: { id },
     select: { statusSirup: true },
@@ -181,10 +211,21 @@ async function updatePlanningApprovalAction(formData: FormData) {
         : planningNextStatus[proposal.statusSirup];
 
   if (!nextStatus) return;
+  if ((action === "revise" || action === "reject") && !actionNote) return;
 
   await prisma.rencanaUmumPengadaan.update({
     where: { id },
-    data: { statusSirup: nextStatus },
+    data: {
+      statusSirup: nextStatus,
+      ...(action === "revise" || action === "reject"
+        ? {
+            catatan:
+              action === "reject"
+                ? `Ditolak: ${actionNote}`
+                : `Revisi diminta: ${actionNote}`,
+          }
+        : {}),
+    },
   });
 
   revalidatePath("/perencanaan");
@@ -224,12 +265,6 @@ export default async function Page({ searchParams }: PageProps) {
   const currentUser = await getCurrentUser();
   const currentUserRoles = currentUser?.roles ?? [];
   const canDeletePlanning = canDeletePlanningProposal(currentUserRoles);
-  const currentUserProfile = currentUser
-    ? await prisma.user.findUnique({
-        where: { id: currentUser.id },
-        select: { unitKerja: true },
-      })
-    : null;
 
   const totalPagu = rupData.reduce(
     (sum, item) => sum + decimalNumber(item.pagu),
@@ -252,16 +287,6 @@ export default async function Page({ searchParams }: PageProps) {
   const readyCount = rupData.filter(
     (item) => item.statusSirup === "SUDAH_TAYANG",
   ).length;
-  const selectedProposal =
-    rupData.find((item) =>
-      canActOnPlanningStatus(currentUserRoles, item.statusSirup),
-    ) ?? rupData[0];
-  const canActOnSelectedProposal = selectedProposal
-    ? canActOnPlanningStatus(currentUserRoles, selectedProposal.statusSirup)
-    : false;
-  const selectedNextStatus = selectedProposal
-    ? planningNextStatus[selectedProposal.statusSirup]
-    : undefined;
 
   return (
     <>
@@ -429,65 +454,40 @@ export default async function Page({ searchParams }: PageProps) {
                         </td>
                         <td className="whitespace-nowrap px-4 py-4 text-right">
                           <div className="flex justify-end gap-2">
-                            <RupDetailModalButton
-                              item={{
+                            <PlanningDetailModalButton
+                              proposal={{
                                 id: item.id,
                                 kodeRup: item.kodeRup,
                                 namaPaket: item.namaPaket,
-                                jenisBelanja: item.jenisBelanja,
-                                lokasiPaket: item.lokasiPaket,
-                                unitBidang: item.unitBidang,
-                                ppkPptk: item.ppkPptk,
-                                kontakPenanggungJawab:
-                                  item.kontakPenanggungJawab,
+                                unitPengusul: item.unitPengusul,
                                 program: item.program,
                                 kegiatan: item.kegiatan,
                                 subKegiatan: item.subKegiatan,
                                 kodeRekening: item.kodeRekening,
-                                uraianBelanja: item.uraianBelanja,
-                                unitPengusul: item.unitPengusul,
                                 sumberDana: item.sumberDana,
                                 pagu: item.pagu.toString(),
-                                uraianKebutuhan: item.uraianKebutuhan,
-                                volumeKebutuhan: item.volumeKebutuhan,
-                                satuanKebutuhan: item.satuanKebutuhan,
-                                spesifikasiAwal: item.spesifikasiAwal,
-                                outputDiharapkan: item.outputDiharapkan,
-                                prioritas: item.prioritas,
-                                waktuKebutuhan: item.waktuKebutuhan,
-                                caraPengadaan: item.caraPengadaan,
                                 metodePengadaan: item.metodePengadaan,
                                 jadwalPemilihan: item.jadwalPemilihan,
-                                jadwalMulaiRencana: item.jadwalMulaiRencana,
-                                jadwalSelesaiRencana: item.jadwalSelesaiRencana,
-                                tahunAnggaran: item.tahunAnggaran,
-                                statusSirup: item.statusSirup,
+                                picTindakLanjut: item.picTindakLanjut,
+                                tindakLanjut: item.tindakLanjut,
                                 statusKak: item.statusKak,
                                 statusHps: item.statusHps,
                                 statusRancanganKontrak:
                                   item.statusRancanganKontrak,
                                 statusDokumenPendukung:
                                   item.statusDokumenPendukung,
-                                kekuranganDokumen: item.kekuranganDokumen,
-                                kendala: item.kendala,
-                                tindakLanjut: item.tindakLanjut,
-                                picTindakLanjut: item.picTindakLanjut,
                                 catatan: item.catatan,
+                                statusSirup: item.statusSirup,
                               }}
-                              statusLabel={
-                                planningStatusLabels[item.statusSirup] ??
-                                humanize(item.statusSirup)
+                              currentUserRoles={currentUserRoles}
+                              planningApprovalRoleFlow={
+                                planningApprovalRoleFlow
                               }
-                              statusStyle={
-                                planningStatusStyles[item.statusSirup] ??
-                                "bg-slate-100 text-slate-600"
-                              }
-                              canEditRevision={
-                                currentUserRoles.includes("SUPER_ADMIN") ||
-                                normalizeUnit(currentUserProfile?.unitKerja) ===
-                                  normalizeUnit(item.unitPengusul) ||
-                                normalizeUnit(currentUser?.name) ===
-                                  normalizeUnit(item.unitPengusul)
+                              planningStatusLabels={planningStatusLabels}
+                              planningStatusStyles={planningStatusStyles}
+                              roleNames={roleNames}
+                              updatePlanningApprovalAction={
+                                updatePlanningApprovalAction
                               }
                             />
                             {canDeletePlanning ? (
@@ -569,111 +569,6 @@ export default async function Page({ searchParams }: PageProps) {
                   )}
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <FileCheck2 className="h-5 w-5 text-[#08783f]" />
-                <h2 className="text-lg font-black text-[#16227c]">
-                  Dokumen Awal yang Dicek
-                </h2>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {[
-                  "KAK / kerangka acuan kerja",
-                  "Spesifikasi teknis dan volume",
-                  "HPS dan referensi harga",
-                  "Sumber dana dan pagu",
-                  "Telaah TKDN/impor bila perlu",
-                  "Rancangan kontrak/SPK",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3"
-                  >
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-[#08783f]" />
-                    <span className="text-sm font-bold text-slate-600">
-                      {item}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <UsersRound className="h-5 w-5 text-[#08783f]" />
-                <h2 className="text-lg font-black text-[#16227c]">
-                  Aksi Sesuai Role
-                </h2>
-              </div>
-              <div className="mt-4 rounded-lg bg-slate-50 p-4">
-                <p className="text-xs font-black uppercase text-slate-400">
-                  Usulan aktif
-                </p>
-                <p className="mt-2 text-sm font-black text-[#16227c]">
-                  {selectedProposal?.namaPaket ?? "Belum ada usulan"}
-                </p>
-                <p className="mt-1 text-xs font-bold text-slate-500">
-                  Status:{" "}
-                  {selectedProposal
-                    ? (planningStatusLabels[selectedProposal.statusSirup] ??
-                      humanize(selectedProposal.statusSirup))
-                    : "-"}
-                </p>
-                <p className="mt-1 text-xs font-bold text-slate-500">
-                  Role login:{" "}
-                  {currentUserRoles.length > 0
-                    ? currentUserRoles
-                        .map((role) => roleNames[role] ?? role)
-                        .join(", ")
-                    : "-"}
-                </p>
-                {selectedProposal && !canActOnSelectedProposal ? (
-                  <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">
-                    Akun ini belum bisa approve status ini. Pilih usulan yang
-                    sedang menunggu role login.
-                  </p>
-                ) : null}
-              </div>
-              <form
-                action={updatePlanningApprovalAction}
-                className="mt-4 grid gap-2"
-              >
-                <input
-                  type="hidden"
-                  name="id"
-                  value={selectedProposal?.id ?? ""}
-                />
-                <button
-                  name="action"
-                  value="approve"
-                  disabled={!canActOnSelectedProposal}
-                  className="h-10 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:cursor-not-allowed disabled:bg-slate-300"
-                >
-                  {selectedNextStatus
-                    ? `Approve ke ${planningStatusLabels[selectedNextStatus]}`
-                    : "Ajukan / Approve Tahap Ini"}
-                </button>
-                <button
-                  name="action"
-                  value="revise"
-                  disabled={!canActOnSelectedProposal}
-                  className="h-10 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-black text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  Minta Revisi
-                </button>
-                <button
-                  name="action"
-                  value="reject"
-                  disabled={!canActOnSelectedProposal}
-                  className="h-10 rounded-lg border border-red-200 bg-red-50 px-4 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  Tolak Usulan
-                </button>
-              </form>
             </div>
           </div>
         </section>

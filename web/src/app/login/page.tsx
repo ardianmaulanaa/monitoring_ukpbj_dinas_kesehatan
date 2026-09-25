@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   AlertCircle,
   ArrowRight,
   Eye,
   EyeOff,
+  Loader2,
   LockKeyhole,
   Mail,
   X,
@@ -24,7 +25,6 @@ const protectedRedirectPrefixes = [
   "/risiko-mitigasi",
   "/audit-readiness",
   "/timeline",
-  "/vendor-pasar",
   "/klinik-ukpbj",
   "/dokumen-template",
   "/laporan",
@@ -63,10 +63,16 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOpeningDashboard, setIsOpeningDashboard] = useState(false);
+
+  useEffect(() => {
+    router.prefetch(getSafeRedirectPath());
+  }, [router]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+    setIsOpeningDashboard(false);
 
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -76,6 +82,7 @@ export default function LoginPage() {
     }
 
     setIsSubmitting(true);
+    let loginSucceeded = false;
 
     try {
       const response = await fetch("/api/auth/login", {
@@ -99,12 +106,16 @@ export default function LoginPage() {
         return;
       }
 
+      loginSucceeded = true;
+      setIsOpeningDashboard(true);
       router.replace(getSafeRedirectPath());
-      router.refresh();
     } catch {
       setError("Tidak dapat menghubungi server. Coba lagi sebentar.");
     } finally {
-      setIsSubmitting(false);
+      if (!loginSucceeded) {
+        setIsSubmitting(false);
+        setIsOpeningDashboard(false);
+      }
     }
   };
 
@@ -386,15 +397,24 @@ export default function LoginPage() {
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="!mt-8 group flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#08783f] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(8,120,63,0.23)] transition duration-300 hover:bg-[#066532] active:scale-[0.98] sm:h-14 sm:gap-3 sm:rounded-2xl"
+                        className="!mt-8 group flex h-12 w-full items-center justify-center gap-2.5 rounded-full bg-[#08783f] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(8,120,63,0.23)] transition duration-300 hover:bg-[#066532] active:scale-[0.98] disabled:cursor-wait disabled:bg-[#0a6d3b] disabled:shadow-[0_10px_24px_rgba(8,120,63,0.16)] sm:h-14 sm:gap-3"
                       >
-                        {isSubmitting
+                        {isOpeningDashboard
+                          ? "Membuka dashboard..."
+                          : isSubmitting
                           ? "Memeriksa akun..."
                           : "Masuk ke Dashboard"}
-                        <ArrowRight
-                          className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
-                          strokeWidth={2.2}
-                        />
+                        {isSubmitting ? (
+                          <Loader2
+                            className="h-5 w-5 animate-spin"
+                            strokeWidth={2.4}
+                          />
+                        ) : (
+                          <ArrowRight
+                            className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
+                            strokeWidth={2.2}
+                          />
+                        )}
                       </button>
                     </form>
                   </div>

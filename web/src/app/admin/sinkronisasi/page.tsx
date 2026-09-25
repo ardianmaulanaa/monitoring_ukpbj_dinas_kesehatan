@@ -146,7 +146,10 @@ const pageConfigs = {
     subtitle: "Kelola termin pembayaran dan penyerapan nilai kontrak.",
     rightLabel: "Keuangan",
     icon: Building2,
-    primaryAction: { label: "Tambah realisasi", href: "/realisasi-belanja/tambah" },
+    primaryAction: {
+      label: "Tambah realisasi",
+      href: "/realisasi-belanja/tambah",
+    },
   },
   "serah-terima": {
     title: "Serah Terima",
@@ -852,10 +855,7 @@ async function getPackageModuleData(
                     (item) =>
                       item.metodePengadaan === PaketMetodePengadaan.TENDER,
                   )
-                  .reduce(
-                    (total, item) => total + decimalNumber(item.pagu),
-                    0,
-                  ),
+                  .reduce((total, item) => total + decimalNumber(item.pagu), 0),
               )
             : "Dari database paket",
         tone: "green",
@@ -874,10 +874,7 @@ async function getPackageModuleData(
                     (item) =>
                       item.metodePengadaan === PaketMetodePengadaan.NON_TENDER,
                   )
-                  .reduce(
-                    (total, item) => total + decimalNumber(item.pagu),
-                    0,
-                  ),
+                  .reduce((total, item) => total + decimalNumber(item.pagu), 0),
               )
             : "Dari database paket",
         tone: "orange",
@@ -1308,7 +1305,10 @@ async function PlanningModuleView({
 
   return (
     <main className="bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form
+        hidden
+        className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
+      >
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
           <span className="self-center text-sm font-black text-slate-400 sm:col-span-2 lg:col-span-1">
             Filter:
@@ -1798,15 +1798,19 @@ async function RealisasiBelanjaView() {
     }),
     { pagu: 0, hps: 0, kontrak: 0, realisasi: 0 },
   );
-  const totalPagu = hasRealizationRows ? realisasiTotals.pagu : summary.totalPagu || 0;
+  const totalPagu = hasRealizationRows
+    ? realisasiTotals.pagu
+    : summary.totalPagu || 0;
   const totalHps = hasRealizationRows ? realisasiTotals.hps : summary.totalHps;
   const totalKontrak = hasRealizationRows
     ? realisasiTotals.kontrak
     : summary.totalNilaiKontrak;
   const realisasiBayar = hasRealizationRows
     ? realisasiTotals.realisasi
-    : dashboard.monthlyRealization.reduce((sum, item) => sum + item.realisasi, 0) ||
-      Math.round(summary.totalNilaiKontrak * 0.71);
+    : dashboard.monthlyRealization.reduce(
+        (sum, item) => sum + item.realisasi,
+        0,
+      ) || Math.round(summary.totalNilaiKontrak * 0.71);
   const efisiensi = Math.max(totalHps - totalKontrak, 0);
   const sisaAnggaran = Math.max(totalPagu - realisasiBayar, 0);
   const totalSerapan =
@@ -1829,25 +1833,21 @@ async function RealisasiBelanjaView() {
         };
       })
     : dashboard.sourceFunds.map((item) => {
-    const pagu = item.amount;
-    const nilaiKontrak = ratioValue(
-      pagu,
-      totalPagu,
-      totalKontrak,
-    );
-    const realisasi = ratioValue(pagu, totalPagu, realisasiBayar);
-    const sisa = Math.max(pagu - realisasi, 0);
-    const serapan = pagu > 0 ? Math.round((realisasi / pagu) * 100) : 0;
+        const pagu = item.amount;
+        const nilaiKontrak = ratioValue(pagu, totalPagu, totalKontrak);
+        const realisasi = ratioValue(pagu, totalPagu, realisasiBayar);
+        const sisa = Math.max(pagu - realisasi, 0);
+        const serapan = pagu > 0 ? Math.round((realisasi / pagu) * 100) : 0;
 
-    return {
-      label: item.label,
-      pagu,
-      nilaiKontrak,
-      realisasi,
-      sisa,
-      serapan,
-    };
-  });
+        return {
+          label: item.label,
+          pagu,
+          nilaiKontrak,
+          realisasi,
+          sisa,
+          serapan,
+        };
+      });
   const exportColumns = [
     "Sumber Dana",
     "Pagu",
@@ -1890,7 +1890,12 @@ async function RealisasiBelanjaView() {
       "",
       "border-l-[#43a047]",
     ],
-    ["Efisiensi", formatCompactCurrency(efisiensi), "vs HPS", "border-l-[#00897b]"],
+    [
+      "Efisiensi",
+      formatCompactCurrency(efisiensi),
+      "vs HPS",
+      "border-l-[#00897b]",
+    ],
     [
       "Sisa Anggaran",
       formatCompactCurrency(sisaAnggaran),
@@ -1901,7 +1906,10 @@ async function RealisasiBelanjaView() {
 
   return (
     <main className="min-h-screen bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form
+        hidden
+        className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
+      >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="shrink-0 text-sm font-black text-slate-400">
             Filter:
@@ -2066,7 +2074,9 @@ async function RealisasiBelanjaView() {
                   <td className="px-4 py-4">
                     {formatCurrency(summary.totalNilaiKontrak)}
                   </td>
-                  <td className="px-4 py-4">{formatCurrency(realisasiBayar)}</td>
+                  <td className="px-4 py-4">
+                    {formatCurrency(realisasiBayar)}
+                  </td>
                   <td className="px-4 py-4">{formatCurrency(sisaAnggaran)}</td>
                   <td className="px-4 py-4">
                     <div className="w-32">
@@ -2120,7 +2130,10 @@ function ModuleAction({
 
 function TopFilterBar() {
   return (
-    <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+    <form
+      hidden
+      className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
+    >
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="shrink-0 text-sm font-black text-slate-400">
           Filter:
@@ -2353,25 +2366,27 @@ async function AuditReadinessView() {
   });
   const groupedAuditRows = Array.from(
     auditRows
-      .reduce(
-        (map, item) => {
-          const key = item.paket?.namaPaket ?? "Tanpa Paket";
-          const current = map.get(key) ?? { name: key, total: 0, complete: 0 };
-          current.total += 1;
-          if (item.status === "LENGKAP") current.complete += 1;
-          map.set(key, current);
-          return map;
-        },
-        new Map<string, { name: string; total: number; complete: number }>(),
-      )
+      .reduce((map, item) => {
+        const key = item.paket?.namaPaket ?? "Tanpa Paket";
+        const current = map.get(key) ?? { name: key, total: 0, complete: 0 };
+        current.total += 1;
+        if (item.status === "LENGKAP") current.complete += 1;
+        map.set(key, current);
+        return map;
+      }, new Map<string, { name: string; total: number; complete: number }>())
       .values(),
   ).map((item) => {
-    const value = item.total > 0 ? Math.round((item.complete / item.total) * 100) : 0;
+    const value =
+      item.total > 0 ? Math.round((item.complete / item.total) * 100) : 0;
     return {
       name: item.name,
       value,
       status:
-        value >= 90 ? "Siap Audit" : value >= 50 ? "Perlu Dilengkapi" : "Tidak Siap",
+        value >= 90
+          ? "Siap Audit"
+          : value >= 50
+            ? "Perlu Dilengkapi"
+            : "Tidak Siap",
     };
   });
 
@@ -2421,17 +2436,17 @@ async function AuditReadinessView() {
               <tbody className="divide-y divide-slate-100">
                 {groupedAuditRows.length > 0 ? (
                   groupedAuditRows.map((row) => (
-                  <tr key={row.name}>
-                    <td className="px-4 py-4 font-semibold text-slate-600">
-                      {row.name}
-                    </td>
-                    <td className="px-4 py-4">
-                      <SimpleProgress value={row.value} />
-                    </td>
-                    <td className="px-4 py-4">
-                      <StatusBadge>{row.status}</StatusBadge>
-                    </td>
-                  </tr>
+                    <tr key={row.name}>
+                      <td className="px-4 py-4 font-semibold text-slate-600">
+                        {row.name}
+                      </td>
+                      <td className="px-4 py-4">
+                        <SimpleProgress value={row.value} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <StatusBadge>{row.status}</StatusBadge>
+                      </td>
+                    </tr>
                   ))
                 ) : (
                   <tr>
@@ -2455,7 +2470,9 @@ async function AuditReadinessView() {
 async function TimelineView() {
   const timelineEvents = await prisma.timelineEvent.findMany({
     include: {
-      paket: { select: { namaPaket: true, unitPemohon: true, metodePengadaan: true } },
+      paket: {
+        select: { namaPaket: true, unitPemohon: true, metodePengadaan: true },
+      },
     },
     orderBy: [{ tanggalMulai: "asc" }, { createdAt: "desc" }],
     take: 100,
@@ -2468,27 +2485,27 @@ async function TimelineView() {
           <div className="space-y-4">
             {timelineEvents.length > 0 ? (
               timelineEvents.map((item) => (
-              <div key={item.id} className="relative pl-8">
-                <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-[#08783f] ring-4 ring-emerald-100" />
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-black text-slate-900">
-                        {item.judul}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">
-                        {item.tanggalMulai
-                          ? item.tanggalMulai.toLocaleDateString("id-ID")
-                          : "-"}
-                        {item.tanggalSelesai
-                          ? ` - ${item.tanggalSelesai.toLocaleDateString("id-ID")}`
-                          : ""}
-                      </p>
+                <div key={item.id} className="relative pl-8">
+                  <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-[#08783f] ring-4 ring-emerald-100" />
+                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-slate-900">
+                          {item.judul}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          {item.tanggalMulai
+                            ? item.tanggalMulai.toLocaleDateString("id-ID")
+                            : "-"}
+                          {item.tanggalSelesai
+                            ? ` - ${item.tanggalSelesai.toLocaleDateString("id-ID")}`
+                            : ""}
+                        </p>
+                      </div>
+                      <StatusBadge>{humanize(item.status)}</StatusBadge>
                     </div>
-                    <StatusBadge>{humanize(item.status)}</StatusBadge>
                   </div>
                 </div>
-              </div>
               ))
             ) : (
               <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center text-sm font-semibold text-slate-400">
@@ -2597,7 +2614,11 @@ async function VendorMarketView() {
             </p>
             <p className="mt-2 text-2xl font-black text-[#16227c]">
               {vendors
-                .reduce((total, item) => total + (contractMap.get(item.nama)?.count ?? 0), 0)
+                .reduce(
+                  (total, item) =>
+                    total + (contractMap.get(item.nama)?.count ?? 0),
+                  0,
+                )
                 .toLocaleString("id-ID")}
             </p>
           </div>
@@ -2620,10 +2641,14 @@ async function VendorMarketView() {
                       {item.nama}
                     </td>
                     <td className="px-4 py-4 font-semibold text-slate-500">
-                      {(contractMap.get(item.nama)?.count ?? 0).toLocaleString("id-ID")}
+                      {(contractMap.get(item.nama)?.count ?? 0).toLocaleString(
+                        "id-ID",
+                      )}
                     </td>
                     <td className="px-4 py-4 font-semibold text-slate-500">
-                      {formatCompactCurrency(contractMap.get(item.nama)?.value ?? 0)}
+                      {formatCompactCurrency(
+                        contractMap.get(item.nama)?.value ?? 0,
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       <StatusBadge>{humanize(item.status)}</StatusBadge>
@@ -2793,8 +2818,14 @@ async function ReportView() {
         <SimpleCard title="Ringkasan Laporan">
           <div className="grid gap-3 p-5 sm:grid-cols-2">
             {[
-              ["Total Paket", dashboard.summary.totalPaket.toLocaleString("id-ID")],
-              ["Total Pagu", formatCompactCurrency(dashboard.summary.totalPagu)],
+              [
+                "Total Paket",
+                dashboard.summary.totalPaket.toLocaleString("id-ID"),
+              ],
+              [
+                "Total Pagu",
+                formatCompactCurrency(dashboard.summary.totalPagu),
+              ],
               [
                 "Nilai Kontrak",
                 formatCompactCurrency(dashboard.summary.totalNilaiKontrak),
@@ -2903,42 +2934,42 @@ async function ReportView() {
 async function SettingsView() {
   const [users, userUnits, paketUnits, paketSatuanKerja, rupUnits] =
     await Promise.all([
-    prisma.user.findMany({
-      orderBy: { name: "asc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        unitKerja: true,
-      },
-    }),
-    prisma.user.groupBy({
-      by: ["unitKerja"],
-      where: {
-        unitKerja: {
-          not: null,
+      prisma.user.findMany({
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          unitKerja: true,
         },
-      },
-      _count: { _all: true },
-    }),
-    prisma.paketPengadaan.groupBy({
-      by: ["unitPemohon"],
-      _count: { _all: true },
-    }),
-    prisma.paketPengadaan.groupBy({
-      by: ["satuanKerja"],
-      where: {
-        satuanKerja: {
-          not: null,
+      }),
+      prisma.user.groupBy({
+        by: ["unitKerja"],
+        where: {
+          unitKerja: {
+            not: null,
+          },
         },
-      },
-      _count: { _all: true },
-    }),
-    prisma.rencanaUmumPengadaan.groupBy({
-      by: ["unitPengusul"],
-      _count: { _all: true },
-    }),
-  ]);
+        _count: { _all: true },
+      }),
+      prisma.paketPengadaan.groupBy({
+        by: ["unitPemohon"],
+        _count: { _all: true },
+      }),
+      prisma.paketPengadaan.groupBy({
+        by: ["satuanKerja"],
+        where: {
+          satuanKerja: {
+            not: null,
+          },
+        },
+        _count: { _all: true },
+      }),
+      prisma.rencanaUmumPengadaan.groupBy({
+        by: ["unitPengusul"],
+        _count: { _all: true },
+      }),
+    ]);
 
   const unitMap = new Map<string, UnitOption>();
 
@@ -2976,10 +3007,7 @@ async function SettingsView() {
 
   return (
     <SimplePageShell>
-      <UnitManagementPanel
-        units={Array.from(unitMap.values())}
-        users={users}
-      />
+      <UnitManagementPanel units={Array.from(unitMap.values())} users={users} />
     </SimplePageShell>
   );
 }
@@ -3503,6 +3531,7 @@ async function ModuleListView({
         }
       >
         <form
+          hidden
           className={
             isPemilihan
               ? "-mx-4 border-b border-slate-200 bg-white sm:-mx-6 lg:-mx-8"
@@ -3762,10 +3791,26 @@ async function ModuleListView({
 
                 <div className="grid gap-2 p-4 sm:grid-cols-2 xl:grid-cols-4">
                   {[
-                    ["01", "SPPBJ", "Dasar penunjukan penyedia sebelum kontrak/SP."],
-                    ["02", "SP / SPK", "Nomor, nilai, penyedia, dan masa berlaku."],
-                    ["03", "Adendum", "Perubahan waktu, nilai, atau ruang lingkup."],
-                    ["04", "Penutupan", "BAST/BAPB, faktur, pembayaran, dan arsip."],
+                    [
+                      "01",
+                      "SPPBJ",
+                      "Dasar penunjukan penyedia sebelum kontrak/SP.",
+                    ],
+                    [
+                      "02",
+                      "SP / SPK",
+                      "Nomor, nilai, penyedia, dan masa berlaku.",
+                    ],
+                    [
+                      "03",
+                      "Adendum",
+                      "Perubahan waktu, nilai, atau ruang lingkup.",
+                    ],
+                    [
+                      "04",
+                      "Penutupan",
+                      "BAST/BAPB, faktur, pembayaran, dan arsip.",
+                    ],
                   ].map(([number, title, helper]) => (
                     <div
                       key={title}
@@ -3796,13 +3841,21 @@ async function ModuleListView({
                 </div>
                 <div className="space-y-3 p-4">
                   {[
-                    ["Kontrak aktif", activeKontrakCount, "bg-emerald-100 text-[#08783f]"],
+                    [
+                      "Kontrak aktif",
+                      activeKontrakCount,
+                      "bg-emerald-100 text-[#08783f]",
+                    ],
                     [
                       "Perlu tindak lanjut",
                       followUpKontrakCount,
                       "bg-red-100 text-red-700",
                     ],
-                    ["Dokumen arsip", table.rows.length.toLocaleString("id-ID"), "bg-slate-100 text-slate-700"],
+                    [
+                      "Dokumen arsip",
+                      table.rows.length.toLocaleString("id-ID"),
+                      "bg-slate-100 text-slate-700",
+                    ],
                   ].map(([label, value, tone]) => (
                     <div
                       key={label}
@@ -3869,7 +3922,7 @@ async function ModuleListView({
                   ? "Daftar Paket e-Katalog V6 & V5"
                   : moduleKey === "pemilihan"
                     ? "Daftar Paket Tender & Non Tender"
-                  : config.title}
+                    : config.title}
               </h2>
             </div>
             <ModuleAction

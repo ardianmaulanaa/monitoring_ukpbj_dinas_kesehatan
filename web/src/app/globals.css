@@ -123,6 +123,28 @@ button:disabled,
   animation: formEnter 0.7s ease-out 0.15s both;
 }
 
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: pageEnter 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
+}
+
 @keyframes dinkesTitleEnter {
   from {
     opacity: 0;
@@ -332,7 +354,6 @@ input:-webkit-autofill:focus {
 }
 
 .page-transition {
-  animation: pageTransitionIn 220ms ease-out;
   max-width: 100%;
   min-width: 0;
   overflow-x: clip;
@@ -340,6 +361,23 @@ input:-webkit-autofill:focus {
   opacity: 1;
   transform: none;
   filter: none;
+}
+
+.page-transition > :not(header) {
+  animation: smoothPageEnter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top center;
+  will-change: transform, opacity, filter;
+}
+
+.app-header-static,
+.app-header-static *,
+.page-transition > header,
+.page-transition > header * {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  filter: none !important;
+  will-change: auto !important;
 }
 
 .page-transition :where(main, section, article, div, form, aside) {
@@ -526,5 +564,155 @@ input:-webkit-autofill:focus {
     animation: none;
     transition: none;
     transform: none;
+  }
+}
+
+@keyframes smoothPageEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0) scale(0.992);
+    filter: blur(5px);
+  }
+
+  62% {
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes smoothSurfaceEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.985);
+    filter: blur(4px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes smoothPopoverExit {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.985);
+    filter: blur(4px);
+  }
+}
+
+@keyframes smoothRouteFill {
+  0% {
+    transform: translateX(-105%) scaleX(0.28);
+  }
+
+  54% {
+    transform: translateX(-16%) scaleX(0.72);
+  }
+
+  100% {
+    transform: translateX(102%) scaleX(0.2);
+  }
+}
+
+.smooth-route-progress {
+  pointer-events: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 70;
+  height: 3px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.smooth-route-progress span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #08783f, #f5bd20, #159cc3);
+  box-shadow: 0 0 18px rgba(8, 120, 63, 0.34);
+}
+
+.smooth-route-progress.is-active {
+  opacity: 1;
+}
+
+.smooth-route-progress.is-active span {
+  animation: smoothRouteFill 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.smooth-page {
+  animation: smoothPageEnter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top center;
+  will-change: transform, opacity, filter;
+}
+
+.smooth-popover {
+  animation: smoothSurfaceEnter 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top right;
+  will-change: transform, opacity, filter;
+}
+
+.smooth-popover.is-closing {
+  animation: smoothPopoverExit 160ms ease-in both;
+  pointer-events: none;
+}
+
+.smooth-page :where(section, article, form, aside)[class*="rounded"],
+.smooth-page :where(div)[class*="rounded"][class*="border"],
+.smooth-page :where(div)[class*="shadow-sm"],
+.smooth-page :where(div)[class*="shadow-md"] {
+  backface-visibility: hidden;
+}
+
+.smooth-page :where(main, section, article, aside, form) > * {
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.smooth-page :where(select, input, textarea) {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.smooth-page :where(select, input, textarea):focus {
+  transform: translateY(-1px);
+}
+
+.app-sidebar-drawer,
+.page-transition .app-sidebar-drawer,
+.smooth-page .app-sidebar-drawer {
+  border-radius: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smooth-page,
+  .smooth-popover,
+  .smooth-popover.is-closing,
+  .smooth-route-progress.is-active span {
+    animation: none !important;
+  }
+
+  .smooth-route-progress {
+    display: none;
   }
 }

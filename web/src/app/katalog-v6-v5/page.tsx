@@ -1307,7 +1307,7 @@ async function PlanningModuleView({
 
   return (
     <main className="bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
           <span className="self-center text-sm font-black text-slate-400 sm:col-span-2 lg:col-span-1">
             Filter:
@@ -1905,7 +1905,7 @@ async function RealisasiBelanjaView() {
 
   return (
     <main className="min-h-screen bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="shrink-0 text-sm font-black text-slate-400">
             Filter:
@@ -2129,7 +2129,7 @@ function ModuleAction({
 
 function TopFilterBar() {
   return (
-    <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+    <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="shrink-0 text-sm font-black text-slate-400">
           Filter:
@@ -3151,15 +3151,15 @@ async function KatalogWorkflowView({
   ).length;
   const processCount = Math.max(rupRows.length - readyCount - doneCount, 0);
 
-  const selectedRup =
-    rupRows.find((item) => item.id === detailId) ??
-    (detailId ? null : (rupRows[0] ?? null));
+  const selectedRup = detailId
+    ? (rupRows.find((item) => item.id === detailId) ?? null)
+    : null;
 
   const selectedPackage = selectedRup ? getLinkedPackage(selectedRup) : null;
 
   return (
     <main className="min-h-screen bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="shrink-0 text-sm font-black text-slate-400">
             Filter:
@@ -3266,6 +3266,62 @@ async function KatalogWorkflowView({
               </p>
             </div>
           ))}
+        </section>
+
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#08783f]">
+              Mekanisme e-Katalog Ada Penyedia
+            </p>
+            <h2 className="mt-1 text-lg font-black text-[#16227c]">
+              Internal mencatat produk, penyedia, harga, dan dokumen
+            </h2>
+          </div>
+          <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              {
+                icon: PackageSearch,
+                title: "Pilih Produk",
+                helper:
+                  "Catat barang/jasa yang ditemukan dari e-Katalog: produk, merek, jumlah, satuan.",
+              },
+              {
+                icon: Truck,
+                title: "Pilih Penyedia",
+                helper:
+                  "Catat nama penyedia/vendor, harga tayang, dan estimasi pengiriman.",
+              },
+              {
+                icon: Handshake,
+                title: "Negosiasi",
+                helper:
+                  "Masukkan harga penawaran, harga kesepakatan, dan catatan negosiasi.",
+              },
+              {
+                icon: FileCheck2,
+                title: "SP sampai Pembayaran",
+                helper:
+                  "Pantau surat pesanan, pengiriman, BAST, dan pembayaran sebagai status monitoring.",
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <div
+                  key={item.title}
+                  className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                >
+                  <Icon className="h-5 w-5 text-[#08783f]" />
+                  <p className="mt-3 text-sm font-black text-slate-900">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                    {item.helper}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </section>
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -3503,7 +3559,21 @@ async function KatalogWorkflowView({
               />
             </div>
           </section>
-        ) : null}
+        ) : (
+          <section
+            id="detail-proses-katalog"
+            className="rounded-lg border border-dashed border-slate-300 bg-white p-5 shadow-sm"
+          >
+            <p className="text-sm font-black text-slate-700">
+              Pilih paket e-Katalog dulu.
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+              Klik Detail Proses pada tabel untuk membuka input produk,
+              penyedia, negosiasi, dan tindak lanjut paket. Detail tidak
+              ditampilkan otomatis supaya halaman tetap ringkas.
+            </p>
+          </section>
+        )}
       </div>
     </main>
   );
@@ -4036,7 +4106,7 @@ async function ModuleListView({
             : "space-y-4 px-4 py-4 sm:px-6 lg:px-8"
         }
       >
-        <form
+        <form hidden
           className={
             isPemilihan
               ? "-mx-4 border-b border-slate-200 bg-white sm:-mx-6 lg:-mx-8"

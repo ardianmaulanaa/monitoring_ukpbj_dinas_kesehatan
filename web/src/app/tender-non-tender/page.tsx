@@ -1,9 +1,7 @@
 import { PaketMetodePengadaan, PaketStatus, Prisma } from "@prisma/client";
 import {
-  ClipboardCheck,
   FileCheck2,
   ListChecks,
-  Scale,
 } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
 import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
@@ -236,85 +234,6 @@ export default async function Page({ searchParams }: PageProps) {
                 </p>
               </div>
             ))}
-          </section>
-
-          <section className="grid gap-4 lg:grid-cols-2">
-            {[
-              {
-                title: "Tender",
-                icon: Scale,
-                count: tenderRows.length,
-                value: formatCompactCurrency(tenderValue),
-                steps: [
-                  "Pengumuman",
-                  "Aanwijzing",
-                  "Evaluasi",
-                  "Klarifikasi",
-                  "Sanggah",
-                  "SPPBJ",
-                ],
-              },
-              {
-                title: "Non Tender",
-                icon: ClipboardCheck,
-                count: nonTenderRows.length,
-                value: formatCompactCurrency(nonTenderValue),
-                steps: [
-                  "Undangan",
-                  "Penawaran",
-                  "Negosiasi",
-                  "BA Hasil",
-                  "Penetapan",
-                  "SPPBJ",
-                ],
-              },
-            ].map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <div
-                  key={item.title}
-                  className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
-                >
-                  <div className="flex min-h-[56px] items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Icon className="h-5 w-5 shrink-0 text-[#08783f]" />
-                      <h2 className="truncate text-sm font-black text-[#16227c]">
-                        {item.title}
-                      </h2>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
-                      {item.count} paket
-                    </span>
-                  </div>
-
-                  <div className="grid gap-2 px-5 py-4 sm:grid-cols-3">
-                    {item.steps.map((step, index) => (
-                      <div
-                        key={`${item.title}-${step}`}
-                        className="min-h-[58px] rounded-md border border-slate-200 bg-[#f4f7f5] px-3 py-2"
-                      >
-                        <span className="text-[10px] font-black uppercase text-slate-400">
-                          Tahap {index + 1}
-                        </span>
-                        <p className="mt-1 text-xs font-black text-slate-700">
-                          {step}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3">
-                    <span className="text-xs font-black uppercase text-slate-400">
-                      Total Pagu
-                    </span>
-                    <span className="text-sm font-black text-slate-900">
-                      {item.value}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
           </section>
 
           <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">

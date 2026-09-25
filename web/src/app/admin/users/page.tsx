@@ -1305,7 +1305,7 @@ async function PlanningModuleView({
 
   return (
     <main className="bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
           <span className="self-center text-sm font-black text-slate-400 sm:col-span-2 lg:col-span-1">
             Filter:
@@ -1903,7 +1903,7 @@ async function RealisasiBelanjaView() {
 
   return (
     <main className="min-h-screen bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="shrink-0 text-sm font-black text-slate-400">
             Filter:
@@ -2124,7 +2124,7 @@ function ModuleAction({
 
 function TopFilterBar() {
   return (
-    <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+    <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="shrink-0 text-sm font-black text-slate-400">
           Filter:
@@ -3521,7 +3521,7 @@ async function ModuleListView({
             : "space-y-4 px-4 py-4 sm:px-6 lg:px-8"
         }
       >
-        <form
+        <form hidden
           className={
             isPemilihan
               ? "-mx-4 border-b border-slate-200 bg-white sm:-mx-6 lg:-mx-8"

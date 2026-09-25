@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 export type DashboardStage = {
@@ -871,7 +872,7 @@ function buildAuditReadiness(
   };
 }
 
-export async function getDashboardData(): Promise<DashboardData> {
+async function computeDashboardData(): Promise<DashboardData> {
   const [packageTable, goodsTable, contractTable] = await Promise.all([
     findDashboardPackageTable(packageTables),
     findTable(goodsTables),
@@ -1001,3 +1002,11 @@ export async function getDashboardData(): Promise<DashboardData> {
     auditReadiness,
   };
 }
+
+export const getDashboardData = unstable_cache(
+  computeDashboardData,
+  ["dashboard-data"],
+  {
+    revalidate: 300,
+  },
+);

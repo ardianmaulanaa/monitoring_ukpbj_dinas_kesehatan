@@ -3,6 +3,7 @@
 import type { RoleCode } from "@prisma/client";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { useOptionalSidebarState } from "./SidebarState";
 import GlobalFilterPanel from "./GlobalFilterPanel";
 import NavBar from "./NavBar";
 import Sidebar from "./Sidebar";
@@ -23,6 +24,7 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roles, setRoles] = useState<RoleCode[]>([]);
+  const sidebarState = useOptionalSidebarState();
 
   // Ambil role user dari API auth supaya menu mobile bisa disaring sesuai hak akses.
   useEffect(() => {
@@ -88,7 +90,17 @@ export default function AppHeader({
         subtitle={subtitle}
         rightLabel={rightLabel}
         filterPanel={filterPanel ?? <GlobalFilterPanel />}
-        onOpenMenu={() => setSidebarOpen(true)}
+        onOpenMenu={() => {
+          if (
+            sidebarState &&
+            window.matchMedia("(min-width: 1024px)").matches
+          ) {
+            sidebarState.toggleDesktopSidebar();
+            return;
+          }
+
+          setSidebarOpen(true);
+        }}
       />
     </>
   );

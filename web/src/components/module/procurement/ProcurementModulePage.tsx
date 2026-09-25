@@ -1314,7 +1314,7 @@ async function PlanningModuleView({
 
   return (
     <main className="bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
           <span className="self-center text-sm font-black text-slate-400 sm:col-span-2 lg:col-span-1">
             Filter:
@@ -1962,7 +1962,7 @@ async function RealisasiBelanjaView() {
 
   return (
     <main className="min-h-screen bg-[#f4f7f5]">
-      <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="shrink-0 text-sm font-black text-slate-400">
             Filter:
@@ -2181,7 +2181,7 @@ function ModuleAction({
 
 function TopFilterBar() {
   return (
-    <form className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+    <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="shrink-0 text-sm font-black text-slate-400">
           Filter:
@@ -3498,8 +3498,6 @@ async function ModuleListView({
   const showKpis = true;
   const isPemilihan = moduleKey === "pemilihan";
   const isKontrak = moduleKey === "kontrak";
-  const tenderRows = table.rows.filter((row) => row[4] === "Tender");
-  const nonTenderRows = table.rows.filter((row) => row[4] === "Non Tender");
   const activeKontrakCount =
     kpis.find((item) => item.label === "Aktif")?.value ?? "0";
   const followUpKontrakCount =
@@ -3551,87 +3549,6 @@ async function ModuleListView({
 
         {isPemilihan ? (
           <>
-            <section className="grid gap-4 lg:grid-cols-2">
-              {[
-                {
-                  title: "Tender",
-                  icon: "⚖",
-                  count: tenderRows.length,
-                  value:
-                    kpis.find((item) => item.label === "Tender")?.helper ??
-                    "Rp 0",
-                  steps: [
-                    "Pengumuman",
-                    "Aanwijzing",
-                    "Evaluasi",
-                    "Klarifikasi",
-                    "Sanggah",
-                    "SPPBJ",
-                  ],
-                },
-                {
-                  title: "Non Tender",
-                  icon: "📋",
-                  count: nonTenderRows.length,
-                  value:
-                    kpis.find((item) => item.label === "Non Tender")?.helper ??
-                    "Rp 0",
-                  steps: [
-                    "Undangan",
-                    "Penawaran",
-                    "Negosiasi",
-                    "BA Hasil",
-                    "Penetapan",
-                    "SPPBJ",
-                  ],
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
-                >
-                  <div className="flex min-h-[56px] items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="text-base" aria-hidden="true">
-                        {item.icon}
-                      </span>
-                      <h2 className="truncate text-sm font-black text-[#16227c]">
-                        {item.title}
-                      </h2>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
-                      {item.count} paket
-                    </span>
-                  </div>
-
-                  <div className="grid gap-2 px-5 py-4 sm:grid-cols-3">
-                    {item.steps.map((step, index) => (
-                      <div
-                        key={`${item.title}-${step}`}
-                        className="min-h-[58px] rounded-md border border-slate-200 bg-[#f4f7f5] px-3 py-2"
-                      >
-                        <span className="text-[10px] font-black uppercase text-slate-400">
-                          Tahap {index + 1}
-                        </span>
-                        <p className="mt-1 text-xs font-black text-slate-700">
-                          {step}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3">
-                    <span className="text-xs font-black uppercase text-slate-400">
-                      Total Pagu
-                    </span>
-                    <span className="text-sm font-black text-slate-900">
-                      {item.value}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </section>
-
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-100 px-5 py-3">
                 <div className="flex items-center gap-2">

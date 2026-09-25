@@ -3,7 +3,11 @@ import { z } from "zod";
 import { isDatabaseConnectionError } from "@/lib/database-errors";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/response";
-import { verifyPassword } from "@/lib/password";
+import {
+  hashPassword,
+  shouldRehashPassword,
+  verifyPassword,
+} from "@/lib/password";
 import {
   sessionCookieName,
   sessionMaxAgeSeconds,
@@ -14,6 +18,9 @@ const loginSchema = z.object({
   email: z.string().trim().email("Email tidak valid.").toLowerCase(),
   password: z.string().min(1, "Password wajib diisi."),
 });
+
+export const preferredRegion = "sin1";
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const json = await request.json().catch(() => null);
@@ -35,10 +42,19 @@ export async function POST(request: Request) {
       where: {
         email: parsed.data.email,
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        passwordHash: true,
+        status: true,
         roles: {
-          include: {
-            role: true,
+          select: {
+            role: {
+              select: {
+                code: true,
+              },
+            },
           },
         },
       },
@@ -78,29 +94,9 @@ export async function POST(request: Request) {
     const ipAddress =
       headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
     const userAgent = headerStore.get("user-agent");
+    const shouldRefreshPasswordHash = shouldRehashPassword(user.passwordHash);
 
-    await prisma.$transaction([
-      prisma.user.update({
-        where: {
-          id: user.id,
-        },
-        data: {
-          lastLoginAt: new Date(),
-        },
-      }),
-      prisma.auditLog.create({
-        data: {
-          userId: user.id,
-          action: "LOGIN",
-          entity: "User",
-          entityId: user.id,
-          ipAddress,
-          userAgent,
-        },
-      }),
-    ]);
-
-    return apiSuccess(
+    const response = apiSuccess(
       {
         user: {
           id: user.id,
@@ -111,6 +107,40 @@ export async function POST(request: Request) {
       },
       "Login berhasil.",
     );
+
+    void (async () => {
+      const refreshedPasswordHash = shouldRefreshPasswordHash
+        ? await hashPassword(parsed.data.password)
+        : null;
+
+      await prisma.$transaction([
+        prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            lastLoginAt: new Date(),
+            ...(refreshedPasswordHash
+              ? { passwordHash: refreshedPasswordHash }
+              : {}),
+          },
+        }),
+        prisma.auditLog.create({
+          data: {
+            userId: user.id,
+            action: "LOGIN",
+            entity: "User",
+            entityId: user.id,
+            ipAddress,
+            userAgent,
+          },
+        }),
+      ]);
+    })().catch((error) => {
+      console.error("Gagal mencatat audit login.", error);
+    });
+
+    return response;
   } catch (error) {
     if (isDatabaseConnectionError(error)) {
       console.error("Database tidak dapat dihubungi saat login.", error);

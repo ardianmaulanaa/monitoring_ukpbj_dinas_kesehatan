@@ -10,6 +10,8 @@ import {
   useState,
 } from "react";
 import { Bell, Filter, Menu, Search, ShieldCheck } from "lucide-react";
+import { SmoothPresence } from "@/components/smooth";
+import { Surface } from "@/components/ui";
 
 type NavBarProps = {
   // title/subtitle/rightLabel berasal dari halaman lewat AppHeader.
@@ -118,7 +120,7 @@ export default function NavBar({
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm">
+      <header className="app-header-static sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm">
         {/* Garis warna identitas aplikasi di paling atas header. */}
         <div className="grid h-1.5 grid-cols-3">
           <div className="bg-[#08783f]" />
@@ -132,11 +134,11 @@ export default function NavBar({
             <button
               type="button"
               onClick={onOpenMenu}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#08783f] text-white shadow-sm transition hover:bg-[#066532] lg:hidden"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-emerald-100 bg-[#edf7f1] text-[#08783f] shadow-sm shadow-emerald-900/10 hover:border-emerald-200 hover:bg-[#e2f3e9] hover:text-[#066532] sm:h-11 sm:w-11"
               aria-label="Buka menu"
               title="Buka menu"
             >
-              <Menu className="h-5 w-5" strokeWidth={2.6} />
+              <Menu className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.8} />
             </button>
 
             <div className="flex min-w-0 items-center gap-3">
@@ -202,15 +204,19 @@ export default function NavBar({
                   <Filter className="h-4 w-4" strokeWidth={2.4} />
                 </button>
 
-                {filterOpen ? (
-                  <div
-                    role="dialog"
-                    aria-label="Filter halaman"
-                    className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 shadow-lg shadow-slate-900/10"
-                  >
-                    {filterPanel}
-                  </div>
-                ) : null}
+                <SmoothPresence show={filterOpen}>
+                  {(state) => (
+                    <Surface
+                      role="dialog"
+                      aria-label="Filter halaman"
+                      className={`smooth-popover absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] p-4 ${
+                        state === "closing" ? "is-closing" : ""
+                      }`}
+                    >
+                      {filterPanel}
+                    </Surface>
+                  )}
+                </SmoothPresence>
               </div>
             ) : null}
 

@@ -33,6 +33,7 @@ const removedRoutePrefixes = [
   "/admin/users",
   "/admin/roles",
   "/admin/audit-log",
+  "/vendor-pasar",
 ];
 
 export function proxy(request: NextRequest) {

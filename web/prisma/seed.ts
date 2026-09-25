@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
+const passwordSaltRounds = Number(process.env.SEED_PASSWORD_SALT_ROUNDS ?? 10);
 
 const roles = [
   ["SUPER_ADMIN", "Super Admin"],
@@ -38,36 +39,12 @@ const demoUsers = [
     nip: "198001012010011001",
   },
   {
-    roleCode: "LPSE_ADMIN",
-    email: "lpseadmin@health.local",
-    name: "Admin LPSE Demo",
-    jabatan: "Admin SIRUP/SPSE",
-    unitKerja: "UKPBJ Labkes Provinsi Jawa Barat",
-    nip: "198001012010011002",
-  },
-  {
-    roleCode: "OPERATOR",
-    email: "operator@health.local",
-    name: "Operator Demo",
-    jabatan: "Operator Unit",
-    unitKerja: "Seksi Mikrobiologi",
-    nip: "198001012010011003",
-  },
-  {
     roleCode: "LEADER",
     email: "kepalaunit@health.local",
     name: "Kepala Unit Demo",
     jabatan: "Kepala Unit",
     unitKerja: "Seksi Mikrobiologi",
     nip: "198001012010011004",
-  },
-  {
-    roleCode: "PPTK",
-    email: "pptk@health.local",
-    name: "PPTK Demo",
-    jabatan: "Pejabat Pelaksana Teknis Kegiatan",
-    unitKerja: "Seksi Mikrobiologi",
-    nip: "198001012010011013",
   },
   {
     roleCode: "PA",
@@ -93,46 +70,17 @@ const demoUsers = [
     unitKerja: "UKPBJ Labkes Provinsi Jawa Barat",
     nip: "198001012010011007",
   },
-  {
-    roleCode: "PROCUREMENT_OFFICER",
-    email: "pejabatpengadaan@health.local",
-    name: "Pejabat Pengadaan Demo",
-    jabatan: "Pejabat Pengadaan",
-    unitKerja: "UKPBJ Labkes Provinsi Jawa Barat",
-    nip: "198001012010011008",
-  },
-  {
-    roleCode: "SELECTION_WORKGROUP",
-    email: "pokja@health.local",
-    name: "Pokja Pemilihan Demo",
-    jabatan: "Pokja Pemilihan",
-    unitKerja: "UKPBJ Labkes Provinsi Jawa Barat",
-    nip: "198001012010011009",
-  },
-  {
-    roleCode: "UKPBJ",
-    email: "ukpbj@health.local",
-    name: "UKPBJ Demo",
-    jabatan: "Tim UKPBJ",
-    unitKerja: "UKPBJ Labkes Provinsi Jawa Barat",
-    nip: "198001012010011010",
-  },
-  {
-    roleCode: "AUDITOR",
-    email: "auditor@health.local",
-    name: "Auditor Demo",
-    jabatan: "Auditor",
-    unitKerja: "Inspektorat",
-    nip: "198001012010011011",
-  },
-  {
-    roleCode: "VIEWER",
-    email: "viewer@health.local",
-    name: "Viewer Demo",
-    jabatan: "Viewer",
-    unitKerja: "Labkes Provinsi Jawa Barat",
-    nip: "198001012010011012",
-  },
+];
+
+const inactiveDemoEmails = [
+  "lpseadmin@health.local",
+  "operator@health.local",
+  "pptk@health.local",
+  "pejabatpengadaan@health.local",
+  "pokja@health.local",
+  "ukpbj@health.local",
+  "auditor@health.local",
+  "viewer@health.local",
 ];
 
 async function main() {
@@ -158,7 +106,7 @@ async function main() {
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@health.local";
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "admin12345";
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
+  const passwordHash = await bcrypt.hash(adminPassword, passwordSaltRounds);
 
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
@@ -197,7 +145,7 @@ async function main() {
     },
   });
 
-  const demoPasswordHash = await bcrypt.hash(demoPassword, 12);
+  const demoPasswordHash = await bcrypt.hash(demoPassword, passwordSaltRounds);
 
   for (const demoUser of demoUsers) {
     const role = await prisma.role.findUniqueOrThrow({
@@ -242,8 +190,20 @@ async function main() {
     });
   }
 
+  await prisma.user.updateMany({
+    where: {
+      email: {
+        in: inactiveDemoEmails,
+      },
+    },
+    data: {
+      status: "INACTIVE",
+    },
+  });
+
   console.info(`Seed selesai. Admin: ${adminEmail}`);
-  console.info(`Akun demo role dibuat. Password demo: ${demoPassword}`);
+  console.info(`Akun demo petinggi dibuat. Password demo: ${demoPassword}`);
+  console.info("Akun demo non-petinggi dinonaktifkan.");
 }
 
 main()

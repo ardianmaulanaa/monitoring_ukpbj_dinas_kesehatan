@@ -407,13 +407,14 @@ export default function KatalogManualWorkflowClient({
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-wide text-slate-400">
-            Workflow Manual
+            Mekanisme Ada Penyedia
           </p>
           <h3 className="mt-1 text-base font-black text-slate-900">
             RUP → Produk → Penyedia → Negosiasi → Surat Pesanan
           </h3>
           <p className="mt-1 text-xs font-semibold text-slate-500">
-            Tanpa API LKPP, tanpa link produk, dan tanpa input ID katalog.
+            Penyedia dicatat sebagai data hasil pengecekan e-Katalog, bukan
+            akun pihak luar yang login ke sistem.
           </p>
         </div>
 
@@ -427,6 +428,35 @@ export default function KatalogManualWorkflowClient({
             Reset Proses
           </button>
         )}
+      </div>
+
+      <div className="mb-4 grid gap-3 md:grid-cols-3">
+        {[
+          {
+            label: "1. Input Produk",
+            text: "Internal memilih barang/jasa yang ditemukan di e-Katalog: nama produk, merek, jumlah, dan satuan.",
+          },
+          {
+            label: "2. Catat Penyedia",
+            text: "Nama penyedia, harga tayang, dan estimasi kirim dicatat sebagai hasil monitoring internal.",
+          },
+          {
+            label: "3. Nego & Dokumen",
+            text: "Harga penawaran/kesepakatan dicatat, lalu paket lanjut ke surat pesanan, pengiriman, BAST, dan pembayaran.",
+          },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+          >
+            <p className="text-xs font-black uppercase text-[#08783f]">
+              {item.label}
+            </p>
+            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
+              {item.text}
+            </p>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -966,10 +996,10 @@ export default function KatalogManualWorkflowClient({
 
             <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
               <p className="text-xs font-semibold leading-5 text-blue-800">
-                Versi ini menyimpan input manual di browser perangkat
-                (localStorage), sehingga belum menjadi data bersama antar-user.
-                Untuk produksi/multi-user, pindahkan field yang sama ke Prisma
-                setelah alur UI ini sudah disetujui.
+                Mekanisme ini hanya untuk monitoring internal. Penyedia tidak
+                punya akses login, tetapi datanya tetap dicatat supaya pimpinan
+                bisa melihat produk, vendor, harga tayang, hasil negosiasi, dan
+                kelanjutan dokumennya.
               </p>
             </div>
           </div>

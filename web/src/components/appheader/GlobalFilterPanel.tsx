@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { Button, Select } from "@/components/ui";
 
 type FilterOption = {
   value: string;
@@ -79,16 +80,21 @@ export default function GlobalFilterPanel() {
 
   return (
     <form action={pathname} className="space-y-3">
-      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-        Filter
-      </p>
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+          Filter
+        </p>
+        <p className="mt-1 text-xs font-semibold text-slate-500">
+          Berlaku untuk halaman aktif.
+        </p>
+      </div>
 
       {q ? <input type="hidden" name="q" value={q} /> : null}
 
-      <select
+      <Select
+        label="TA"
         name="tahunAnggaran"
         defaultValue={tahunAnggaran}
-        className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
       >
         <option value="">Semua Tahun</option>
         {options.years.map((item) => (
@@ -96,12 +102,12 @@ export default function GlobalFilterPanel() {
             {item.label}
           </option>
         ))}
-      </select>
+      </Select>
 
-      <select
+      <Select
+        label="Sumber Dana"
         name="sumberDana"
         defaultValue={sumberDana}
-        className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
       >
         <option value="">Semua Sumber Dana</option>
         {options.sourceFunds.map((item) => (
@@ -109,12 +115,12 @@ export default function GlobalFilterPanel() {
             {item.label}
           </option>
         ))}
-      </select>
+      </Select>
 
-      <select
+      <Select
+        label="Unit"
         name={paramNames.unit}
         defaultValue={unit}
-        className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
       >
         <option value="">Semua Unit</option>
         {options.units.map((item) => (
@@ -122,12 +128,12 @@ export default function GlobalFilterPanel() {
             {item.label}
           </option>
         ))}
-      </select>
+      </Select>
 
-      <select
+      <Select
+        label="Status"
         name={paramNames.status}
         defaultValue={status}
-        className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
       >
         <option value="">Semua Status</option>
         {paramNames.statuses.map((item) => (
@@ -135,7 +141,7 @@ export default function GlobalFilterPanel() {
             {item.label}
           </option>
         ))}
-      </select>
+      </Select>
 
       <div className="grid grid-cols-2 gap-2 pt-1">
         <Link
@@ -144,12 +150,12 @@ export default function GlobalFilterPanel() {
         >
           Reset
         </Link>
-        <button
+        <Button
           type="submit"
-          className="h-10 rounded-lg bg-[#08783f] text-sm font-black text-white shadow-sm transition hover:bg-[#066532]"
+          className="px-3"
         >
           Terapkan
-        </button>
+        </Button>
       </div>
     </form>
   );

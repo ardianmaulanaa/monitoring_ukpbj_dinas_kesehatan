@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { RoleCode } from "@prisma/client";
 import {
   AlertTriangle,
@@ -11,14 +13,13 @@ import {
   FileCheck2,
   FolderOpen,
   LayoutDashboard,
-  Menu,
+  LogOut,
   MessageSquareText,
   PackageSearch,
   Ruler,
   Settings,
   ShieldCheck,
   ShoppingCart,
-  Truck,
   WalletCards,
   X,
   type LucideIcon,
@@ -87,7 +88,6 @@ const sections: NavigationSection[] = [
   {
     title: "Pendukung",
     items: [
-      { href: "/vendor-pasar", label: "Vendor & Pasar", icon: Truck },
       {
         href: "/klinik-ukpbj",
         label: "Klinik UKPBJ",
@@ -122,7 +122,9 @@ export default function Sidebar({
   roles = [],
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const isDesktop = mode === "desktop";
+  const drawerOpen = isDesktop ? !collapsed : open;
   // Ambil hanya menu yang boleh diakses role user saat ini.
   const visibleSections = sections
     .map((section) => ({
@@ -131,100 +133,82 @@ export default function Sidebar({
     }))
     .filter((section) => section.items.length > 0);
 
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
+    onClose?.();
+    router.replace("/login");
+    router.refresh();
+  }
+
   return (
     <>
-      {!isDesktop ? (
+      {drawerOpen ? (
         // Overlay gelap di belakang sidebar mobile; klik area ini untuk menutup menu.
-        <div
-          className={`fixed inset-0 z-40 h-[100dvh] max-h-[100dvh] bg-slate-950/30 transition lg:hidden ${
-            open ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
-          onClick={onClose}
-          aria-hidden="true"
+        <button
+          type="button"
+          aria-label="Tutup sidebar"
+          className="fixed inset-0 z-40 h-[100dvh] max-h-[100dvh] cursor-default bg-slate-950/20 backdrop-blur-[1px] transition"
+          onClick={isDesktop ? onToggleDesktop : onClose}
         />
       ) : null}
 
       <aside
-        className={`inset-y-0 left-0 z-50 flex-col border-r border-slate-200 bg-white text-slate-700 transition-all duration-300 ${
+        className={`app-sidebar-drawer fixed inset-y-0 left-0 z-50 flex h-dvh max-h-dvh w-[min(82vw,300px)] flex-col overflow-hidden rounded-none border-r border-slate-200 bg-white text-slate-700 shadow-2xl shadow-slate-950/20 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isDesktop
-            ? `fixed top-0 hidden h-dvh overflow-hidden lg:flex ${
-                collapsed
-                  ? "w-[76px]"
-                  : "w-[260px] shadow-2xl shadow-slate-950/10"
-              }`
-            : `fixed flex h-dvh max-h-dvh w-[300px] overflow-hidden lg:hidden ${
-                open ? "translate-x-0" : "-translate-x-full"
-              }`
+            ? `hidden lg:flex ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`
+            : `${drawerOpen ? "translate-x-0" : "-translate-x-full"} lg:hidden`
         }`}
       >
-        {/* GARIS WARNA */}
-        <div className="grid h-1.5 shrink-0 grid-cols-3">
-          <div className="bg-[#08783f]" />
-          <div className="bg-[#f5bd20]" />
-          <div className="bg-[#159cc3]" />
-        </div>
-
         {/* HEADER: judul aplikasi dan tombol buka/tutup sidebar. */}
-        <div
-          className={`flex min-h-[96px] shrink-0 items-center border-b border-slate-100 ${
-            collapsed && isDesktop
-              ? "justify-center px-3"
-              : "justify-between px-5"
-          }`}
-        >
-          <div className={`min-w-0 ${collapsed && isDesktop ? "hidden" : ""}`}>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#08783f]">
-              Dinkes Jabar
-            </p>
+        <div className="flex min-h-[88px] shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-emerald-100 bg-white p-2 shadow-md shadow-emerald-900/10">
+              <Image
+                src="/app/logo-dinkes.png"
+                alt="Logo Dinkes"
+                width={44}
+                height={44}
+                className="h-full w-full object-contain"
+                priority
+              />
+            </div>
 
-            <h2 className="mt-2 text-xl font-black tracking-[-0.03em] text-slate-950">
-              Monitoring PBJ
-            </h2>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#08783f]">
+                DINKES JABAR
+              </p>
+
+              <h2 className="mt-1 text-xl font-black tracking-[-0.03em] text-slate-950">
+                Monitoring PBJ
+              </h2>
+            </div>
           </div>
 
-          {isDesktop ? (
-            <button
-              type="button"
-              onClick={onToggleDesktop}
-              className="hidden h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#08783f] lg:flex"
-              aria-label={collapsed ? "Buka sidebar" : "Tutup sidebar"}
-              title={collapsed ? "Buka sidebar" : "Tutup sidebar"}
-            >
-              <Menu className="h-5 w-5" strokeWidth={2.4} />
-            </button>
-          ) : null}
-
-          {!isDesktop ? (
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#08783f]"
-              aria-label="Tutup menu"
-              title="Tutup menu"
-            >
-              <X className="h-5 w-5" strokeWidth={2.4} />
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={isDesktop ? onToggleDesktop : onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#edf7f1] text-[#08783f] hover:bg-[#e2f3e9]"
+            aria-label="Tutup menu"
+            title="Tutup menu"
+          >
+            <X className="h-5 w-5" strokeWidth={2.6} />
+          </button>
         </div>
 
         {/* HANYA BAGIAN INI YANG BOLEH SCROLL: daftar menu dari sections yang sudah difilter role. */}
         <nav
-          className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain py-4 ${
-            collapsed && isDesktop ? "px-2" : "px-3"
-          } ${isDesktop ? "" : "pb-[max(2rem,env(safe-area-inset-bottom))]"}`}
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 py-5"
         >
-          <div className="space-y-4">
+          <div className="space-y-5">
             {visibleSections.map((section) => (
               <section key={section.title}>
                 <p
-                  className={`px-3 pb-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 ${
-                    collapsed && isDesktop ? "sr-only" : ""
-                  }`}
+                  className="px-3 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400"
                 >
                   {section.title}
                 </p>
 
-                <div className="mt-2 space-y-1">
+                <div className="mt-2 space-y-1.5">
                   {section.items.map((item) => {
                     const Icon = item.icon;
                     const active = isActivePath(pathname, item.href);
@@ -234,26 +218,15 @@ export default function Sidebar({
                         key={item.href}
                         href={item.href}
                         onClick={onClose}
-                        title={collapsed && isDesktop ? item.label : undefined}
-                        className={`flex min-h-10 items-center rounded-lg border-l-[3px] text-sm font-bold transition ${
-                          collapsed && isDesktop
-                            ? "justify-center gap-0 px-2"
-                            : "gap-3 px-3"
-                        } ${
+                        className={`flex min-h-10 items-center gap-3 rounded-md px-4 text-sm font-bold transition ${
                           active
-                            ? "border-[#08783f] bg-[#08783f] text-white shadow-[0_10px_22px_rgba(8,120,63,0.18)]"
-                            : "border-transparent text-slate-600 hover:border-[#08783f]/25 hover:bg-[#f4f7f5] hover:text-[#08783f]"
+                            ? "bg-[#08783f] text-white shadow-lg shadow-emerald-900/15"
+                            : "text-slate-500 hover:bg-[#edf7f1] hover:text-[#08783f]"
                         }`}
                       >
-                        <Icon className="h-5 w-5 shrink-0" strokeWidth={2.2} />
+                        <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2.2} />
 
-                        <span
-                          className={`truncate ${
-                            collapsed && isDesktop ? "sr-only" : ""
-                          }`}
-                        >
-                          {item.label}
-                        </span>
+                        <span className="truncate">{item.label}</span>
                       </Link>
                     );
                   })}
@@ -262,6 +235,17 @@ export default function Sidebar({
             ))}
           </div>
         </nav>
+
+        <div className="shrink-0 border-t border-slate-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#edf7f1] px-4 py-3 text-sm font-black text-[#08783f] transition hover:bg-[#e2f3e9]"
+          >
+            <LogOut className="h-[18px] w-[18px]" strokeWidth={2.5} />
+            Keluar
+          </button>
+        </div>
       </aside>
     </>
   );
