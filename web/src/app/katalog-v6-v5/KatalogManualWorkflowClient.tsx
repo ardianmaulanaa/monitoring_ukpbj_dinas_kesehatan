@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -13,7 +14,8 @@ import {
   Save,
   Truck,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useTransition } from "react";
+import { updateKatalogWorkflowAction } from "@/app/katalog-v6-v5/actions";
 
 type RupSummary = {
   id: string;
@@ -48,7 +50,6 @@ type ManualCatalogDraft = {
   product?: ProductData;
   provider?: ProviderData;
   negotiation?: NegotiationData;
-  updatedAt?: string;
 };
 
 type EditableStep = 2 | 3 | 4;
@@ -62,92 +63,45 @@ function rupiah(value: number) {
 }
 
 export default function KatalogManualWorkflowClient({
+  initialDraft,
   rup,
 }: {
+  initialDraft?: ManualCatalogDraft;
   rup: RupSummary;
 }) {
-  const storageKey = `ukpbj-ekatalog-manual:${rup.id}`;
-
-  const [draft, setDraft] = useState<ManualCatalogDraft>({});
-  const [loaded, setLoaded] = useState(false);
-  const [activeStep, setActiveStep] = useState<EditableStep>(2);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [draft, setDraft] = useState<ManualCatalogDraft>(initialDraft ?? {});
+  const [activeStep, setActiveStep] = useState<EditableStep>(
+    !initialDraft?.product ? 2 : !initialDraft.provider ? 3 : 4,
+  );
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const [productForm, setProductForm] = useState({
-    namaProduk: "",
-    merk: "",
-    jumlah: "1",
-    satuan: "Unit",
+    namaProduk: initialDraft?.product?.namaProduk ?? "",
+    merk: initialDraft?.product?.merk ?? "",
+    jumlah: String(initialDraft?.product?.jumlah ?? 1),
+    satuan: initialDraft?.product?.satuan ?? "Unit",
   });
 
   const [providerForm, setProviderForm] = useState({
-    namaPenyedia: "",
-    hargaTayang: "",
-    estimasiPengiriman: "",
+    namaPenyedia: initialDraft?.provider?.namaPenyedia ?? "",
+    hargaTayang: initialDraft?.provider
+      ? String(initialDraft.provider.hargaTayang)
+      : "",
+    estimasiPengiriman: initialDraft?.provider?.estimasiPengiriman ?? "",
   });
 
   const [negotiationForm, setNegotiationForm] = useState({
-    hargaPenawaran: "",
-    hargaKesepakatan: "",
-    catatan: "",
+    hargaPenawaran: initialDraft?.negotiation
+      ? String(initialDraft.negotiation.hargaPenawaran)
+      : "",
+    hargaKesepakatan: initialDraft?.negotiation
+      ? String(initialDraft.negotiation.hargaKesepakatan)
+      : "",
+    catatan: initialDraft?.negotiation?.catatan ?? "",
   });
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      try {
-        const raw = window.localStorage.getItem(storageKey);
-
-        if (raw) {
-          const parsed = JSON.parse(raw) as ManualCatalogDraft;
-          setDraft(parsed);
-
-          if (parsed.product) {
-            setProductForm({
-              namaProduk: parsed.product.namaProduk,
-              merk: parsed.product.merk,
-              jumlah: String(parsed.product.jumlah),
-              satuan: parsed.product.satuan,
-            });
-          }
-
-          if (parsed.provider) {
-            setProviderForm({
-              namaPenyedia: parsed.provider.namaPenyedia,
-              hargaTayang: String(parsed.provider.hargaTayang),
-              estimasiPengiriman: parsed.provider.estimasiPengiriman,
-            });
-          }
-
-          if (parsed.negotiation) {
-            setNegotiationForm({
-              hargaPenawaran: String(parsed.negotiation.hargaPenawaran),
-              hargaKesepakatan: String(parsed.negotiation.hargaKesepakatan),
-              catatan: parsed.negotiation.catatan,
-            });
-          }
-
-          if (!parsed.product) setActiveStep(2);
-          else if (!parsed.provider) setActiveStep(3);
-          else setActiveStep(4);
-        }
-      } catch {
-        setDraft({});
-      } finally {
-        setLoaded(true);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [storageKey]);
-
-  function persist(next: ManualCatalogDraft) {
-    const value = {
-      ...next,
-      updatedAt: new Date().toISOString(),
-    };
-    setDraft(value);
-    window.localStorage.setItem(storageKey, JSON.stringify(value));
-  }
 
   const currentStep = !draft.product
     ? 2
@@ -232,12 +186,14 @@ export default function KatalogManualWorkflowClient({
   function openStep(no: number) {
     if (!canOpenStep(no)) return;
     setError("");
+    setSuccess("");
     setActiveStep(no as EditableStep);
   }
 
   function saveProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setSuccess("");
 
     const jumlah = Number(productForm.jumlah);
 
@@ -258,24 +214,39 @@ export default function KatalogManualWorkflowClient({
       satuan: productForm.satuan.trim() || "Unit",
     };
 
-    // Jika produk diubah, penyedia dan negosiasi direset agar harga tetap konsisten.
-    persist({ product });
-    setProviderForm({
-      namaPenyedia: "",
-      hargaTayang: "",
-      estimasiPengiriman: "",
+    startTransition(async () => {
+      const result = await updateKatalogWorkflowAction({
+        step: "product",
+        id: rup.id,
+        ...product,
+      });
+
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+
+      setDraft({ product });
+      setProviderForm({
+        namaPenyedia: "",
+        hargaTayang: "",
+        estimasiPengiriman: "",
+      });
+      setNegotiationForm({
+        hargaPenawaran: "",
+        hargaKesepakatan: "",
+        catatan: "",
+      });
+      setSuccess(result.message);
+      setActiveStep(3);
+      router.refresh();
     });
-    setNegotiationForm({
-      hargaPenawaran: "",
-      hargaKesepakatan: "",
-      catatan: "",
-    });
-    setActiveStep(3);
   }
 
   function saveProvider(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setSuccess("");
 
     if (!draft.product) {
       setError("Pilih produk terlebih dahulu.");
@@ -309,22 +280,38 @@ export default function KatalogManualWorkflowClient({
       estimasiPengiriman: providerForm.estimasiPengiriman.trim(),
     };
 
-    // Jika penyedia/harga diubah, negosiasi direset.
-    persist({
-      product: draft.product,
-      provider,
+    startTransition(async () => {
+      const result = await updateKatalogWorkflowAction({
+        step: "provider",
+        id: rup.id,
+        ...provider,
+        totalHarga: total,
+      });
+
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+
+      setDraft({
+        product: draft.product,
+        provider,
+      });
+      setNegotiationForm({
+        hargaPenawaran: "",
+        hargaKesepakatan: "",
+        catatan: "",
+      });
+      setSuccess(result.message);
+      setActiveStep(4);
+      router.refresh();
     });
-    setNegotiationForm({
-      hargaPenawaran: "",
-      hargaKesepakatan: "",
-      catatan: "",
-    });
-    setActiveStep(4);
   }
 
   function saveNegotiation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setSuccess("");
 
     if (!draft.product || !draft.provider) {
       setError("Produk dan penyedia harus dipilih terlebih dahulu.");
@@ -355,14 +342,31 @@ export default function KatalogManualWorkflowClient({
       return;
     }
 
-    persist({
-      product: draft.product,
-      provider: draft.provider,
-      negotiation: {
-        hargaPenawaran,
-        hargaKesepakatan,
-        catatan: negotiationForm.catatan.trim(),
-      },
+    const negotiation = {
+      hargaPenawaran,
+      hargaKesepakatan,
+      catatan: negotiationForm.catatan.trim(),
+    };
+
+    startTransition(async () => {
+      const result = await updateKatalogWorkflowAction({
+        step: "negotiation",
+        id: rup.id,
+        ...negotiation,
+      });
+
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+
+      setDraft({
+        product: draft.product,
+        provider: draft.provider,
+        negotiation,
+      });
+      setSuccess(result.message);
+      router.refresh();
     });
   }
 
@@ -372,53 +376,47 @@ export default function KatalogManualWorkflowClient({
     );
     if (!confirmed) return;
 
-    window.localStorage.removeItem(storageKey);
-    setDraft({});
-    setProductForm({
-      namaProduk: "",
-      merk: "",
-      jumlah: "1",
-      satuan: "Unit",
-    });
-    setProviderForm({
-      namaPenyedia: "",
-      hargaTayang: "",
-      estimasiPengiriman: "",
-    });
-    setNegotiationForm({
-      hargaPenawaran: "",
-      hargaKesepakatan: "",
-      catatan: "",
-    });
     setError("");
-    setActiveStep(2);
-  }
+    setSuccess("");
 
-  if (!loaded) {
-    return (
-      <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
-        Memuat proses manual e-Katalog...
-      </div>
-    );
+    startTransition(async () => {
+      const result = await updateKatalogWorkflowAction({
+        step: "reset",
+        id: rup.id,
+      });
+
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+
+      setDraft({});
+      setProductForm({
+        namaProduk: "",
+        merk: "",
+        jumlah: "1",
+        satuan: "Unit",
+      });
+      setProviderForm({
+        namaPenyedia: "",
+        hargaTayang: "",
+        estimasiPengiriman: "",
+      });
+      setNegotiationForm({
+        hargaPenawaran: "",
+        hargaKesepakatan: "",
+        catatan: "",
+      });
+      setSuccess(result.message);
+      setActiveStep(2);
+      router.refresh();
+    });
   }
 
   return (
-    <div className="mt-6">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-400">
-            Mekanisme Ada Penyedia
-          </p>
-          <h3 className="mt-1 text-base font-black text-slate-900">
-            RUP → Produk → Penyedia → Negosiasi → Surat Pesanan
-          </h3>
-          <p className="mt-1 text-xs font-semibold text-slate-500">
-            Penyedia dicatat sebagai data hasil pengecekan e-Katalog, bukan
-            akun pihak luar yang login ke sistem.
-          </p>
-        </div>
-
-        {(draft.product || draft.provider || draft.negotiation) && (
+    <div>
+      {(draft.product || draft.provider || draft.negotiation) && (
+        <div className="mb-3 flex justify-end">
           <button
             type="button"
             onClick={resetDraft}
@@ -427,39 +425,11 @@ export default function KatalogManualWorkflowClient({
             <RotateCcw className="h-4 w-4" />
             Reset Proses
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="mb-4 grid gap-3 md:grid-cols-3">
-        {[
-          {
-            label: "1. Input Produk",
-            text: "Internal memilih barang/jasa yang ditemukan di e-Katalog: nama produk, merek, jumlah, dan satuan.",
-          },
-          {
-            label: "2. Catat Penyedia",
-            text: "Nama penyedia, harga tayang, dan estimasi kirim dicatat sebagai hasil monitoring internal.",
-          },
-          {
-            label: "3. Nego & Dokumen",
-            text: "Harga penawaran/kesepakatan dicatat, lalu paket lanjut ke surat pesanan, pengiriman, BAST, dan pembayaran.",
-          },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-          >
-            <p className="text-xs font-black uppercase text-[#08783f]">
-              {item.label}
-            </p>
-            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              {item.text}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {stepItems.map((step) => {
           const state = stepState(step.no);
           const Icon = step.icon;
@@ -471,66 +441,64 @@ export default function KatalogManualWorkflowClient({
               type="button"
               disabled={!clickable}
               onClick={() => openStep(step.no)}
-              className={`rounded-lg border p-4 text-left transition ${
+              className={`flex min-h-[70px] w-full items-center gap-2 rounded-md border px-3 py-2 text-left transition ${
                 state === "done"
-                  ? "border-emerald-200 bg-emerald-50"
+                  ? "border-emerald-200 bg-white"
                   : state === "active"
-                    ? "border-amber-300 bg-amber-50 ring-2 ring-amber-100"
-                    : "border-slate-200 bg-slate-50"
+                    ? "border-amber-300 bg-amber-50"
+                    : "border-slate-200 bg-white"
               } ${
                 clickable
-                  ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-sm"
+                  ? "cursor-pointer hover:border-[#08783f]"
                   : "cursor-default"
               }`}
             >
-              <div className="flex items-center justify-between gap-3">
-                <span
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-black ${
-                    state === "done"
-                      ? "bg-[#08783f] text-white"
-                      : state === "active"
-                        ? "bg-amber-500 text-white"
-                        : "bg-slate-200 text-slate-500"
-                  }`}
-                >
-                  {state === "done" ? "✓" : step.no}
-                </span>
-                <Icon
-                  className={`h-5 w-5 ${
+              <span
+                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                  state === "done"
+                    ? "bg-[#08783f] text-white"
+                    : state === "active"
+                      ? "bg-amber-500 text-white"
+                      : "bg-slate-200 text-slate-500"
+                }`}
+              >
+                {state === "done" ? "✓" : step.no}
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Icon
+                    className={`h-3.5 w-3.5 shrink-0 ${
+                      state === "done"
+                        ? "text-[#08783f]"
+                        : state === "active"
+                          ? "text-amber-600"
+                          : "text-slate-400"
+                    }`}
+                  />
+                  <p className="truncate text-xs font-black text-slate-900">
+                    {step.title}
+                  </p>
+                </div>
+                <p
+                  className={`mt-1 text-[10px] font-black uppercase tracking-wide ${
                     state === "done"
                       ? "text-[#08783f]"
                       : state === "active"
-                        ? "text-amber-600"
+                        ? "text-amber-700"
                         : "text-slate-400"
                   }`}
-                />
-              </div>
-
-              <p className="mt-3 text-sm font-black text-slate-900">
-                {step.title}
-              </p>
-              <p className="mt-1 min-h-10 text-xs font-semibold leading-5 text-slate-500">
-                {step.helper}
-              </p>
-
-              <p
-                className={`mt-3 text-[10px] font-black uppercase tracking-wide ${
-                  state === "done"
-                    ? "text-[#08783f]"
+                >
+                  {state === "done"
+                    ? "Selesai"
                     : state === "active"
-                      ? "text-amber-700"
-                      : "text-slate-400"
-                }`}
-              >
-                {state === "done"
-                  ? "Selesai"
-                  : state === "active"
-                    ? "Tahap Saat Ini"
-                    : "Menunggu"}
-              </p>
+                      ? "Saat ini"
+                      : "Menunggu"}
+                </p>
+              </div>
             </button>
           );
         })}
+        </div>
       </div>
 
       {error && (
@@ -540,9 +508,16 @@ export default function KatalogManualWorkflowClient({
         </div>
       )}
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+      {success && (
+        <div className="mt-4 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{success}</span>
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-5">
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 px-5 py-4">
+          <div className="border-b border-slate-100 px-4 py-3">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#08783f]">
               Input Manual
             </p>
@@ -556,7 +531,7 @@ export default function KatalogManualWorkflowClient({
           </div>
 
           {activeStep === 2 && (
-            <form onSubmit={saveProduct} className="space-y-4 p-5">
+            <form onSubmit={saveProduct} className="space-y-3 p-4">
               <div>
                 <label className="text-xs font-black uppercase text-slate-500">
                   Nama Produk *
@@ -591,7 +566,7 @@ export default function KatalogManualWorkflowClient({
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-black uppercase text-slate-500">
                     Jumlah *
@@ -630,23 +605,24 @@ export default function KatalogManualWorkflowClient({
 
               <button
                 type="submit"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37]"
+                disabled={isPending}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Save className="h-4 w-4" />
-                Simpan Produk
+                {isPending ? "Menyimpan..." : "Simpan Produk"}
               </button>
             </form>
           )}
 
           {activeStep === 3 && (
-            <form onSubmit={saveProvider} className="space-y-4 p-5">
+            <form onSubmit={saveProvider} className="space-y-3 p-4">
               {!draft.product ? (
                 <p className="text-sm font-semibold text-slate-500">
                   Pilih produk terlebih dahulu.
                 </p>
               ) : (
                 <>
-                  <div className="rounded-md border border-emerald-100 bg-emerald-50 px-4 py-3">
+                  <div className="rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2.5">
                     <p className="text-xs font-black uppercase text-emerald-700">
                       Produk Terpilih
                     </p>
@@ -716,7 +692,7 @@ export default function KatalogManualWorkflowClient({
                   </div>
 
                   {Number(providerForm.hargaTayang) > 0 && (
-                    <div className="rounded-md bg-slate-50 p-4">
+                    <div className="rounded-md bg-slate-50 p-3">
                       <p className="text-xs font-black uppercase text-slate-400">
                         Total Harga Tayang
                       </p>
@@ -734,10 +710,11 @@ export default function KatalogManualWorkflowClient({
 
                   <button
                     type="submit"
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37]"
+                    disabled={isPending}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Save className="h-4 w-4" />
-                    Simpan Penyedia
+                    {isPending ? "Menyimpan..." : "Simpan Penyedia"}
                   </button>
                 </>
               )}
@@ -745,14 +722,14 @@ export default function KatalogManualWorkflowClient({
           )}
 
           {activeStep === 4 && (
-            <form onSubmit={saveNegotiation} className="space-y-4 p-5">
+            <form onSubmit={saveNegotiation} className="space-y-3 p-4">
               {!draft.product || !draft.provider ? (
                 <p className="text-sm font-semibold text-slate-500">
                   Produk dan penyedia harus disimpan terlebih dahulu.
                 </p>
               ) : (
                 <>
-                  <div className="rounded-md border border-emerald-100 bg-emerald-50 px-4 py-3">
+                  <div className="rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2.5">
                     <p className="text-xs font-black uppercase text-emerald-700">
                       Dasar Negosiasi
                     </p>
@@ -822,10 +799,11 @@ export default function KatalogManualWorkflowClient({
 
                   <button
                     type="submit"
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37]"
+                    disabled={isPending}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Save className="h-4 w-4" />
-                    Simpan Hasil Negosiasi
+                    {isPending ? "Menyimpan..." : "Simpan Hasil Negosiasi"}
                   </button>
                 </>
               )}
@@ -834,7 +812,7 @@ export default function KatalogManualWorkflowClient({
         </section>
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 px-5 py-4">
+          <div className="border-b border-slate-100 px-4 py-3">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#08783f]">
               Ringkasan
             </p>
@@ -843,8 +821,8 @@ export default function KatalogManualWorkflowClient({
             </h3>
           </div>
 
-          <div className="space-y-4 p-5">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="space-y-3 p-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs font-black uppercase text-slate-400">
                 Produk
               </p>
@@ -874,7 +852,7 @@ export default function KatalogManualWorkflowClient({
               )}
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs font-black uppercase text-slate-400">
                 Penyedia
               </p>
@@ -905,7 +883,7 @@ export default function KatalogManualWorkflowClient({
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 p-4">
+              <div className="rounded-lg border border-slate-200 p-3">
                 <p className="text-xs font-black uppercase text-slate-400">
                   Total Harga Tayang
                 </p>
@@ -913,7 +891,7 @@ export default function KatalogManualWorkflowClient({
                   {draft.provider ? rupiah(totalHargaTayang) : "-"}
                 </p>
               </div>
-              <div className="rounded-lg border border-slate-200 p-4">
+              <div className="rounded-lg border border-slate-200 p-3">
                 <p className="text-xs font-black uppercase text-slate-400">
                   Sisa Pagu
                 </p>
@@ -927,7 +905,7 @@ export default function KatalogManualWorkflowClient({
               </div>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs font-black uppercase text-slate-400">
                 Hasil Negosiasi
               </p>
@@ -972,7 +950,7 @@ export default function KatalogManualWorkflowClient({
             </div>
 
             {draft.negotiation && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#08783f]" />
                   <div>
@@ -993,28 +971,8 @@ export default function KatalogManualWorkflowClient({
                 </div>
               </div>
             )}
-
-            <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
-              <p className="text-xs font-semibold leading-5 text-blue-800">
-                Mekanisme ini hanya untuk monitoring internal. Penyedia tidak
-                punya akses login, tetapi datanya tetap dicatat supaya pimpinan
-                bisa melihat produk, vendor, harga tayang, hasil negosiasi, dan
-                kelanjutan dokumennya.
-              </p>
-            </div>
           </div>
         </section>
-      </div>
-
-      <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <p className="text-xs font-black uppercase tracking-wide text-[#08783f]">
-          Urutan tindakan
-        </p>
-        <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-          RUP tayang → isi produk manual → isi penyedia dan harga tayang →
-          negosiasi → Surat Pesanan → pengiriman → pemeriksaan/BAST →
-          pembayaran. Tidak perlu API LKPP, link produk, atau input paket ulang.
-        </p>
       </div>
     </div>
   );

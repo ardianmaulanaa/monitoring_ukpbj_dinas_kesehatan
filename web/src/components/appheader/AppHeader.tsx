@@ -25,6 +25,10 @@ export default function AppHeader({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roles, setRoles] = useState<RoleCode[]>([]);
   const sidebarState = useOptionalSidebarState();
+  const visibleSubtitle =
+    subtitle && !subtitle.includes("›") && !subtitle.includes(" / ")
+      ? subtitle
+      : undefined;
 
   // Ambil role user dari API auth supaya menu mobile bisa disaring sesuai hak akses.
   useEffect(() => {
@@ -87,7 +91,7 @@ export default function AppHeader({
       {/* NavBar adalah header atas: logo, judul halaman, notifikasi, dan profil. */}
       <NavBar
         title={title}
-        subtitle={subtitle}
+        subtitle={visibleSubtitle}
         rightLabel={rightLabel}
         filterPanel={filterPanel ?? <GlobalFilterPanel />}
         onOpenMenu={() => {

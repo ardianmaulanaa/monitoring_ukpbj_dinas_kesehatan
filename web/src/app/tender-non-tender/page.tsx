@@ -1,5 +1,11 @@
-import { PaketMetodePengadaan, PaketStatus, Prisma } from "@prisma/client";
 import {
+  PaketMetodePengadaan,
+  PaketStatus,
+  Prisma,
+  RupStatus,
+} from "@prisma/client";
+import {
+  BarChart3,
   FileCheck2,
   ListChecks,
 } from "lucide-react";
@@ -53,6 +59,10 @@ function humanize(value: string) {
     .replaceAll("-", " ")
     .toLowerCase()
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function normalizeKey(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function methodLabel(value: PaketMetodePengadaan) {
@@ -117,11 +127,35 @@ export default async function Page({ searchParams }: PageProps) {
       : {}),
   };
 
-  const paketData = await prisma.paketPengadaan.findMany({
-    where,
-    orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
-    take: 100,
-  });
+  const rupWhere: Prisma.RencanaUmumPengadaanWhereInput = {
+    statusSirup: RupStatus.SUDAH_TAYANG,
+    metodePengadaan: { in: methodFilter },
+    ...(tahunAnggaran ? { tahunAnggaran: Number(tahunAnggaran) } : {}),
+    ...(sumberDana ? { sumberDana } : {}),
+    ...(unitPemohon ? { unitPengusul: unitPemohon } : {}),
+    ...(q
+      ? {
+          OR: [
+            { kodeRup: { contains: q } },
+            { namaPaket: { contains: q } },
+            { unitPengusul: { contains: q } },
+          ],
+        }
+      : {}),
+  };
+
+  const [paketData, rupData] = await Promise.all([
+    prisma.paketPengadaan.findMany({
+      where,
+      orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
+      take: 100,
+    }),
+    prisma.rencanaUmumPengadaan.findMany({
+      where: rupWhere,
+      orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
+      take: 200,
+    }),
+  ]);
 
   const tenderRows = paketData.filter(
     (item) => item.metodePengadaan === "TENDER",
@@ -143,6 +177,59 @@ export default async function Page({ searchParams }: PageProps) {
   const problemCount = paketData.filter((item) =>
     ["TERLAMBAT", "GAGAL", "BATAL"].includes(item.statusPaket),
   ).length;
+  const packageByRupKey = new Map(
+    paketData.map((item) => [
+      `${normalizeKey(item.namaPaket)}::${normalizeKey(item.unitPemohon)}`,
+      item,
+    ]),
+  );
+  const linkedRupRows = rupData.map((rup) => ({
+    rup,
+    paket: packageByRupKey.get(
+      `${normalizeKey(rup.namaPaket)}::${normalizeKey(rup.unitPengusul)}`,
+    ),
+  }));
+  const finalStatuses = ["SELESAI", "GAGAL", "BATAL"];
+  const buildStatusChart = (method: PaketMetodePengadaan) => {
+    const rows = linkedRupRows.filter(
+      ({ rup }) => rup.metodePengadaan === method,
+    );
+    const ready = rows.filter(({ paket }) => !paket).length;
+    const done = rows.filter(({ paket }) =>
+      paket ? finalStatuses.includes(paket.statusPaket) : false,
+    ).length;
+    const process = Math.max(rows.length - ready - done, 0);
+
+    return {
+      method,
+      title: methodLabel(method),
+      total: rows.length,
+      statuses: [
+        {
+          label: "Siap Diproses",
+          value: ready,
+          className: "bg-blue-500",
+          badgeClassName: "bg-blue-50 text-blue-700",
+        },
+        {
+          label: "Sedang Diproses",
+          value: process,
+          className: "bg-amber-500",
+          badgeClassName: "bg-amber-50 text-amber-700",
+        },
+        {
+          label: "Selesai / Final",
+          value: done,
+          className: "bg-emerald-500",
+          badgeClassName: "bg-emerald-50 text-emerald-700",
+        },
+      ],
+    };
+  };
+  const tenderStatusCharts = [
+    buildStatusChart(PaketMetodePengadaan.TENDER),
+    buildStatusChart(PaketMetodePengadaan.NON_TENDER),
+  ].filter((item) => methodFilter.includes(item.method));
 
   const kpis = [
     {
@@ -191,6 +278,34 @@ export default async function Page({ searchParams }: PageProps) {
     formatCompactCurrency(decimalNumber(item.hps)),
     humanize(item.statusPaket),
   ]);
+  const workflowGroups = [
+    {
+      title: "Mekanisme Tender",
+      helper: "Untuk paket tender dengan proses kompetitif penuh.",
+      badge: `${tenderRows.length.toLocaleString("id-ID")} paket`,
+      steps: [
+        ["1", "Dokumen", "Dokumen pemilihan, KAK, spesifikasi, dan HPS final"],
+        ["2", "Pengumuman", "Tender tayang dan jadwal pemilihan dibuka"],
+        ["3", "Penawaran", "Penyedia submit dokumen administrasi, teknis, harga"],
+        ["4", "Evaluasi", "Evaluasi administrasi, teknis, harga, dan kualifikasi"],
+        ["5", "Penetapan", "BA hasil pemilihan dan pemenang ditetapkan"],
+        ["6", "SPPBJ", "Paket siap masuk kontrak"],
+      ],
+    },
+    {
+      title: "Mekanisme Non Tender",
+      helper: "Untuk paket non tender, seleksi sederhana, atau penunjukan sesuai kebutuhan.",
+      badge: `${nonTenderRows.length.toLocaleString("id-ID")} paket`,
+      steps: [
+        ["1", "Dokumen", "Dokumen persiapan, HPS, dan kebutuhan paket final"],
+        ["2", "Undangan", "Penyedia diundang atau proses non tender dibuka"],
+        ["3", "Penawaran", "Penyedia menyampaikan penawaran dan kelengkapan"],
+        ["4", "Klarifikasi", "Klarifikasi, negosiasi teknis, dan negosiasi harga"],
+        ["5", "Penetapan", "BA hasil dan penyedia terpilih ditetapkan"],
+        ["6", "SPPBJ/SP", "Siap masuk kontrak atau surat pesanan"],
+      ],
+    },
+  ];
 
   return (
     <>
@@ -203,9 +318,6 @@ export default async function Page({ searchParams }: PageProps) {
         <div className="space-y-4 px-4 py-4 sm:px-6 lg:px-8">
           <section className="-mx-4 flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between lg:-mx-8">
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                UKPBJ / Pemilihan Penyedia
-              </p>
               <h1 className="mt-1 text-lg font-black text-[#16227c]">
                 Tender & Non Tender
               </h1>
@@ -237,36 +349,119 @@ export default async function Page({ searchParams }: PageProps) {
           </section>
 
           <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-2">
+                <BarChart3 className="h-5 w-5 shrink-0 text-[#08783f]" />
+                <div className="min-w-0">
+                  <h2 className="text-lg font-black text-[#16227c]">
+                    Grafik Kondisi Paket Tender & Non Tender
+                  </h2>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    Hanya menampilkan paket dengan RUP sudah tayang dan siap diproses.
+                  </p>
+                </div>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
+                {rupData.length.toLocaleString("id-ID")} RUP siap
+              </span>
+            </div>
+            <div className="grid gap-4 p-4 xl:grid-cols-2">
+              {tenderStatusCharts.map((chart) => {
+                const total = Math.max(chart.total, 1);
+
+                return (
+                  <div
+                    key={chart.title}
+                    className="rounded-md border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-black text-[#16227c]">
+                          {chart.title}
+                        </h3>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          RUP siap: {chart.total.toLocaleString("id-ID")} paket
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      {chart.statuses.map((status) => {
+                        const percent = Math.round((status.value / total) * 100);
+
+                        return (
+                          <div key={`${chart.title}-${status.label}`}>
+                            <div className="mb-1 flex items-center justify-between gap-3">
+                              <span className="text-xs font-black text-slate-700">
+                                {status.label}
+                              </span>
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-[11px] font-black ${status.badgeClassName}`}
+                              >
+                                {status.value.toLocaleString("id-ID")}
+                              </span>
+                            </div>
+                            <div className="h-3 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+                              <div
+                                className={`h-full rounded-full ${status.className}`}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-5 py-3">
               <div className="flex items-center gap-2">
                 <ListChecks className="h-5 w-5 text-[#08783f]" />
                 <h2 className="text-sm font-black text-[#16227c]">
-                  Workflow Pemilihan
+                  Mekanisme Pemilihan
                 </h2>
               </div>
             </div>
-            <div className="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              {[
-                ["1", "Dokumen", "Dokumen pemilihan dan HPS final"],
-                ["2", "Publikasi", "Tender tayang atau undangan dikirim"],
-                ["3", "Penawaran", "Penyedia submit dokumen penawaran"],
-                ["4", "Evaluasi", "Administrasi, teknis, harga"],
-                ["5", "Penetapan", "BA hasil dan pemenang/penyedia"],
-                ["6", "SPPBJ", "Siap masuk kontrak atau surat pesanan"],
-              ].map(([number, title, helper]) => (
+            <div className="grid gap-4 p-4 xl:grid-cols-2">
+              {workflowGroups.map((group) => (
                 <div
-                  key={number}
-                  className="min-h-[86px] rounded-md border border-slate-200 bg-[#f4f7f5] p-3"
+                  key={group.title}
+                  className="overflow-hidden rounded-md border border-slate-200 bg-white"
                 >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-black text-white">
-                    {number}
-                  </span>
-                  <p className="mt-2 text-xs font-black text-slate-900">
-                    {title}
-                  </p>
-                  <p className="mt-1 text-[11px] font-semibold leading-4 text-slate-500">
-                    {helper}
-                  </p>
+                  <div className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-black text-[#16227c]">
+                        {group.title}
+                      </h3>
+                      <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                        {group.helper}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
+                      {group.badge}
+                    </span>
+                  </div>
+                  <div className="grid gap-2 p-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
+                    {group.steps.map(([number, title, helper]) => (
+                      <div
+                        key={`${group.title}-${number}`}
+                        className="min-h-[92px] rounded-md border border-slate-200 bg-[#f4f7f5] p-3"
+                      >
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-black text-white">
+                          {number}
+                        </span>
+                        <p className="mt-2 text-xs font-black text-slate-900">
+                          {title}
+                        </p>
+                        <p className="mt-1 text-[11px] font-semibold leading-4 text-slate-500">
+                          {helper}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

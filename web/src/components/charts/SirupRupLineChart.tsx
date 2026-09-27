@@ -1,25 +1,41 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Chart from "chart.js/auto";
 
+type ChartItem = {
+  label: string;
+  count: number;
+  amount: number;
+};
+
+type ChartCategoryKey = "sumberDana" | "metodeFinal" | "jenisBarang";
+
+type ChartCategory = {
+  key: ChartCategoryKey;
+  label: string;
+  items: ChartItem[];
+};
+
 type SirupRupLineChartProps = {
-  labels: string[];
-  paguData: number[];
-  packageData: number[];
-  latestPagu: number;
+  categories: ChartCategory[];
   primarySourceFund?: string;
   totalPackages: number;
   totalPagu: number;
 };
 
-const CHART_COLORS = {
-  pagu: "#16227c",
-  package: "#08783f",
-  axis: "#64748b",
-  grid: "rgba(148, 163, 184, 0.22)",
-  tooltip: "#0f172a",
-};
+const CHART_COLORS = [
+  "#16227c",
+  "#08783f",
+  "#f5bd20",
+  "#159cc3",
+  "#e53935",
+  "#7c3aed",
+  "#0f766e",
+  "#f57c00",
+];
+
+const GRID_COLOR = "rgba(148, 163, 184, 0.2)";
 
 function formatCompactCurrency(value: number) {
   if (value >= 1_000_000_000) {
@@ -42,116 +58,140 @@ function formatCompactCurrency(value: number) {
 }
 
 export default function SirupRupLineChart({
-  labels,
-  paguData,
-  packageData,
-  latestPagu,
+  categories,
   primarySourceFund,
   totalPackages,
   totalPagu,
 }: SirupRupLineChartProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const doughnutRef = useRef<HTMLCanvasElement | null>(null);
+  const barRef = useRef<HTMLCanvasElement | null>(null);
+  const [selectedCategoryKey, setSelectedCategoryKey] =
+    useState<ChartCategoryKey>("sumberDana");
+
+  const selectedCategory =
+    categories.find((category) => category.key === selectedCategoryKey) ??
+    categories[0];
+  const chartItems = useMemo(
+    () => (selectedCategory?.items ?? []).filter((item) => item.amount > 0),
+    [selectedCategory],
+  );
+  const dominantItem = chartItems[0];
 
   useEffect(() => {
-    if (!canvasRef.current || labels.length === 0) return;
+    if (!doughnutRef.current || chartItems.length === 0) return;
 
-    const context = canvasRef.current.getContext("2d");
+    const context = doughnutRef.current.getContext("2d");
     if (!context) return;
 
-    const maxPagu = Math.max(...paguData, 0);
-    const maxPackage = Math.max(...packageData, 0);
-
     const chart = new Chart(context, {
-      type: "line",
+      type: "doughnut",
       data: {
-        labels,
+        labels: chartItems.map((item) => item.label),
         datasets: [
           {
-            label: "Total Pagu",
-            backgroundColor: CHART_COLORS.pagu,
-            borderColor: CHART_COLORS.pagu,
-            borderWidth: 2.5,
-            data: paguData,
-            fill: false,
-            pointBackgroundColor: CHART_COLORS.pagu,
-            pointBorderColor: "#ffffff",
-            pointBorderWidth: 2,
-            pointHoverRadius: 6,
-            pointRadius: 3,
-            tension: 0,
-            yAxisID: "pagu",
-          },
-          {
-            label: "Jumlah Paket",
-            backgroundColor: CHART_COLORS.package,
-            borderColor: CHART_COLORS.package,
-            borderWidth: 2.5,
-            data: packageData,
-            fill: false,
-            pointBackgroundColor: CHART_COLORS.package,
-            pointBorderColor: "#ffffff",
-            pointBorderWidth: 2,
-            pointHoverRadius: 6,
-            pointRadius: 3,
-            tension: 0,
-            yAxisID: "paket",
+            data: chartItems.map((item) => item.amount),
+            backgroundColor: chartItems.map(
+              (_, index) => CHART_COLORS[index % CHART_COLORS.length],
+            ),
+            borderColor: "#ffffff",
+            borderRadius: 7,
+            borderWidth: 4,
+            hoverOffset: 8,
           },
         ],
       },
       options: {
+        cutout: "62%",
         maintainAspectRatio: false,
         responsive: true,
-        layout: {
-          padding: {
-            top: 28,
-            right: 16,
-            bottom: 4,
-            left: 0,
-          },
-        },
-        interaction: {
-          mode: "index",
-          intersect: false,
-        },
         plugins: {
           legend: {
-            align: "end",
             position: "bottom",
             labels: {
-              boxHeight: 8,
-              boxWidth: 20,
+              boxHeight: 10,
+              boxWidth: 10,
               color: "#475569",
               font: {
                 size: 12,
                 weight: 700,
               },
+              padding: 14,
               usePointStyle: true,
             },
           },
-          title: {
-            display: false,
-          },
           tooltip: {
-            backgroundColor: CHART_COLORS.tooltip,
-            borderColor: "rgba(15, 23, 42, 0.12)",
-            borderWidth: 1,
+            backgroundColor: "#0f172a",
             bodyFont: {
               size: 12,
               weight: 700,
             },
             callbacks: {
               label(context) {
-                const label = context.dataset.label ?? "";
                 const value = Number(context.raw ?? 0);
+                const item = chartItems[context.dataIndex];
 
-                if (context.dataset.yAxisID === "pagu") {
-                  return `${label}: ${formatCompactCurrency(value)}`;
-                }
-
-                return `${label}: ${value.toLocaleString("id-ID")} paket`;
+                return `${item.label}: ${formatCompactCurrency(value)} (${item.count.toLocaleString("id-ID")} paket)`;
               },
             },
-            displayColors: true,
+            padding: 12,
+            titleFont: {
+              size: 12,
+              weight: 800,
+            },
+          },
+        },
+      },
+    });
+
+    return () => {
+      chart.destroy();
+    };
+  }, [chartItems]);
+
+  useEffect(() => {
+    if (!barRef.current || chartItems.length === 0) return;
+
+    const context = barRef.current.getContext("2d");
+    if (!context) return;
+
+    const chart = new Chart(context, {
+      type: "bar",
+      data: {
+        labels: chartItems.map((item) => item.label),
+        datasets: [
+          {
+            label: "Total Pagu",
+            data: chartItems.map((item) => item.amount),
+            backgroundColor: chartItems.map(
+              (_, index) => CHART_COLORS[index % CHART_COLORS.length],
+            ),
+            borderRadius: 8,
+            borderSkipped: false,
+            maxBarThickness: 56,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        responsive: true,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            backgroundColor: "#0f172a",
+            bodyFont: {
+              size: 12,
+              weight: 700,
+            },
+            callbacks: {
+              label(context) {
+                const value = Number(context.raw ?? 0);
+                const item = chartItems[context.dataIndex];
+
+                return `${formatCompactCurrency(value)} | ${item.count.toLocaleString("id-ID")} paket`;
+              },
+            },
             padding: 12,
             titleFont: {
               size: 12,
@@ -161,56 +201,38 @@ export default function SirupRupLineChart({
         },
         scales: {
           x: {
-            display: true,
             grid: {
-              color: CHART_COLORS.grid,
-              drawTicks: false,
-            },
-            border: {
-              color: "rgba(148, 163, 184, 0.35)",
+              display: false,
             },
             ticks: {
-              color: CHART_COLORS.axis,
+              color: "#64748b",
               font: {
                 size: 11,
                 weight: 700,
               },
-              padding: 8,
+              maxRotation: 0,
+              minRotation: 0,
             },
           },
-          pagu: {
+          y: {
             beginAtZero: true,
-            display: true,
-            grace: "12%",
             grid: {
-              color: CHART_COLORS.grid,
+              color: GRID_COLOR,
             },
             border: {
               color: "rgba(148, 163, 184, 0.35)",
             },
-            position: "left",
-            suggestedMax: maxPagu > 0 ? maxPagu * 1.18 : undefined,
             ticks: {
               callback(value) {
                 return formatCompactCurrency(Number(value));
               },
-              color: CHART_COLORS.axis,
+              color: "#64748b",
               font: {
                 size: 11,
                 weight: 700,
               },
               padding: 8,
             },
-          },
-          paket: {
-            beginAtZero: true,
-            display: false,
-            grace: "18%",
-            grid: {
-              drawOnChartArea: false,
-            },
-            position: "right",
-            suggestedMax: maxPackage > 0 ? maxPackage * 1.18 : undefined,
           },
         },
       },
@@ -219,7 +241,7 @@ export default function SirupRupLineChart({
     return () => {
       chart.destroy();
     };
-  }, [labels, packageData, paguData]);
+  }, [chartItems]);
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -229,13 +251,10 @@ export default function SirupRupLineChart({
             Monitoring SIRUP / RUP
           </p>
           <h2 className="mt-1 text-lg font-black leading-tight text-[#16227c] sm:text-xl">
-            Grafik tren pagu dan jumlah paket
+            Grafik distribusi pagu dan paket
           </h2>
           <p className="mt-1 text-sm font-bold text-slate-500">
             Hanya paket perencanaan yang sudah approve sampai Siap RUP/SIRUP.
-          </p>
-          <p className="mt-1 text-xs font-bold text-slate-400">
-            Pagu aktif terakhir {formatCompactCurrency(latestPagu)}
           </p>
         </div>
 
@@ -267,17 +286,59 @@ export default function SirupRupLineChart({
         </div>
       </div>
 
-      {labels.length > 0 && totalPackages > 0 ? (
-        <div className="mt-5 overflow-x-auto overscroll-x-contain pb-3 pt-3">
-          <div className="relative h-[320px] min-w-[780px] sm:h-[360px] lg:h-[400px] lg:min-w-0">
-            <canvas
-              ref={canvasRef}
-              aria-label="Grafik tren pagu bulanan SIRUP RUP"
-            />
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div></div>
+
+        <select
+          value={selectedCategoryKey}
+          onChange={(event) =>
+            setSelectedCategoryKey(event.target.value as ChartCategoryKey)
+          }
+          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-[#16227c] outline-none transition focus:border-[#08783f] focus:ring-4 focus:ring-emerald-100 sm:w-[260px]"
+        >
+          {categories.map((category) => (
+            <option key={category.key} value={category.key}>
+              {category.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {chartItems.length > 0 && totalPackages > 0 ? (
+        <div className="mt-5 grid gap-5 xl:grid-cols-[380px_1fr]">
+          <div className="rounded-xl bg-slate-50 p-4">
+            <div className="relative mx-auto h-[280px] max-w-[340px] sm:h-[320px]">
+              <canvas
+                ref={doughnutRef}
+                aria-label={`Doughnut chart ${selectedCategory?.label ?? "SIRUP RUP"}`}
+              />
+              <div className="pointer-events-none absolute inset-x-0 top-[38%] mx-auto w-32 text-center">
+                <p className="text-[10px] font-black uppercase text-slate-400">
+                  Dominan
+                </p>
+                <p className="mt-1 truncate text-base font-black text-slate-950">
+                  {dominantItem?.label ?? "-"}
+                </p>
+                <p className="mt-1 text-xs font-black text-[#08783f]">
+                  {formatCompactCurrency(dominantItem?.amount ?? 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-slate-50 p-4">
+            <div className="overflow-x-auto overscroll-x-contain pb-2">
+              <div className="h-[300px] min-w-[620px] sm:h-[340px] xl:min-w-0">
+                <canvas
+                  ref={barRef}
+                  aria-label={`Bar chart ${selectedCategory?.label ?? "SIRUP RUP"}`}
+                />
+              </div>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="mt-5 flex h-[260px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 text-center text-sm font-semibold text-slate-500 sm:h-[320px] lg:h-[380px]">
+        <div className="mt-5 flex h-[260px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 text-center text-sm font-semibold text-slate-500 sm:h-[320px]">
           Belum ada paket perencanaan yang sudah disetujui untuk masuk grafik
           SIRUP/RUP.
         </div>

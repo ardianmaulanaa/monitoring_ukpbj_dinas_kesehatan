@@ -33,6 +33,7 @@ import {
   ShoppingCart,
   Truck,
   UsersRound,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
@@ -1307,7 +1308,10 @@ async function PlanningModuleView({
 
   return (
     <main className="bg-[#f4f7f5]">
-      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form
+        hidden
+        className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
+      >
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
           <span className="self-center text-sm font-black text-slate-400 sm:col-span-2 lg:col-span-1">
             Filter:
@@ -1905,7 +1909,10 @@ async function RealisasiBelanjaView() {
 
   return (
     <main className="min-h-screen bg-[#f4f7f5]">
-      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form
+        hidden
+        className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
+      >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="shrink-0 text-sm font-black text-slate-400">
             Filter:
@@ -2129,7 +2136,10 @@ function ModuleAction({
 
 function TopFilterBar() {
   return (
-    <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+    <form
+      hidden
+      className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
+    >
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="shrink-0 text-sm font-black text-slate-400">
           Filter:
@@ -3150,6 +3160,51 @@ async function KatalogWorkflowView({
     paket?.statusPaket?.toUpperCase().includes("SELESAI"),
   ).length;
   const processCount = Math.max(rupRows.length - readyCount - doneCount, 0);
+  const katalogStatusChart = [
+    {
+      label: "Siap Diproses",
+      value: readyCount,
+      helper: "RUP sudah tayang dan belum masuk paket proses",
+      className: "bg-blue-500",
+      badgeClassName: "bg-blue-50 text-blue-700",
+    },
+    {
+      label: "Sedang Diproses",
+      value: processCount,
+      helper: "Sudah masuk proses pemilihan / transaksi",
+      className: "bg-amber-500",
+      badgeClassName: "bg-amber-50 text-amber-700",
+    },
+    {
+      label: "Selesai",
+      value: doneCount,
+      helper: "Paket sudah selesai diproses",
+      className: "bg-emerald-500",
+      badgeClassName: "bg-emerald-50 text-emerald-700",
+    },
+  ];
+  const katalogStatusTotal = Math.max(
+    katalogStatusChart.reduce((sum, item) => sum + item.value, 0),
+    1,
+  );
+  const katalogChartMax = Math.max(
+    ...katalogStatusChart.map((item) => item.value),
+    1,
+  );
+  const katalogLinePoints = katalogStatusChart.map((item, index) => {
+    const x = 58 + index * 154;
+    const y = 220 - (item.value / katalogChartMax) * 156;
+
+    return {
+      ...item,
+      x,
+      y,
+      percent: Math.round((item.value / katalogStatusTotal) * 100),
+    };
+  });
+  const katalogPolyline = katalogLinePoints
+    .map((item) => `${item.x},${item.y}`)
+    .join(" ");
 
   const selectedRup = detailId
     ? (rupRows.find((item) => item.id === detailId) ?? null)
@@ -3159,7 +3214,10 @@ async function KatalogWorkflowView({
 
   return (
     <main className="min-h-screen bg-[#f4f7f5]">
-      <form hidden className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+      <form
+        hidden
+        className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
+      >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="shrink-0 text-sm font-black text-slate-400">
             Filter:
@@ -3269,58 +3327,121 @@ async function KatalogWorkflowView({
         </section>
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-5 py-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#08783f]">
-              Mekanisme e-Katalog Ada Penyedia
-            </p>
-            <h2 className="mt-1 text-lg font-black text-[#16227c]">
-              Internal mencatat produk, penyedia, harga, dan dokumen
-            </h2>
-          </div>
-          <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {[
-              {
-                icon: PackageSearch,
-                title: "Pilih Produk",
-                helper:
-                  "Catat barang/jasa yang ditemukan dari e-Katalog: produk, merek, jumlah, satuan.",
-              },
-              {
-                icon: Truck,
-                title: "Pilih Penyedia",
-                helper:
-                  "Catat nama penyedia/vendor, harga tayang, dan estimasi pengiriman.",
-              },
-              {
-                icon: Handshake,
-                title: "Negosiasi",
-                helper:
-                  "Masukkan harga penawaran, harga kesepakatan, dan catatan negosiasi.",
-              },
-              {
-                icon: FileCheck2,
-                title: "SP sampai Pembayaran",
-                helper:
-                  "Pantau surat pesanan, pengiriman, BAST, dan pembayaran sebagai status monitoring.",
-              },
-            ].map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <div
-                  key={item.title}
-                  className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-                >
-                  <Icon className="h-5 w-5 text-[#08783f]" />
-                  <p className="mt-3 text-sm font-black text-slate-900">
-                    {item.title}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-                    {item.helper}
-                  </p>
+          <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="min-w-0 px-5 py-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-2">
+                  <BarChart3 className="h-5 w-5 shrink-0 text-[#08783f]" />
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-black text-[#16227c]">
+                      Grafik Kondisi Paket e-Katalog
+                    </h2>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">
+                      Hanya menampilkan paket dengan RUP sudah tayang dan siap diproses.
+                    </p>
+                  </div>
                 </div>
-              );
-            })}
+                <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
+                  {rupRows.length.toLocaleString("id-ID")} RUP siap
+                </span>
+              </div>
+
+              <div className="mt-5 overflow-x-auto">
+                <svg
+                  viewBox="0 0 430 300"
+                  role="img"
+                  aria-label="Grafik garis kondisi paket e-Katalog"
+                  className="h-[320px] min-w-[430px] w-full"
+                >
+                  {[64, 116, 168, 220].map((y) => (
+                    <line
+                      key={y}
+                      x1="42"
+                      x2="406"
+                      y1={y}
+                      y2={y}
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+                  ))}
+                  {[58, 212, 366].map((x) => (
+                    <line
+                      key={x}
+                      x1={x}
+                      x2={x}
+                      y1="64"
+                      y2="220"
+                      stroke="#edf2f7"
+                      strokeWidth="1"
+                    />
+                  ))}
+                  <polyline
+                    fill="none"
+                    points={katalogPolyline}
+                    stroke="#2aaec1"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="4"
+                  />
+                  {katalogLinePoints.map((item) => (
+                    <g key={item.label}>
+                      <circle
+                        cx={item.x}
+                        cy={item.y}
+                        fill="#2aaec1"
+                        r="5"
+                        stroke="#d8f3f7"
+                        strokeWidth="3"
+                      />
+                      <text
+                        x={item.x}
+                        y={Math.max(item.y - 14, 18)}
+                        fill="#0f172a"
+                        fontSize="13"
+                        fontWeight="800"
+                        textAnchor="middle"
+                      >
+                        {item.value.toLocaleString("id-ID")}
+                      </text>
+                      <text
+                        x={item.x}
+                        y="280"
+                        fill="#64748b"
+                        fontSize="13"
+                        fontWeight="700"
+                        textAnchor="middle"
+                      >
+                        {item.label}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-200 px-5 py-5 lg:border-l lg:border-t-0">
+              <div className="space-y-5">
+                {katalogLinePoints.map((item, index) => (
+                  <div key={item.label}>
+                    {index > 0 ? (
+                      <div className="mb-5 border-t border-slate-200" />
+                    ) : null}
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-[#2aaec1]" />
+                      <p className="text-sm font-black text-slate-600">
+                        {item.label}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-3xl font-black text-slate-900">
+                      {item.value.toLocaleString("id-ID")}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-500">
+                      {item.percent}% dari total RUP siap
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -3453,126 +3574,136 @@ async function KatalogWorkflowView({
           </div>
         </section>
 
-        {selectedRup ? (
-          <section
+        {selectedRup && (
+          <div
             id="detail-proses-katalog"
-            className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+            className="fixed inset-0 z-[1000] flex h-[100dvh] items-center justify-center overflow-hidden bg-slate-950/40 px-3 py-4 backdrop-blur-sm sm:px-6 sm:py-6"
           >
-            <div className="border-b border-slate-100 px-5 py-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#08783f]">
-                    Detail Proses e-Katalog
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-[#16227c]">
-                    {selectedRup.namaPaket}
-                  </h2>
-                  <p className="mt-1 text-sm font-semibold text-slate-500">
-                    {selectedRup.kodeRup} · {selectedRup.unitPengusul}
-                  </p>
-                </div>
-                <span
-                  className={`inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-black ${katalogProcessStyle(selectedPackage?.statusPaket)}`}
-                >
-                  {katalogProcessLabel(selectedPackage?.statusPaket)}
-                </span>
-              </div>
-            </div>
-
-            <div className="p-5">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {[
-                  ["Kode RUP", selectedRup.kodeRup],
-                  [
-                    "Pagu",
-                    formatCompactCurrency(decimalNumber(selectedRup.pagu)),
-                  ],
-                  [
-                    "Lokasi Paket",
-                    selectedPackage?.lokasiPelaksanaan ||
-                      selectedRup.lokasiPaket ||
-                      "-",
-                  ],
-                  ["Sumber Dana", selectedRup.sumberDana],
-                  ["Jadwal Pemilihan", selectedRup.jadwalPemilihan || "-"],
-                  ["Jenis Katalog", selectedRup.jenisKatalog || "-"],
-                  ["Etalase", selectedRup.etalaseKatalog || "-"],
-                  ["Produk", selectedRup.namaProdukKatalog || "-"],
-                  ["Merek / Tipe", selectedRup.merekTipeKatalog || "-"],
-                  [
-                    "Jumlah",
-                    `${selectedRup.jumlahProdukKatalog || "-"} ${
-                      selectedRup.satuanProdukKatalog || ""
-                    }`.trim(),
-                  ],
-                  [
-                    "Harga Tayang",
-                    selectedRup.totalHargaKatalog
-                      ? formatCompactCurrency(
-                          decimalNumber(selectedRup.totalHargaKatalog),
-                        )
-                      : "-",
-                  ],
-                  ["Penyedia", selectedRup.namaPenyediaKatalog || "-"],
-                  [
-                    "Status Negosiasi",
-                    selectedRup.statusNegosiasiKatalog || "-",
-                  ],
-                  [
-                    "Harga Negosiasi",
-                    selectedRup.hargaNegosiasiKatalog
-                      ? formatCompactCurrency(
-                          decimalNumber(selectedRup.hargaNegosiasiKatalog),
-                        )
-                      : "-",
-                  ],
-                  ["Surat Pesanan", selectedRup.nomorSuratPesanan || "-"],
-                  ["Tanggal SP", selectedRup.tanggalSuratPesanan || "-"],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-                  >
-                    <p className="text-xs font-black uppercase text-slate-400">
-                      {label}
+            <section className="relative flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] min-w-0 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:w-full sm:max-w-[calc(100vw-3rem)] max-w-4xl">
+              <div className="shrink-0 rounded-t-2xl border-b border-slate-100 bg-white px-5 py-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#08783f]">
+                      Detail Proses e-Katalog
                     </p>
-                    <p className="mt-2 text-sm font-black text-slate-800">
-                      {value}
+                    <h2 className="mt-1 text-lg font-black text-[#16227c] sm:text-xl">
+                      {selectedRup.namaPaket}
+                    </h2>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      {selectedRup.kodeRup} · {selectedRup.unitPengusul}
                     </p>
                   </div>
-                ))}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-black ${katalogProcessStyle(selectedPackage?.statusPaket)}`}
+                    >
+                      {katalogProcessLabel(selectedPackage?.statusPaket)}
+                    </span>
+                    <Link
+                      href="/katalog-v6-v5"
+                      aria-label="Tutup detail proses"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
               </div>
 
-              <KatalogManualWorkflowClient
-                rup={{
-                  id: selectedRup.id,
-                  kodeRup: selectedRup.kodeRup,
-                  namaPaket: selectedRup.namaPaket,
-                  unitPengusul: selectedRup.unitPengusul,
-                  lokasiPaket:
-                    selectedPackage?.lokasiPelaksanaan ||
-                    selectedRup.lokasiPaket ||
-                    null,
-                  sumberDana: selectedRup.sumberDana,
-                  pagu: decimalNumber(selectedRup.pagu),
-                }}
-              />
-            </div>
-          </section>
-        ) : (
-          <section
-            id="detail-proses-katalog"
-            className="rounded-lg border border-dashed border-slate-300 bg-white p-5 shadow-sm"
-          >
-            <p className="text-sm font-black text-slate-700">
-              Pilih paket e-Katalog dulu.
-            </p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-              Klik Detail Proses pada tabel untuk membuka input produk,
-              penyedia, negosiasi, dan tindak lanjut paket. Detail tidak
-              ditampilkan otomatis supaya halaman tetap ringkas.
-            </p>
-          </section>
+              <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-6">
+                <div className="mb-5 grid gap-3 lg:grid-cols-3">
+                  {[
+                    ["Kode RUP", selectedRup.kodeRup],
+                    [
+                      "Pagu",
+                      formatCompactCurrency(decimalNumber(selectedRup.pagu)),
+                    ],
+                    [
+                      "Lokasi Paket",
+                      selectedPackage?.lokasiPelaksanaan ||
+                        selectedRup.lokasiPaket ||
+                        "-",
+                    ],
+                    ["Sumber Dana", selectedRup.sumberDana],
+                    ["Jenis Katalog", selectedRup.jenisKatalog || "-"],
+                    ["Etalase", selectedRup.etalaseKatalog || "-"],
+                    ["Produk", selectedRup.namaProdukKatalog || "-"],
+                    ["Penyedia", selectedRup.namaPenyediaKatalog || "-"],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                    >
+                      <p className="text-xs font-black uppercase text-slate-400">
+                        {label}
+                      </p>
+                      <p className="mt-2 text-sm font-black text-slate-800">
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <KatalogManualWorkflowClient
+                  initialDraft={{
+                    ...(selectedRup.namaProdukKatalog
+                      ? {
+                          product: {
+                            namaProduk: selectedRup.namaProdukKatalog,
+                            merk: selectedRup.merekTipeKatalog || "",
+                            jumlah:
+                              decimalNumber(selectedRup.jumlahProdukKatalog) ||
+                              1,
+                            satuan: selectedRup.satuanProdukKatalog || "Unit",
+                          },
+                        }
+                      : {}),
+                    ...(selectedRup.namaPenyediaKatalog &&
+                    selectedRup.hargaSatuanKatalog
+                      ? {
+                          provider: {
+                            namaPenyedia: selectedRup.namaPenyediaKatalog,
+                            hargaTayang: decimalNumber(
+                              selectedRup.hargaSatuanKatalog,
+                            ),
+                            estimasiPengiriman:
+                              selectedRup.catatanKatalog?.replace(
+                                "Estimasi pengiriman: ",
+                                "",
+                              ) ?? "",
+                          },
+                        }
+                      : {}),
+                    ...(selectedRup.hargaNegosiasiKatalog
+                      ? {
+                          negotiation: {
+                            hargaPenawaran: decimalNumber(
+                              selectedRup.totalHargaKatalog,
+                            ),
+                            hargaKesepakatan: decimalNumber(
+                              selectedRup.hargaNegosiasiKatalog,
+                            ),
+                            catatan: selectedRup.catatanKatalog ?? "",
+                          },
+                        }
+                      : {}),
+                  }}
+                  rup={{
+                    id: selectedRup.id,
+                    kodeRup: selectedRup.kodeRup,
+                    namaPaket: selectedRup.namaPaket,
+                    unitPengusul: selectedRup.unitPengusul,
+                    lokasiPaket:
+                      selectedPackage?.lokasiPelaksanaan ||
+                      selectedRup.lokasiPaket ||
+                      null,
+                    sumberDana: selectedRup.sumberDana,
+                    pagu: decimalNumber(selectedRup.pagu),
+                  }}
+                />
+              </div>
+            </section>
+          </div>
         )}
       </div>
     </main>
@@ -4106,7 +4237,8 @@ async function ModuleListView({
             : "space-y-4 px-4 py-4 sm:px-6 lg:px-8"
         }
       >
-        <form hidden
+        <form
+          hidden
           className={
             isPemilihan
               ? "-mx-4 border-b border-slate-200 bg-white sm:-mx-6 lg:-mx-8"

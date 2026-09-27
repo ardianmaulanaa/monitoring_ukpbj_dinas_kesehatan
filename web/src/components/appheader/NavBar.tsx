@@ -209,7 +209,7 @@ export default function NavBar({
                     <Surface
                       role="dialog"
                       aria-label="Filter halaman"
-                      className={`smooth-popover absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] p-4 ${
+                      className={`app-filter-popover smooth-popover z-50 p-4 ${
                         state === "closing" ? "is-closing" : ""
                       }`}
                     >

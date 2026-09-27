@@ -102,27 +102,6 @@ function formatCompactCurrency(value: number) {
   return formatCurrency(value);
 }
 
-function parseTimelineDate(value?: Date | string | null) {
-  if (!value) return null;
-
-  const parsed = value instanceof Date ? value : new Date(value);
-
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function monthLabel(value: string) {
-  const [year, month] = value.split("-");
-  const date = new Date(Number(year), Number(month) - 1);
-
-  return date.toLocaleDateString("id-ID", {
-    month: "short",
-  });
-}
-
-function monthKey(year: number, monthIndex: number) {
-  return `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
-}
-
 function sourceFundClass(value: string) {
   const normalized = value.toUpperCase();
 
@@ -135,6 +114,32 @@ function sourceFundClass(value: string) {
 
 function normalizeUnit(value?: string | null) {
   return value?.trim().toLowerCase() ?? "";
+}
+
+function buildDistributionSummary<T>(
+  data: T[],
+  getKey: (item: T) => string | null | undefined,
+  getLabel: (key: string) => string,
+  getAmount: (item: T) => number,
+) {
+  return Object.values(
+    data.reduce<
+      Record<string, { label: string; count: number; amount: number }>
+    >((accumulator, item) => {
+      const rawKey = getKey(item)?.trim() || "Tidak Terisi";
+      const current = accumulator[rawKey] ?? {
+        label: getLabel(rawKey),
+        count: 0,
+        amount: 0,
+      };
+
+      current.count += 1;
+      current.amount += getAmount(item);
+      accumulator[rawKey] = current;
+
+      return accumulator;
+    }, {}),
+  ).sort((left, right) => right.amount - left.amount);
 }
 
 export default async function Page({ searchParams }: RupPageProps) {
@@ -232,73 +237,43 @@ export default async function Page({ searchParams }: RupPageProps) {
   const approvedRupData = rupData.filter(
     (item) => item.statusSirup === "SUDAH_TAYANG",
   );
-  const chartYear =
-    Number(tahunAnggaran) ||
-    approvedRupData
-      .map((item) => {
-        const timelineDate =
-          parseTimelineDate(item.jadwalMulaiRencana) ??
-          parseTimelineDate(item.jadwalPemilihan) ??
-          parseTimelineDate(item.waktuKebutuhan) ??
-          parseTimelineDate(item.tanggalTayangSirup) ??
-          parseTimelineDate(item.tanggalInputSirup) ??
-          parseTimelineDate(item.createdAt);
-
-        return timelineDate?.getFullYear();
-      })
-      .find((year): year is number => Boolean(year)) ||
-    new Date().getFullYear();
-  const monthlyPaguSummary = Object.values(
-    approvedRupData.reduce<
-      Record<string, { key: string; label: string; count: number; amount: number }>
-    >(
-      (accumulator, item) => {
-      const timelineDate =
-        parseTimelineDate(item.jadwalMulaiRencana) ??
-        parseTimelineDate(item.jadwalPemilihan) ??
-        parseTimelineDate(item.waktuKebutuhan) ??
-        parseTimelineDate(item.tanggalTayangSirup) ??
-        parseTimelineDate(item.tanggalInputSirup) ??
-        parseTimelineDate(item.createdAt);
-
-      if (!timelineDate) return accumulator;
-      if (timelineDate.getFullYear() !== chartYear) return accumulator;
-
-      const key = monthKey(chartYear, timelineDate.getMonth());
-      const current = accumulator[key] ?? {
-        key,
-        label: monthLabel(key),
-        count: 0,
-        amount: 0,
-      };
-
-      current.count += 1;
-      current.amount += decimalNumber(item.pagu);
-      accumulator[key] = current;
-
-      return accumulator;
-      },
-      Object.fromEntries(
-        Array.from({ length: 12 }, (_, monthIndex) => {
-          const key = monthKey(chartYear, monthIndex);
-
-          return [
-            key,
-            {
-              key,
-              label: monthLabel(key),
-              count: 0,
-              amount: 0,
-            },
-          ];
-        }),
-      ),
-    ),
-  )
-    .sort((left, right) => left.key.localeCompare(right.key));
-  const latestMonthlyPagu = monthlyPaguSummary.findLast(
-    (item) => item.amount > 0,
+  const approvedTotalPagu = approvedRupData.reduce(
+    (total, item) => total + decimalNumber(item.pagu),
+    0,
   );
+  const rupChartCategories = [
+    {
+      key: "sumberDana" as const,
+      label: "Sumber Dana Utama",
+      items: buildDistributionSummary(
+        approvedRupData,
+        (item) => item.sumberDana,
+        (key) => key,
+        (item) => decimalNumber(item.pagu),
+      ),
+    },
+    {
+      key: "metodeFinal" as const,
+      label: "Metode Final",
+      items: buildDistributionSummary(
+        approvedRupData,
+        (item) => item.metodePengadaan,
+        methodLabel,
+        (item) => decimalNumber(item.pagu),
+      ),
+    },
+    {
+      key: "jenisBarang" as const,
+      label: "Jenis Barang",
+      items: buildDistributionSummary(
+        approvedRupData,
+        (item) => item.jenisBelanja,
+        (key) => key,
+        (item) => decimalNumber(item.pagu),
+      ),
+    },
+  ];
+  const dominantApprovedSourceFund = rupChartCategories[0]?.items[0];
   const currentUser = await getCurrentUser();
   const canManageRup = canDeletePlanningProposal(currentUser?.roles ?? []);
   const currentUserProfile = currentUser
@@ -321,16 +296,10 @@ export default async function Page({ searchParams }: RupPageProps) {
           <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_1fr]">
             <div className="xl:col-span-2">
               <SirupRupLineChart
-                labels={monthlyPaguSummary.map((item) => item.label)}
-                paguData={monthlyPaguSummary.map((item) => item.amount)}
-                packageData={monthlyPaguSummary.map((item) => item.count)}
-                latestPagu={latestMonthlyPagu?.amount ?? 0}
-                primarySourceFund={dominantSourceFund?.label}
+                categories={rupChartCategories}
+                primarySourceFund={dominantApprovedSourceFund?.label}
                 totalPackages={approvedRupData.length}
-                totalPagu={approvedRupData.reduce(
-                  (total, item) => total + decimalNumber(item.pagu),
-                  0,
-                )}
+                totalPagu={approvedTotalPagu}
               />
             </div>
 

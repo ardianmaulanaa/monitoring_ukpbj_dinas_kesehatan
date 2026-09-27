@@ -54,34 +54,6 @@ const planningNextStatus: Partial<Record<RupStatus, RupStatus>> = {
   MENUNGGU_KPA_PA: "SUDAH_TAYANG",
 };
 
-const planningApprovalFlow = [
-  {
-    label: "Draft Usulan",
-    helper: "Unit input kebutuhan, volume, pagu, jadwal, dan dokumen awal.",
-  },
-  {
-    label: "Kepala Unit",
-    helper: "Validasi bahwa kebutuhan benar diperlukan oleh unit pengusul.",
-  },
-  {
-    label: "PPTK",
-    helper: "Cek kesesuaian kegiatan, output, jadwal, dan anggaran.",
-  },
-  {
-    label: "PPK",
-    helper:
-      "Review KAK, spesifikasi teknis, HPS, metode, dan rancangan kontrak.",
-  },
-  {
-    label: "KPA/PA",
-    helper: "Approval akhir sebelum paket siap masuk RUP/SIRUP.",
-  },
-  {
-    label: "Siap RUP/SIRUP",
-    helper: "Admin dapat input atau sinkronkan ke SIRUP.",
-  },
-];
-
 const planningApprovalRoleFlow: {
   status: RupStatus;
   label: string;
@@ -342,27 +314,6 @@ export default async function Page({ searchParams }: PageProps) {
                 </p>
               </div>
             ))}
-          </div>
-
-          <div className="mb-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="grid gap-3 p-5 lg:grid-cols-6">
-              {planningApprovalFlow.map((step, index) => (
-                <div
-                  key={step.label}
-                  className="relative rounded-lg border border-slate-200 bg-slate-50 p-4"
-                >
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#08783f] text-xs font-black text-white">
-                    {index + 1}
-                  </span>
-                  <p className="mt-3 text-sm font-black text-slate-900">
-                    {step.label}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-                    {step.helper}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">

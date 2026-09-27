@@ -675,6 +675,34 @@ input:-webkit-autofill:focus {
   pointer-events: none;
 }
 
+.app-filter-popover {
+  position: fixed !important;
+  left: 1rem !important;
+  right: 1rem !important;
+  top: 4.75rem !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+.app-filter-form {
+  width: 100%;
+  min-width: min(18rem, calc(100vw - 4rem));
+}
+
+@media (min-width: 640px) {
+  .app-filter-popover {
+    position: absolute !important;
+    left: auto !important;
+    right: 0 !important;
+    top: 3rem !important;
+    width: min(22rem, calc(100vw - 2rem)) !important;
+  }
+
+  .app-filter-form {
+    min-width: 0;
+  }
+}
+
 .smooth-page :where(section, article, form, aside)[class*="rounded"],
 .smooth-page :where(div)[class*="rounded"][class*="border"],
 .smooth-page :where(div)[class*="shadow-sm"],

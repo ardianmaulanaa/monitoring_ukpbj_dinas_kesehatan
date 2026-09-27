@@ -79,7 +79,7 @@ export default function GlobalFilterPanel() {
   const status = searchParams.get(paramNames.status) ?? "";
 
   return (
-    <form action={pathname} className="space-y-3">
+    <form action={pathname} className="app-filter-form space-y-3">
       <div>
         <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
           Filter
