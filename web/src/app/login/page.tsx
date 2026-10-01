@@ -108,7 +108,7 @@ export default function LoginPage() {
 
       loginSucceeded = true;
       setIsOpeningDashboard(true);
-      router.replace(getSafeRedirectPath());
+      window.location.assign(getSafeRedirectPath());
     } catch {
       setError("Tidak dapat menghubungi server. Coba lagi sebentar.");
     } finally {
@@ -196,6 +196,7 @@ export default function LoginPage() {
                   height={70}
                   priority
                   className="h-full w-full object-contain"
+                  style={{ width: "100%", height: "auto" }}
                 />
               </div>
 
@@ -267,6 +268,7 @@ export default function LoginPage() {
                       height={52}
                       priority
                       className="h-full w-full object-contain"
+                      style={{ width: "100%", height: "auto" }}
                     />
                   </div>
 
