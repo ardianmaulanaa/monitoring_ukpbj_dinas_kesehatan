@@ -223,6 +223,10 @@ function parameterPlaceholder(index: number) {
   return `$${index}`;
 }
 
+function textExpression(column: string) {
+  return `${quoteIdentifier(column)}::text`;
+}
+
 function toNumber(value: unknown) {
   if (typeof value === "bigint") return Number(value);
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -244,9 +248,9 @@ function toNumber(value: unknown) {
 }
 
 function buildLikeWhere(column: string, words: readonly string[], startIndex = 1) {
-  const quotedColumn = quoteIdentifier(column);
+  const columnExpression = textExpression(column);
   const conditions = words.map(
-    (_, index) => `LOWER(${quotedColumn}) LIKE ${parameterPlaceholder(startIndex + index)}`,
+    (_, index) => `LOWER(${columnExpression}) LIKE ${parameterPlaceholder(startIndex + index)}`,
   );
 
   return {
@@ -256,9 +260,9 @@ function buildLikeWhere(column: string, words: readonly string[], startIndex = 1
 }
 
 function buildExactOrLikeWhere(column: string, values: readonly string[], startIndex = 1) {
-  const quotedColumn = quoteIdentifier(column);
+  const columnExpression = textExpression(column);
   const conditions = values.map(
-    (_, index) => `LOWER(${quotedColumn}) = LOWER(${parameterPlaceholder(startIndex + index)})`,
+    (_, index) => `LOWER(${columnExpression}) = LOWER(${parameterPlaceholder(startIndex + index)})`,
   );
 
   return {
@@ -407,7 +411,7 @@ async function countNearDeadline(tableName: string | null) {
   if (!dueColumn) return 0;
 
   const statusFilter = statusColumn
-    ? ` AND UPPER(${quoteIdentifier(statusColumn)}) NOT IN ('SELESAI', 'GAGAL', 'BATAL')`
+    ? ` AND UPPER(${textExpression(statusColumn)}) NOT IN ('SELESAI', 'GAGAL', 'BATAL')`
     : "";
 
   const rows = await prisma.$queryRawUnsafe<CountRow[]>(
@@ -708,7 +712,7 @@ async function getPriorities(tableName: string | null) {
        ${quoteIdentifier(statusColumn)} AS status
      FROM ${quoteIdentifier(tableName)}
      WHERE ${quoteIdentifier(dueColumn)} BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
-       AND UPPER(${quoteIdentifier(statusColumn)}) NOT IN ('SELESAI', 'GAGAL', 'BATAL')
+       AND UPPER(${textExpression(statusColumn)}) NOT IN ('SELESAI', 'GAGAL', 'BATAL')
      LIMIT ${parameterPlaceholder(1)}`,
     3 - priorities.length,
   );
