@@ -9,3 +9,5 @@ UserInterface.md
 **/.DS_Store
 .openclaw-archive/
 **/.openclaw-archive/
+.vercel
+.env*
