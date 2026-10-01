@@ -55,6 +55,7 @@ export default function IntroPageClient() {
             height={160}
             priority
             className="h-full w-full object-contain"
+            style={{ width: "100%", height: "auto" }}
           />
         </div>
 

@@ -20,6 +20,7 @@ import {
   Settings,
   ShieldCheck,
   ShoppingCart,
+  UserCircle,
   WalletCards,
   X,
   type LucideIcon,
@@ -169,6 +170,7 @@ export default function Sidebar({
                 width={44}
                 height={44}
                 className="h-full w-full object-contain"
+                style={{ width: "100%", height: "auto" }}
                 priority
               />
             </div>
@@ -236,7 +238,20 @@ export default function Sidebar({
           </div>
         </nav>
 
-        <div className="shrink-0 border-t border-slate-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="shrink-0 space-y-2 border-t border-slate-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <Link
+            href="/profile"
+            onClick={onClose}
+            className={`flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-black transition ${
+              isActivePath(pathname, "/profile")
+                ? "bg-[#08783f] text-white shadow-lg shadow-emerald-900/15"
+                : "bg-white text-slate-600 hover:bg-[#edf7f1] hover:text-[#08783f]"
+            }`}
+          >
+            <UserCircle className="h-[18px] w-[18px]" strokeWidth={2.5} />
+            Profil
+          </Link>
+
           <button
             type="button"
             onClick={handleLogout}

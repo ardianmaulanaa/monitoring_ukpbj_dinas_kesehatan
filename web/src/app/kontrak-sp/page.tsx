@@ -343,6 +343,17 @@ function methodLabel(value: string) {
   return labels[value] ?? humanize(value);
 }
 
+function contractFollowUpLabel(value?: PaketMetodePengadaan | string | null) {
+  if (value === "TENDER") return "Kontrak/SPK/Surat Perjanjian";
+  if (value === "NON_TENDER") return "Kontrak/SPK";
+  if (value === "E_PURCHASING") return "Surat/Bukti Pesanan/Kontrak";
+  if (value === "PENGADAAN_LANGSUNG") {
+    return "Bukti Pembelian/Kuitansi/SPK/Kontrak";
+  }
+
+  return "Kontrak/Surat Pesanan";
+}
+
 function sourceFundClass(value: string) {
   const normalized = value.toUpperCase();
 
@@ -1030,32 +1041,64 @@ async function getKontrakModuleData(
       ? { status: status as KontrakStatus }
       : {}),
   };
-  const rows = await prisma.kontrak.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+  const [rows, sppbjPackages] = await Promise.all([
+    prisma.kontrak.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+    prisma.paketPengadaan.findMany({
+      where: {
+        statusPaket: PaketStatus.KONTRAK,
+        ...(q
+          ? {
+              OR: [
+                { kodePaket: { contains: q } },
+                { namaPaket: { contains: q } },
+                { unitPemohon: { contains: q } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+    }),
+  ]);
+  const contractedPackageIds = new Set(
+    rows.map((item) => item.paketId).filter(Boolean),
+  );
+  const pendingSppbjPackages = sppbjPackages.filter(
+    (item) => !contractedPackageIds.has(item.id),
+  );
   const totalNilai = rows.reduce(
     (total, item) => total + decimalNumber(item.nilaiKontrak),
     0,
+  );
+  const totalRencanaNilai = pendingSppbjPackages.reduce(
+    (total, item) => total + decimalNumber(item.hps || item.pagu),
+    totalNilai,
   );
   const activeCount = rows.filter((item) => item.status === "AKTIF").length;
   const problemCount = rows.filter((item) =>
     ["TERLAMBAT", "BATAL"].includes(item.status),
   ).length;
+  const totalRows = rows.length + pendingSppbjPackages.length;
 
   return {
     kpis: [
       {
         label: "Total Kontrak",
-        value: rows.length.toLocaleString("id-ID"),
-        helper: config.rightLabel,
+        value: totalRows.toLocaleString("id-ID"),
+        helper:
+          pendingSppbjPackages.length > 0
+            ? `${pendingSppbjPackages.length.toLocaleString("id-ID")} paket SPPBJ siap dibuat`
+            : config.rightLabel,
         tone: "blue",
       },
       {
-        label: "Nilai Kontrak",
-        value: formatCompactCurrency(totalNilai),
-        helper: "Dari database kontrak",
+        label: "Nilai Kontrak/Rencana",
+        value: formatCompactCurrency(totalRencanaNilai),
+        helper: "Kontrak tersimpan + paket SPPBJ",
         tone: "green",
       },
       {
@@ -1066,32 +1109,46 @@ async function getKontrakModuleData(
       },
       {
         label: "Perlu Tindak Lanjut",
-        value: problemCount.toLocaleString("id-ID"),
-        helper: "Terlambat/batal",
+        value: (problemCount + pendingSppbjPackages.length).toLocaleString(
+          "id-ID",
+        ),
+        helper: "SPPBJ belum dibuat dokumen / terlambat",
         tone: "red",
       },
     ],
     table: {
       columns: [
-        "Nomor Kontrak",
+        "Nomor / Kode",
         "Nama Paket",
-        "Penyedia",
-        "Nilai Kontrak",
-        "Tanggal Kontrak",
-        "Masa Berlaku",
+        "Metode",
+        "Dokumen Lanjutan",
+        "Nilai",
+        "Tahap",
         "Status",
         "Aksi",
       ],
-      rows: rows.map((item) => [
-        item.nomorKontrak,
-        item.namaPaket,
-        item.penyedia,
-        formatCompactCurrency(decimalNumber(item.nilaiKontrak)),
-        formatShortDate(item.tanggalKontrak),
-        `${formatShortDate(item.tanggalMulai)} - ${formatShortDate(item.tanggalSelesai)}`,
-        humanize(item.status),
-        "Detail",
-      ]),
+      rows: [
+        ...pendingSppbjPackages.map((item) => [
+          item.kodePaket,
+          item.namaPaket,
+          methodLabel(item.metodePengadaan),
+          contractFollowUpLabel(item.metodePengadaan),
+          formatCompactCurrency(decimalNumber(item.hps || item.pagu)),
+          "SPPBJ",
+          "Siap dibuat",
+          "Tambah Kontrak/SP",
+        ]),
+        ...rows.map((item) => [
+          item.nomorKontrak,
+          item.namaPaket,
+          "-",
+          contractFollowUpLabel(),
+          formatCompactCurrency(decimalNumber(item.nilaiKontrak)),
+          `${formatShortDate(item.tanggalKontrak)} | ${formatShortDate(item.tanggalMulai)} - ${formatShortDate(item.tanggalSelesai)}`,
+          humanize(item.status),
+          "Detail",
+        ]),
+      ],
     },
   };
 }
@@ -1701,6 +1758,17 @@ function tableCellContent(
   const normalizedValue = value.toLowerCase();
 
   if (normalizedColumn === "aksi") {
+    if (value === "Tambah Kontrak/SP") {
+      return (
+        <Link
+          href="/kontrak-sp/tambah"
+          className="inline-flex h-8 items-center justify-center rounded-md border border-emerald-200 bg-white px-3 text-xs font-black text-[#08783f] transition hover:bg-emerald-50"
+        >
+          {value}
+        </Link>
+      );
+    }
+
     return (
       <button
         type="button"

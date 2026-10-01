@@ -3160,51 +3160,25 @@ async function KatalogWorkflowView({
     paket?.statusPaket?.toUpperCase().includes("SELESAI"),
   ).length;
   const processCount = Math.max(rupRows.length - readyCount - doneCount, 0);
-  const katalogStatusChart = [
-    {
-      label: "Siap Diproses",
-      value: readyCount,
-      helper: "RUP sudah tayang dan belum masuk paket proses",
-      className: "bg-blue-500",
-      badgeClassName: "bg-blue-50 text-blue-700",
-    },
-    {
-      label: "Sedang Diproses",
-      value: processCount,
-      helper: "Sudah masuk proses pemilihan / transaksi",
-      className: "bg-amber-500",
-      badgeClassName: "bg-amber-50 text-amber-700",
-    },
-    {
-      label: "Selesai",
-      value: doneCount,
-      helper: "Paket sudah selesai diproses",
-      className: "bg-emerald-500",
-      badgeClassName: "bg-emerald-50 text-emerald-700",
-    },
-  ];
-  const katalogStatusTotal = Math.max(
-    katalogStatusChart.reduce((sum, item) => sum + item.value, 0),
-    1,
-  );
-  const katalogChartMax = Math.max(
-    ...katalogStatusChart.map((item) => item.value),
-    1,
-  );
-  const katalogLinePoints = katalogStatusChart.map((item, index) => {
-    const x = 58 + index * 154;
-    const y = 220 - (item.value / katalogChartMax) * 156;
+  const sourceFundStats = Array.from(
+    rupRows
+      .reduce((map, item) => {
+        const label = item.sumberDana || "Tanpa Sumber Dana";
+        const current = map.get(label) ?? { label, count: 0, amount: 0 };
 
-    return {
-      ...item,
-      x,
-      y,
-      percent: Math.round((item.value / katalogStatusTotal) * 100),
-    };
-  });
-  const katalogPolyline = katalogLinePoints
-    .map((item) => `${item.x},${item.y}`)
-    .join(" ");
+        current.count += 1;
+        current.amount += decimalNumber(item.pagu);
+        map.set(label, current);
+
+        return map;
+      }, new Map<string, { label: string; count: number; amount: number }>())
+      .values(),
+  ).sort((a, b) => b.amount - a.amount);
+  const dominantSourceFund = sourceFundStats[0] ?? null;
+  const maxSourceFundAmount = Math.max(
+    ...sourceFundStats.map((item) => item.amount),
+    1,
+  );
 
   const selectedRup = detailId
     ? (rupRows.find((item) => item.id === detailId) ?? null)
@@ -3326,123 +3300,91 @@ async function KatalogWorkflowView({
           ))}
         </section>
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
-            <div className="min-w-0 px-5 py-5">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-2">
-                  <BarChart3 className="h-5 w-5 shrink-0 text-[#08783f]" />
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-[#08783f]">
+                Grafik Sumber Dana
+              </p>
+              <h2 className="mt-2 text-xl font-black leading-tight text-[#16227c] sm:text-2xl">
+                Distribusi pagu berdasarkan sumber dana
+              </h2>
+            </div>
+            <CircleDollarSign className="h-8 w-8 shrink-0 text-[#08783f]" />
+          </div>
+
+          {dominantSourceFund ? (
+            <>
+              <div className="mt-7 flex items-center justify-between gap-4 rounded-2xl bg-emerald-50 px-5 py-5 sm:px-6">
+                <div className="flex min-w-0 items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[#08783f]">
+                    <Landmark className="h-7 w-7" />
+                  </div>
                   <div className="min-w-0">
-                    <h2 className="text-lg font-black text-[#16227c]">
-                      Grafik Kondisi Paket e-Katalog
-                    </h2>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">
-                      Hanya menampilkan paket dengan RUP sudah tayang dan siap diproses.
+                    <p className="text-sm font-black uppercase text-[#08783f]">
+                      Sumber Dana Terbesar
+                    </p>
+                    <p className="mt-1 truncate text-2xl font-black tracking-wide text-slate-950 sm:text-3xl">
+                      {dominantSourceFund.label}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-500">
+                      {dominantSourceFund.count.toLocaleString("id-ID")} paket
+                      e-Katalog
                     </p>
                   </div>
                 </div>
-                <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
-                  {rupRows.length.toLocaleString("id-ID")} RUP siap
-                </span>
+                <p className="shrink-0 text-right text-lg font-black text-slate-950 sm:text-xl">
+                  {formatCompactCurrency(dominantSourceFund.amount)}
+                </p>
               </div>
 
-              <div className="mt-5 overflow-x-auto">
-                <svg
-                  viewBox="0 0 430 300"
-                  role="img"
-                  aria-label="Grafik garis kondisi paket e-Katalog"
-                  className="h-[320px] min-w-[430px] w-full"
-                >
-                  {[64, 116, 168, 220].map((y) => (
-                    <line
-                      key={y}
-                      x1="42"
-                      x2="406"
-                      y1={y}
-                      y2={y}
-                      stroke="#e2e8f0"
-                      strokeWidth="1"
-                    />
-                  ))}
-                  {[58, 212, 366].map((x) => (
-                    <line
-                      key={x}
-                      x1={x}
-                      x2={x}
-                      y1="64"
-                      y2="220"
-                      stroke="#edf2f7"
-                      strokeWidth="1"
-                    />
-                  ))}
-                  <polyline
-                    fill="none"
-                    points={katalogPolyline}
-                    stroke="#2aaec1"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="4"
-                  />
-                  {katalogLinePoints.map((item) => (
-                    <g key={item.label}>
-                      <circle
-                        cx={item.x}
-                        cy={item.y}
-                        fill="#2aaec1"
-                        r="5"
-                        stroke="#d8f3f7"
-                        strokeWidth="3"
-                      />
-                      <text
-                        x={item.x}
-                        y={Math.max(item.y - 14, 18)}
-                        fill="#0f172a"
-                        fontSize="13"
-                        fontWeight="800"
-                        textAnchor="middle"
-                      >
-                        {item.value.toLocaleString("id-ID")}
-                      </text>
-                      <text
-                        x={item.x}
-                        y="280"
-                        fill="#64748b"
-                        fontSize="13"
-                        fontWeight="700"
-                        textAnchor="middle"
-                      >
-                        {item.label}
-                      </text>
-                    </g>
-                  ))}
-                </svg>
-              </div>
-            </div>
+              <div className="mt-7 space-y-5">
+                {sourceFundStats.map((item, index) => {
+                  const width = Math.max(
+                    6,
+                    Math.round((item.amount / maxSourceFundAmount) * 100),
+                  );
+                  const barClass =
+                    index === 0
+                      ? "bg-[#08783f]"
+                      : index === 1
+                        ? "bg-[#f5bd20]"
+                        : index === 2
+                          ? "bg-[#1976d2]"
+                          : "bg-slate-400";
 
-            <div className="border-t border-slate-200 px-5 py-5 lg:border-l lg:border-t-0">
-              <div className="space-y-5">
-                {katalogLinePoints.map((item, index) => (
-                  <div key={item.label}>
-                    {index > 0 ? (
-                      <div className="mb-5 border-t border-slate-200" />
-                    ) : null}
-                    <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-[#2aaec1]" />
-                      <p className="text-sm font-black text-slate-600">
-                        {item.label}
-                      </p>
+                  return (
+                    <div key={item.label}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-base font-black text-slate-900">
+                            {item.label}
+                          </p>
+                          <p className="mt-1 text-sm font-bold text-slate-500">
+                            {item.count.toLocaleString("id-ID")} paket
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-right text-base font-black text-slate-900">
+                          {formatCompactCurrency(item.amount)}
+                        </p>
+                      </div>
+                      <div className="mt-3 h-4 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${barClass}`}
+                          style={{ width: `${width}%` }}
+                        />
+                      </div>
                     </div>
-                    <p className="mt-2 text-3xl font-black text-slate-900">
-                      {item.value.toLocaleString("id-ID")}
-                    </p>
-                    <p className="mt-1 text-sm font-bold text-slate-500">
-                      {item.percent}% dari total RUP siap
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+            </>
+          ) : (
+            <div className="mt-7 flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 text-center text-sm font-semibold text-slate-500">
+              Belum ada paket e-Katalog yang bisa ditampilkan pada grafik sumber
+              dana.
             </div>
-          </div>
+          )}
         </section>
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">

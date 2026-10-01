@@ -259,6 +259,7 @@ export async function updateSirupPublicationAction(
   revalidatePath("/perencanaan");
   revalidatePath("/katalog-v6-v5");
   revalidatePath("/sirup-rup");
+  revalidatePath("/tender-non-tender");
   revalidatePath(`/sirup-rup/${id}`);
 
   return {

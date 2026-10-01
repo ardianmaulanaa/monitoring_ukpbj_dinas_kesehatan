@@ -33,6 +33,10 @@ type FormState = {
   statusPaket:
     | "PERENCANAAN"
     | "SIAP_DIPROSES"
+    | "PERSIAPAN_DOKUMEN"
+    | "PENJADWALAN"
+    | "PENGUMUMAN_UNDANGAN"
+    | "EVALUASI_KLARIFIKASI"
     | "PEMILIHAN"
     | "PEMENANG_DITETAPKAN"
     | "KONTRAK"
@@ -383,8 +387,12 @@ export default function PaketForm({
               >
                 <option value="PERENCANAAN">Perencanaan</option>
                 <option value="SIAP_DIPROSES">Siap Diproses</option>
-                <option value="PEMILIHAN">Pemilihan</option>
-                <option value="PEMENANG_DITETAPKAN">Pemenang Ditetapkan</option>
+                <option value="PERSIAPAN_DOKUMEN">Persiapan Dokumen</option>
+                <option value="PENJADWALAN">Penjadwalan</option>
+                <option value="PENGUMUMAN_UNDANGAN">Pengumuman/Undangan</option>
+                <option value="EVALUASI_KLARIFIKASI">Evaluasi/Klarifikasi</option>
+                <option value="PEMILIHAN">Hasil Pemilihan</option>
+                <option value="PEMENANG_DITETAPKAN">Catat Penetapan</option>
                 <option value="KONTRAK">Kontrak</option>
                 <option value="SELESAI">Selesai</option>
                 <option value="GAGAL">Gagal</option>

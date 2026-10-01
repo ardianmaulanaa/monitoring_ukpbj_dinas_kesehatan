@@ -8,6 +8,7 @@ import EditRupModalButton from "@/components/button/sirup-rup/EditRupModalButton
 import PlanningDetailModalButton from "@/app/perencanaan/PlanningDetailModalButton";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
+import { isDatabaseConnectionError } from "@/lib/database-errors";
 import { canDeletePlanningProposal } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
@@ -157,6 +158,35 @@ function canActOnPlanningStatus(userRoles: RoleCode[], status: RupStatus) {
   return userRoles.some((role) => allowedRoles.includes(role));
 }
 
+async function getPlanningRows(where: Prisma.RencanaUmumPengadaanWhereInput) {
+  const query = () =>
+    prisma.rencanaUmumPengadaan.findMany({
+      where,
+      orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
+      take: 100,
+    });
+
+  try {
+    return await query();
+  } catch (error) {
+    if (!isDatabaseConnectionError(error)) {
+      throw error;
+    }
+
+    await prisma.$disconnect().catch(() => undefined);
+
+    try {
+      return await query();
+    } catch (retryError) {
+      if (isDatabaseConnectionError(retryError)) {
+        return [];
+      }
+
+      throw retryError;
+    }
+  }
+}
+
 async function updatePlanningApprovalAction(formData: FormData) {
   "use server";
 
@@ -202,6 +232,7 @@ async function updatePlanningApprovalAction(formData: FormData) {
 
   revalidatePath("/perencanaan");
   revalidatePath("/sirup-rup");
+  revalidatePath("/tender-non-tender");
 }
 
 export default async function Page({ searchParams }: PageProps) {
@@ -228,13 +259,11 @@ export default async function Page({ searchParams }: PageProps) {
     ...(statusSirup ? { statusSirup: statusSirup as RupStatus } : {}),
   };
 
-  const rupData = await prisma.rencanaUmumPengadaan.findMany({
-    where,
-    orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
-    take: 100,
-  });
-  const sourceFunds = await getActiveSumberDanaOptions();
-  const currentUser = await getCurrentUser();
+  const [rupData, sourceFunds, currentUser] = await Promise.all([
+    getPlanningRows(where),
+    getActiveSumberDanaOptions(),
+    getCurrentUser(),
+  ]);
   const currentUserRoles = currentUser?.roles ?? [];
   const canDeletePlanning = canDeletePlanningProposal(currentUserRoles);
 

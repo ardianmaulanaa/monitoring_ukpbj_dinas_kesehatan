@@ -28,6 +28,10 @@ const createPaketSchema = z.object({
     .enum([
       "PERENCANAAN",
       "SIAP_DIPROSES",
+      "PERSIAPAN_DOKUMEN",
+      "PENJADWALAN",
+      "PENGUMUMAN_UNDANGAN",
+      "EVALUASI_KLARIFIKASI",
       "PEMILIHAN",
       "PEMENANG_DITETAPKAN",
       "KONTRAK",

@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   type ReactNode,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -39,10 +38,6 @@ export default function NavBar({
   filterPanel,
   onOpenMenu,
 }: NavBarProps) {
-  const [currentUser, setCurrentUser] = useState<{
-    name: string;
-    email: string;
-  } | null>(null);
   const [notifications, setNotifications] = useState<{
     total: number;
     items: NotificationItem[];
@@ -50,21 +45,13 @@ export default function NavBar({
   const [filterOpen, setFilterOpen] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
 
-  // Ambil data user dan notifikasi dari API untuk bagian kanan header.
+  // Ambil data notifikasi untuk bagian kanan header.
   useEffect(() => {
     let active = true;
 
     async function loadHeaderData() {
       try {
-        const [userResponse, notificationResponse] = await Promise.all([
-          fetch("/api/auth/me"),
-          fetch("/api/notifications"),
-        ]);
-
-        if (active && userResponse.ok) {
-          const payload = await userResponse.json();
-          setCurrentUser(payload.data?.user ?? null);
-        }
+        const notificationResponse = await fetch("/api/notifications");
 
         if (active && notificationResponse.ok) {
           const payload = await notificationResponse.json();
@@ -112,12 +99,6 @@ export default function NavBar({
     };
   }, [filterOpen]);
 
-  // Huruf avatar diambil dari nama user, fallback ke email, lalu Admin.
-  const profileInitial = useMemo(() => {
-    const source = currentUser?.name || currentUser?.email || "Admin";
-    return source.trim().charAt(0).toUpperCase() || "A";
-  }, [currentUser]);
-
   return (
     <>
       <header className="app-header-static sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm">
@@ -149,6 +130,7 @@ export default function NavBar({
                   width={28}
                   height={28}
                   className="h-7 w-7 object-contain"
+                  style={{ width: "28px", height: "auto" }}
                   priority
                 />
               </div>
@@ -236,14 +218,6 @@ export default function NavBar({
               </Link>
             </div>
 
-            <Link
-              href="/profile"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#08783f] text-sm font-black text-white shadow-sm ring-1 ring-emerald-100 transition hover:bg-[#066532] focus:outline-none focus:ring-2 focus:ring-[#08783f] focus:ring-offset-2"
-              aria-label="Profil pengguna"
-              title={currentUser?.name ?? "Admin"}
-            >
-              {profileInitial}
-            </Link>
           </div>
         </div>
       </header>
