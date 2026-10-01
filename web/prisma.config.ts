@@ -6,7 +6,7 @@ const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL belum diatur. Gunakan URL TiDB, contoh: mysql://USER:PASSWORD@HOST:4000/ukpbj_kesehatan_db?sslaccept=strict",
+    "DATABASE_URL belum diatur. Gunakan URL PostgreSQL, contoh: postgresql://USER:PASSWORD@HOST:5432/monitoring_ukpbj?schema=public",
   );
 }
 

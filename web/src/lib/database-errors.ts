@@ -6,7 +6,7 @@ export function isDatabaseConnectionError(error: unknown) {
   }
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    return error.code === "P1001" || error.code === "P1002";
+    return error.code === "P1001" || error.code === "P1002" || error.code === "P1017";
   }
 
   if (!(error instanceof Error)) {
@@ -15,7 +15,7 @@ export function isDatabaseConnectionError(error: unknown) {
 
   return (
     error.name === "PrismaClientInitializationError" ||
-    error.message.includes("Can't reach database server")
+    error.message.includes("Can't reach database server") ||
+    error.message.includes("Server has closed the connection")
   );
 }
-

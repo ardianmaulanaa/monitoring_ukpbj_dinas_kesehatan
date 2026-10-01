@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -67,6 +67,10 @@ enum PaketMetodePengadaan {
 enum PaketStatus {
   PERENCANAAN
   SIAP_DIPROSES
+  PERSIAPAN_DOKUMEN
+  PENJADWALAN
+  PENGUMUMAN_UNDANGAN
+  EVALUASI_KLARIFIKASI
   PEMILIHAN
   PEMENANG_DITETAPKAN
   KONTRAK
@@ -543,6 +547,7 @@ model AuditChecklist {
   dokumen   String             @db.VarChar(160)
   status    AuditDokumenStatus @default(BELUM_ADA)
   catatan   String?            @db.Text
+  fileUrl   String?            @map("file_url") @db.VarChar(255)
   createdAt DateTime           @default(now()) @map("created_at")
   updatedAt DateTime           @updatedAt @map("updated_at")
 

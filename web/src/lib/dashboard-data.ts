@@ -216,7 +216,11 @@ let schemaCatalogPromise: Promise<SchemaCatalog> | null = null;
 let schemaCatalogExpiresAt = 0;
 
 function quoteIdentifier(identifier: string) {
-  return `\`${identifier.replaceAll("`", "``")}\``;
+  return `"${identifier.replaceAll('"', '""')}"`;
+}
+
+function parameterPlaceholder(index: number) {
+  return `$${index}`;
 }
 
 function toNumber(value: unknown) {
@@ -239,9 +243,11 @@ function toNumber(value: unknown) {
   return 0;
 }
 
-function buildLikeWhere(column: string, words: readonly string[]) {
+function buildLikeWhere(column: string, words: readonly string[], startIndex = 1) {
   const quotedColumn = quoteIdentifier(column);
-  const conditions = words.map(() => `LOWER(${quotedColumn}) LIKE ?`);
+  const conditions = words.map(
+    (_, index) => `LOWER(${quotedColumn}) LIKE ${parameterPlaceholder(startIndex + index)}`,
+  );
 
   return {
     sql: conditions.join(" OR "),
@@ -249,9 +255,11 @@ function buildLikeWhere(column: string, words: readonly string[]) {
   };
 }
 
-function buildExactOrLikeWhere(column: string, values: readonly string[]) {
+function buildExactOrLikeWhere(column: string, values: readonly string[], startIndex = 1) {
   const quotedColumn = quoteIdentifier(column);
-  const conditions = values.map(() => `LOWER(${quotedColumn}) = LOWER(?)`);
+  const conditions = values.map(
+    (_, index) => `LOWER(${quotedColumn}) = LOWER(${parameterPlaceholder(startIndex + index)})`,
+  );
 
   return {
     sql: conditions.join(" OR "),
@@ -266,9 +274,9 @@ function getSchemaCatalog() {
     schemaCatalogExpiresAt = now + schemaCatalogTtlMs;
     schemaCatalogPromise = prisma
       .$queryRawUnsafe<SchemaColumnRow[]>(
-        `SELECT table_name AS tableName, column_name AS columnName
+        `SELECT table_name AS "tableName", column_name AS "columnName"
          FROM information_schema.columns
-         WHERE table_schema = DATABASE()`,
+         WHERE table_schema = current_schema()`,
       )
       .then((rows) => {
         const catalog: SchemaCatalog = new Map();
@@ -405,7 +413,7 @@ async function countNearDeadline(tableName: string | null) {
   const rows = await prisma.$queryRawUnsafe<CountRow[]>(
     `SELECT COUNT(*) AS count
      FROM ${quoteIdentifier(tableName)}
-     WHERE ${quoteIdentifier(dueColumn)} BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+     WHERE ${quoteIdentifier(dueColumn)} BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
      ${statusFilter}`,
   );
 
@@ -699,9 +707,9 @@ async function getPriorities(tableName: string | null) {
        0 AS budget,
        ${quoteIdentifier(statusColumn)} AS status
      FROM ${quoteIdentifier(tableName)}
-     WHERE ${quoteIdentifier(dueColumn)} BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+     WHERE ${quoteIdentifier(dueColumn)} BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
        AND UPPER(${quoteIdentifier(statusColumn)}) NOT IN ('SELESAI', 'GAGAL', 'BATAL')
-     LIMIT ?`,
+     LIMIT ${parameterPlaceholder(1)}`,
     3 - priorities.length,
   );
 
@@ -753,12 +761,12 @@ async function getMonthlyRealization(
     { monthIndex: bigint | number | string | null; pagu: unknown; realisasi: unknown }[]
   >(
     `SELECT
-       MONTH(${quoteIdentifier(dateColumn)}) AS monthIndex,
+       EXTRACT(MONTH FROM ${quoteIdentifier(dateColumn)}) AS "monthIndex",
        COALESCE(SUM(${quoteIdentifier(budgetColumnName)}), 0) AS pagu,
        ${amountSql} AS realisasi
      FROM ${quoteIdentifier(tableName)}
-     WHERE YEAR(${quoteIdentifier(dateColumn)}) = ?
-     GROUP BY MONTH(${quoteIdentifier(dateColumn)})`,
+     WHERE EXTRACT(YEAR FROM ${quoteIdentifier(dateColumn)}) = ${parameterPlaceholder(1)}
+     GROUP BY EXTRACT(MONTH FROM ${quoteIdentifier(dateColumn)})`,
     year,
   );
 
