@@ -506,12 +506,13 @@ async function getCategories(packageTable: string | null, goodsTable: string | n
   const amountSql = amountColumn
     ? `COALESCE(SUM(${quoteIdentifier(amountColumn)}), 0)`
     : "0";
+  const categoryExpression = textExpression(categoryColumn);
 
   const rows = await prisma.$queryRawUnsafe<CategoryRow[]>(
-    `SELECT ${quoteIdentifier(categoryColumn)} AS label, COUNT(*) AS value, ${amountSql} AS amount
+    `SELECT ${categoryExpression} AS label, COUNT(*) AS value, ${amountSql} AS amount
      FROM ${quoteIdentifier(tableName)}
-     WHERE ${quoteIdentifier(categoryColumn)} IS NOT NULL AND ${quoteIdentifier(categoryColumn)} <> ''
-     GROUP BY ${quoteIdentifier(categoryColumn)}
+     WHERE ${quoteIdentifier(categoryColumn)} IS NOT NULL AND ${categoryExpression} <> ''
+     GROUP BY ${categoryExpression}
      ORDER BY value DESC
      LIMIT 5`,
   );
@@ -534,12 +535,13 @@ async function getBreakdown(
   const amountSql = amountColumnName
     ? `COALESCE(SUM(${quoteIdentifier(amountColumnName)}), 0)`
     : "0";
+  const labelExpression = textExpression(labelColumnName);
 
   const rows = await prisma.$queryRawUnsafe<BreakdownRow[]>(
-    `SELECT ${quoteIdentifier(labelColumnName)} AS label, COUNT(*) AS count, ${amountSql} AS amount
+    `SELECT ${labelExpression} AS label, COUNT(*) AS count, ${amountSql} AS amount
      FROM ${quoteIdentifier(tableName)}
-     WHERE ${quoteIdentifier(labelColumnName)} IS NOT NULL AND ${quoteIdentifier(labelColumnName)} <> ''
-     GROUP BY ${quoteIdentifier(labelColumnName)}
+     WHERE ${quoteIdentifier(labelColumnName)} IS NOT NULL AND ${labelExpression} <> ''
+     GROUP BY ${labelExpression}
      ORDER BY count DESC`,
   );
 
