@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import SirupRupLineChart from "@/components/charts/SirupRupLineChart";
 import CompleteSirupModalButton from "@/components/button/sirup-rup/CompleteSirupModalButton";
 import DeleteRupButton from "@/components/button/sirup-rup/DeleteRupButton";
+import ImportRupModalButton from "@/components/button/sirup-rup/ImportRupModalButton";
 import RupDetailModalButton from "@/components/button/sirup-rup/RupDetailModalButton";
 import { canDeletePlanningProposal } from "@/lib/permissions";
 
@@ -455,10 +456,13 @@ export default async function Page({ searchParams }: RupPageProps) {
                 </h1>
               </div>
 
-              <p className="text-sm font-semibold text-slate-500">
-                Paket diambil dari Perencanaan, lalu dilengkapi data tayang
-                SIRUP.
-              </p>
+              <div className="flex flex-col gap-2 sm:items-end">
+                {canManageRup ? <ImportRupModalButton /> : null}
+                <p className="text-sm font-semibold text-slate-500">
+                  Paket diambil dari Perencanaan, lalu dilengkapi data tayang
+                  SIRUP.
+                </p>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
