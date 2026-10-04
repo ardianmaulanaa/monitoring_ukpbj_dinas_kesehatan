@@ -12,6 +12,7 @@ type SumberDanaOption = {
 };
 
 type EditRupModalButtonProps = {
+  defaultUnitPengusul?: string | null;
   initialData: Record<string, string | number | null | undefined>;
   sumberDanaOptions: SumberDanaOption[];
   label?: string;
@@ -19,6 +20,7 @@ type EditRupModalButtonProps = {
 };
 
 export default function EditRupModalButton({
+  defaultUnitPengusul,
   initialData,
   sumberDanaOptions,
   label = "Edit",
@@ -52,6 +54,7 @@ export default function EditRupModalButton({
         maxWidthClassName="max-w-5xl"
       >
         <RupForm
+          defaultUnitPengusul={defaultUnitPengusul}
           sumberDanaOptions={sumberDanaOptions}
           mode={mode}
           variant="modal"

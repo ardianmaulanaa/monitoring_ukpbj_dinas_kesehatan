@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
-import { canDeletePlanningProposal } from "@/lib/permissions";
+import { canProcessRup } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
 
 export type RupRevisionState = {
@@ -115,7 +115,7 @@ export async function updateSirupPublicationAction(
     return { ok: false, message: "Sesi login tidak ditemukan." };
   }
 
-  if (!canDeletePlanningProposal(user.roles)) {
+  if (!canProcessRup(user.roles)) {
     return {
       ok: false,
       message: "Hanya superadmin yang boleh mengubah data SIRUP/RUP.",
@@ -149,6 +149,7 @@ export async function updateSirupPublicationAction(
 
   if (
     ![
+      "SIAP_RUP",
       "BELUM_INPUT",
       "PROSES_VERIFIKASI",
       "SUDAH_TAYANG",
@@ -183,11 +184,17 @@ export async function updateSirupPublicationAction(
         | "SWAKELOLA",
       pagu,
       statusSirup: statusSirup as
+        | "SIAP_RUP"
         | "BELUM_INPUT"
         | "PROSES_VERIFIKASI"
         | "SUDAH_TAYANG"
         | "REVISI_PAGU"
         | "DITARIK",
+      ...(statusSirup === "SUDAH_TAYANG"
+        ? {
+            statusUsulan: "RUP_TAYANG" as const,
+          }
+        : {}),
       jenisKatalog:
         metodePengadaan === "E_PURCHASING"
           ? optionalText(formData.get("jenisKatalog"))

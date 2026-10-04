@@ -3,7 +3,6 @@
 import type { RoleCode } from "@prisma/client";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { useOptionalSidebarState } from "./SidebarState";
 import GlobalFilterPanel from "./GlobalFilterPanel";
 import NavBar from "./NavBar";
 import Sidebar from "./Sidebar";
@@ -24,7 +23,6 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roles, setRoles] = useState<RoleCode[]>([]);
-  const sidebarState = useOptionalSidebarState();
   const visibleSubtitle =
     subtitle && !subtitle.includes("›") && !subtitle.includes(" / ")
       ? subtitle
@@ -94,17 +92,7 @@ export default function AppHeader({
         subtitle={visibleSubtitle}
         rightLabel={rightLabel}
         filterPanel={filterPanel ?? <GlobalFilterPanel />}
-        onOpenMenu={() => {
-          if (
-            sidebarState &&
-            window.matchMedia("(min-width: 1024px)").matches
-          ) {
-            sidebarState.toggleDesktopSidebar();
-            return;
-          }
-
-          setSidebarOpen(true);
-        }}
+        onOpenMenu={() => setSidebarOpen(true)}
       />
     </>
   );

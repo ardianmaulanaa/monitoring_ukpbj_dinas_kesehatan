@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 import type { RoleCode } from "@prisma/client";
 import {
   AlertTriangle,
@@ -11,6 +13,7 @@ import {
   ClipboardList,
   FileBarChart2,
   FileCheck2,
+  ListChecks,
   FolderOpen,
   LayoutDashboard,
   LogOut,
@@ -57,8 +60,14 @@ const sections: NavigationSection[] = [
     title: "Utama",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/sirup-rup", label: "SIRUP / RUP", icon: ClipboardList },
-      { href: "/perencanaan", label: "Perencanaan", icon: Ruler },
+      { href: "/sirup-rup", label: "SIRUP/RUP", icon: ClipboardList },
+    ],
+  },
+  {
+    title: "Perencanaan",
+    items: [
+      { href: "/perencanaan", label: "Usulan Perencanaan", icon: Ruler },
+      { href: "/verifikasi", label: "Verifikasi", icon: ListChecks },
     ],
   },
   {
@@ -124,6 +133,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const isDesktop = mode === "desktop";
   const drawerOpen = isDesktop ? !collapsed : open;
   // Ambil hanya menu yang boleh diakses role user saat ini.
@@ -134,6 +144,12 @@ export default function Sidebar({
     }))
     .filter((section) => section.items.length > 0);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
     onClose?.();
@@ -141,23 +157,23 @@ export default function Sidebar({
     router.refresh();
   }
 
-  return (
+  const sidebar = (
     <>
-      {drawerOpen ? (
+      {drawerOpen && !isDesktop ? (
         // Overlay gelap di belakang sidebar mobile; klik area ini untuk menutup menu.
         <button
           type="button"
           aria-label="Tutup sidebar"
-          className="fixed inset-0 z-40 h-[100dvh] max-h-[100dvh] cursor-default bg-slate-950/20 backdrop-blur-[1px] transition"
-          onClick={isDesktop ? onToggleDesktop : onClose}
+          className="fixed inset-0 z-[60] h-[100dvh] max-h-[100dvh] cursor-default bg-slate-950/20 backdrop-blur-[1px] transition"
+          onClick={onClose}
         />
       ) : null}
 
       <aside
-        className={`app-sidebar-drawer fixed inset-y-0 left-0 z-50 flex h-dvh max-h-dvh w-[min(82vw,300px)] flex-col overflow-hidden rounded-none border-r border-slate-200 bg-white text-slate-700 shadow-2xl shadow-slate-950/20 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`app-sidebar-drawer fixed inset-y-0 left-0 z-[70] flex h-dvh max-h-dvh w-[min(82vw,300px)] flex-col overflow-hidden rounded-none border-r border-slate-200 bg-white text-slate-700 shadow-2xl shadow-slate-950/20 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isDesktop
             ? `hidden lg:flex ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`
-            : `${drawerOpen ? "translate-x-0" : "-translate-x-full"} lg:hidden`
+            : `${drawerOpen ? "translate-x-0" : "-translate-x-full"}`
         }`}
       >
         {/* HEADER: judul aplikasi dan tombol buka/tutup sidebar. */}
@@ -264,4 +280,10 @@ export default function Sidebar({
       </aside>
     </>
   );
+
+  if (!mounted) {
+    return null;
+  }
+
+  return createPortal(sidebar, document.body);
 }

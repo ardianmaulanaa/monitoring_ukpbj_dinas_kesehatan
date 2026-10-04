@@ -68,7 +68,7 @@ export default function IntroPageClient() {
         </h1>
 
         <p className="intro-copy mt-5 w-full max-w-[18rem] text-sm font-semibold leading-6 text-slate-600 sm:max-w-md sm:text-base sm:leading-7">
-          Sistem Monitoring UKPBJ Dinas Kesehatan
+          SIMUKPBJ Dinas Kesehatan
         </p>
 
         <div className="intro-progress mt-8 h-1.5 w-52 overflow-hidden rounded-full bg-white shadow-inner ring-1 ring-[#08783f]/10">

@@ -15,9 +15,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sistem Monitoring Pengadaan Barang dan Jasa Dinas Kesehatan",
+  title: "SIMUKPBJ",
   description:
-    "Monitoring siklus pengadaan barang dan jasa Dinas Kesehatan.",
+    "Sistem informasi UKPBJ Dinas Kesehatan.",
+  icons: {
+    icon: "/app/logo-dinkes.png",
+    shortcut: "/app/logo-dinkes.png",
+    apple: "/app/logo-dinkes.png",
+  },
 };
 
 export default function RootLayout({

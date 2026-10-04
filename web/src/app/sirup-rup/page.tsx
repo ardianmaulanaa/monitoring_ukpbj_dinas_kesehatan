@@ -8,13 +8,14 @@ import CompleteSirupModalButton from "@/components/button/sirup-rup/CompleteSiru
 import DeleteRupButton from "@/components/button/sirup-rup/DeleteRupButton";
 import ImportRupModalButton from "@/components/button/sirup-rup/ImportRupModalButton";
 import RupDetailModalButton from "@/components/button/sirup-rup/RupDetailModalButton";
-import { canDeletePlanningProposal } from "@/lib/permissions";
+import { canProcessRup } from "@/lib/planning-workflow";
 
 type RupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const statusStyles = {
+const statusStyles: Record<string, string> = {
+  SIAP_RUP: "bg-emerald-100 text-emerald-700",
   BELUM_INPUT: "bg-slate-100 text-slate-600",
   PROSES_VERIFIKASI: "bg-amber-100 text-amber-700",
   MENUNGGU_PPTK: "bg-blue-100 text-blue-700",
@@ -25,7 +26,8 @@ const statusStyles = {
   DITARIK: "bg-red-100 text-red-700",
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
+  SIAP_RUP: "Siap RUP",
   BELUM_INPUT: "Belum Input",
   PROSES_VERIFIKASI: "Proses Verifikasi",
   MENUNGGU_PPTK: "Menunggu PPTK",
@@ -166,19 +168,21 @@ export default async function Page({ searchParams }: RupPageProps) {
     ...(tahunAnggaran ? { tahunAnggaran: Number(tahunAnggaran) } : {}),
     ...(sumberDana ? { sumberDana } : {}),
     ...(unitPengusul ? { unitPengusul } : {}),
-    ...(statusSirup
-      ? {
-          statusSirup: statusSirup as
-            | "BELUM_INPUT"
-            | "PROSES_VERIFIKASI"
-            | "MENUNGGU_PPTK"
-            | "MENUNGGU_PPK"
-            | "MENUNGGU_KPA_PA"
-            | "SUDAH_TAYANG"
-            | "REVISI_PAGU"
-            | "DITARIK",
-        }
-      : {}),
+    ...(statusSirup === "SIAP_RUP"
+      ? { statusUsulan: "SIAP_RUP" as const }
+      : statusSirup
+        ? {
+            statusSirup: statusSirup as
+              | "BELUM_INPUT"
+              | "PROSES_VERIFIKASI"
+              | "MENUNGGU_PPTK"
+              | "MENUNGGU_PPK"
+              | "MENUNGGU_KPA_PA"
+              | "SUDAH_TAYANG"
+              | "REVISI_PAGU"
+              | "DITARIK",
+          }
+        : {}),
   };
 
   const rupData = await prisma.rencanaUmumPengadaan.findMany({
@@ -276,7 +280,7 @@ export default async function Page({ searchParams }: RupPageProps) {
   ];
   const dominantApprovedSourceFund = rupChartCategories[0]?.items[0];
   const currentUser = await getCurrentUser();
-  const canManageRup = canDeletePlanningProposal(currentUser?.roles ?? []);
+  const canManageRup = canProcessRup(currentUser?.roles ?? []);
   const currentUserProfile = currentUser
     ? await prisma.user.findUnique({
         where: { id: currentUser.id },
@@ -599,7 +603,11 @@ export default async function Page({ searchParams }: RupPageProps) {
                           {canManageRup ? (
                             <>
                               <CompleteSirupModalButton
-                                label="Edit SIRUP/RUP"
+                                label={
+                                  item.statusUsulan === "SIAP_RUP"
+                                    ? "Proses RUP"
+                                    : "Edit SIRUP/RUP"
+                                }
                                 item={{
                                   id: item.id,
                                   kodeRup: item.kodeRup,

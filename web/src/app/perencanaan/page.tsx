@@ -1,5 +1,4 @@
-import { revalidatePath } from "next/cache";
-import { Prisma, type RoleCode, type RupStatus } from "@prisma/client";
+import { Prisma, type StatusUsulan } from "@prisma/client";
 import { FileSearch } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
 import AddRupModalButton from "@/components/button/sirup-rup/AddRupModalButton";
@@ -10,98 +9,19 @@ import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
 import { isDatabaseConnectionError } from "@/lib/database-errors";
 import { canDeletePlanningProposal } from "@/lib/permissions";
+import {
+  canEditUsulan,
+  isDraftStatus,
+  isReadyRupStatus,
+  isRevisionStatus,
+  planningStatusLabels,
+  planningStatusStyles,
+} from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
 import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
-
-const planningStatusLabels: Record<string, string> = {
-  BELUM_INPUT: "Draft Usulan",
-  PROSES_VERIFIKASI: "Menunggu Kepala Unit",
-  MENUNGGU_PPTK: "Menunggu PPTK",
-  MENUNGGU_PPK: "Menunggu PPK",
-  MENUNGGU_KPA_PA: "Menunggu KPA/PA",
-  REVISI_PAGU: "Perlu Revisi",
-  SUDAH_TAYANG: "Siap RUP/SIRUP",
-  DITARIK: "Ditolak",
-};
-
-const planningStatusStyles: Record<string, string> = {
-  BELUM_INPUT: "bg-slate-100 text-slate-600",
-  PROSES_VERIFIKASI: "bg-amber-100 text-amber-700",
-  MENUNGGU_PPTK: "bg-blue-100 text-blue-700",
-  MENUNGGU_PPK: "bg-violet-100 text-violet-700",
-  MENUNGGU_KPA_PA: "bg-indigo-100 text-indigo-700",
-  REVISI_PAGU: "bg-orange-100 text-orange-700",
-  SUDAH_TAYANG: "bg-emerald-100 text-emerald-700",
-  DITARIK: "bg-red-100 text-red-700",
-};
-
-const planningStatusRole: Partial<Record<RupStatus, RoleCode[]>> = {
-  BELUM_INPUT: ["OPERATOR"],
-  PROSES_VERIFIKASI: ["LEADER"],
-  MENUNGGU_PPTK: ["PPTK"],
-  MENUNGGU_PPK: ["PPK"],
-  MENUNGGU_KPA_PA: ["KPA", "PA"],
-};
-
-const planningNextStatus: Partial<Record<RupStatus, RupStatus>> = {
-  BELUM_INPUT: "PROSES_VERIFIKASI",
-  PROSES_VERIFIKASI: "MENUNGGU_PPTK",
-  MENUNGGU_PPTK: "MENUNGGU_PPK",
-  MENUNGGU_PPK: "MENUNGGU_KPA_PA",
-  MENUNGGU_KPA_PA: "SUDAH_TAYANG",
-};
-
-const planningApprovalRoleFlow: {
-  status: RupStatus;
-  label: string;
-  roles: RoleCode[];
-  helper: string;
-}[] = [
-  {
-    status: "BELUM_INPUT",
-    label: "Unit Pengusul",
-    roles: ["OPERATOR"],
-    helper: "Ajukan usulan awal ke Kepala Unit.",
-  },
-  {
-    status: "PROSES_VERIFIKASI",
-    label: "Kepala Unit",
-    roles: ["LEADER"],
-    helper: "Validasi kebutuhan unit dan kelengkapan awal.",
-  },
-  {
-    status: "MENUNGGU_PPTK",
-    label: "PPTK",
-    roles: ["PPTK"],
-    helper: "Cek kegiatan, output, jadwal, dan anggaran.",
-  },
-  {
-    status: "MENUNGGU_PPK",
-    label: "PPK",
-    roles: ["PPK"],
-    helper: "Review KAK, spesifikasi, HPS, dan metode.",
-  },
-  {
-    status: "MENUNGGU_KPA_PA",
-    label: "KPA/PA",
-    roles: ["KPA", "PA"],
-    helper: "Approval akhir sebelum siap RUP/SIRUP.",
-  },
-];
-
-const roleNames: Partial<Record<RoleCode, string>> = {
-  SUPER_ADMIN: "Super Admin",
-  LPSE_ADMIN: "Admin LPSE",
-  OPERATOR: "Operator",
-  LEADER: "Kepala Unit",
-  PPTK: "PPTK",
-  PPK: "PPK",
-  PA: "PA",
-  KPA: "KPA",
 };
 
 function getParam(
@@ -127,35 +47,14 @@ function humanize(value: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function methodLabel(value: string) {
-  const labels: Record<string, string> = {
-    TENDER: "Tender",
-    NON_TENDER: "Non Tender",
-    E_PURCHASING: "e-Katalog",
-    PENGADAAN_LANGSUNG: "Pengadaan Langsung",
-    SWAKELOLA: "Swakelola",
-  };
+function priorityClass(value: string | null) {
+  const normalized = (value ?? "").toUpperCase();
 
-  return labels[value] ?? humanize(value);
-}
+  if (normalized === "MENDESAK") return "bg-red-100 text-red-700";
+  if (normalized === "TINGGI") return "bg-amber-100 text-amber-700";
+  if (normalized === "RENDAH") return "bg-slate-100 text-slate-600";
 
-function sourceFundClass(value: string) {
-  const normalized = value.toUpperCase();
-
-  if (normalized.includes("BLUD")) return "bg-emerald-100 text-[#08783f]";
-  if (normalized.includes("APBD")) return "bg-amber-100 text-amber-700";
-  if (normalized.includes("DBHCHT")) return "bg-red-100 text-red-700";
-
-  return "bg-emerald-100 text-emerald-700";
-}
-
-function canActOnPlanningStatus(userRoles: RoleCode[], status: RupStatus) {
-  if (userRoles.includes("SUPER_ADMIN")) {
-    return Boolean(planningNextStatus[status]);
-  }
-
-  const allowedRoles = planningStatusRole[status] ?? [];
-  return userRoles.some((role) => allowedRoles.includes(role));
+  return "bg-blue-100 text-blue-700";
 }
 
 async function getPlanningRows(where: Prisma.RencanaUmumPengadaanWhereInput) {
@@ -187,61 +86,15 @@ async function getPlanningRows(where: Prisma.RencanaUmumPengadaanWhereInput) {
   }
 }
 
-async function updatePlanningApprovalAction(formData: FormData) {
-  "use server";
-
-  const user = await getCurrentUser();
-  if (!user) return;
-
-  const id = String(formData.get("id") ?? "");
-  const action = String(formData.get("action") ?? "");
-  const actionNote = String(formData.get("catatanAksi") ?? "").trim();
-  const proposal = await prisma.rencanaUmumPengadaan.findUnique({
-    where: { id },
-    select: { statusSirup: true },
-  });
-
-  if (!proposal || !canActOnPlanningStatus(user.roles, proposal.statusSirup)) {
-    return;
-  }
-
-  const nextStatus =
-    action === "revise"
-      ? "REVISI_PAGU"
-      : action === "reject"
-        ? "DITARIK"
-        : planningNextStatus[proposal.statusSirup];
-
-  if (!nextStatus) return;
-  if ((action === "revise" || action === "reject") && !actionNote) return;
-
-  await prisma.rencanaUmumPengadaan.update({
-    where: { id },
-    data: {
-      statusSirup: nextStatus,
-      ...(action === "revise" || action === "reject"
-        ? {
-            catatan:
-              action === "reject"
-                ? `Ditolak: ${actionNote}`
-                : `Revisi diminta: ${actionNote}`,
-          }
-        : {}),
-    },
-  });
-
-  revalidatePath("/perencanaan");
-  revalidatePath("/sirup-rup");
-  revalidatePath("/tender-non-tender");
-}
-
 export default async function Page({ searchParams }: PageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const q = getParam(resolvedSearchParams, "q")?.trim();
   const tahunAnggaran = getParam(resolvedSearchParams, "tahunAnggaran");
   const sumberDana = getParam(resolvedSearchParams, "sumberDana");
   const unitPengusul = getParam(resolvedSearchParams, "unitPengusul");
-  const statusSirup = getParam(resolvedSearchParams, "statusSirup");
+  const statusUsulan =
+    getParam(resolvedSearchParams, "statusUsulan") ??
+    getParam(resolvedSearchParams, "statusSirup");
 
   const where: Prisma.RencanaUmumPengadaanWhereInput = {
     ...(q
@@ -256,7 +109,7 @@ export default async function Page({ searchParams }: PageProps) {
     ...(tahunAnggaran ? { tahunAnggaran: Number(tahunAnggaran) } : {}),
     ...(sumberDana ? { sumberDana } : {}),
     ...(unitPengusul ? { unitPengusul } : {}),
-    ...(statusSirup ? { statusSirup: statusSirup as RupStatus } : {}),
+    ...(statusUsulan ? { statusUsulan: statusUsulan as StatusUsulan } : {}),
   };
 
   const [rupData, sourceFunds, currentUser] = await Promise.all([
@@ -265,28 +118,28 @@ export default async function Page({ searchParams }: PageProps) {
     getCurrentUser(),
   ]);
   const currentUserRoles = currentUser?.roles ?? [];
+  const currentUserProfile = currentUser
+    ? await prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: { unitKerja: true },
+      })
+    : null;
   const canDeletePlanning = canDeletePlanningProposal(currentUserRoles);
 
   const totalPagu = rupData.reduce(
-    (sum, item) => sum + decimalNumber(item.pagu),
+    (sum, item) => sum + decimalNumber(item.totalEstimasi ?? item.pagu),
     0,
   );
   const draftCount = rupData.filter(
-    (item) => item.statusSirup === "BELUM_INPUT",
+    (item) => isDraftStatus(item.statusUsulan),
   ).length;
-  const reviewCount = rupData.filter((item) =>
-    [
-      "PROSES_VERIFIKASI",
-      "MENUNGGU_PPTK",
-      "MENUNGGU_PPK",
-      "MENUNGGU_KPA_PA",
-    ].includes(item.statusSirup),
-  ).length;
+  const reviewCount = rupData.filter((item) => item.statusUsulan === "DIAJUKAN").length;
   const revisionCount = rupData.filter(
-    (item) => item.statusSirup === "REVISI_PAGU",
+    (item) => isRevisionStatus(item.statusUsulan),
   ).length;
   const readyCount = rupData.filter(
-    (item) => item.statusSirup === "SUDAH_TAYANG",
+    (item) =>
+      isReadyRupStatus(item.statusUsulan) || item.statusUsulan === "RUP_TAYANG",
   ).length;
 
   return (
@@ -315,7 +168,7 @@ export default async function Page({ searchParams }: PageProps) {
               {
                 label: "Menunggu Review",
                 value: reviewCount.toLocaleString("id-ID"),
-                helper: "Kepala Unit/PPTK/PPK/KPA",
+                helper: "Menunggu Kepala Unit",
                 tone: "border-l-[#f57c00]",
               },
               {
@@ -355,6 +208,7 @@ export default async function Page({ searchParams }: PageProps) {
               </div>
 
               <AddRupModalButton
+                defaultUnitPengusul={currentUserProfile?.unitKerja}
                 sumberDanaOptions={sourceFunds}
                 label="Tambah Usulan"
                 mode="planning"
@@ -362,19 +216,20 @@ export default async function Page({ searchParams }: PageProps) {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="min-w-[1320px] w-full border-collapse text-left text-sm">
+              <table className="min-w-[1420px] w-full border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
-                    <th className="px-4 py-3">Kode RUP</th>
-                    <th className="px-4 py-3">Nama Usulan</th>
+                    <th className="px-4 py-3">Kode Usulan</th>
+                    <th className="px-4 py-3">Uraian Kebutuhan</th>
                     <th className="px-4 py-3">Unit</th>
+                    <th className="px-4 py-3">Tahun</th>
                     <th className="px-4 py-3">Program / Kegiatan</th>
                     <th className="px-4 py-3">Rekening</th>
-                    <th className="px-4 py-3">Sumber Dana</th>
-                    <th className="px-4 py-3">Pagu</th>
-                    <th className="px-4 py-3">Metode</th>
-                    <th className="px-4 py-3">Kesiapan Dokumen</th>
+                    <th className="px-4 py-3">Jumlah</th>
+                    <th className="px-4 py-3">Total Estimasi</th>
+                    <th className="px-4 py-3">Prioritas</th>
                     <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Tanggal Pengajuan</th>
                     <th className="px-4 py-3 text-right">Aksi</th>
                   </tr>
                 </thead>
@@ -394,6 +249,9 @@ export default async function Page({ searchParams }: PageProps) {
                         <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
                           {item.unitPengusul}
                         </td>
+                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
+                          {item.tahunAnggaran}
+                        </td>
                         <td className="max-w-[260px] px-4 py-4">
                           <p className="truncate font-bold text-slate-700">
                             {item.program || "-"}
@@ -405,32 +263,38 @@ export default async function Page({ searchParams }: PageProps) {
                         <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
                           {item.kodeRekening || "-"}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${sourceFundClass(item.sumberDana)}`}
-                          >
-                            {item.sumberDana}
-                          </span>
+                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
+                          {item.jumlahKebutuhan?.toString() ??
+                            item.volumeKebutuhan ??
+                            "-"}{" "}
+                          {item.satuanKebutuhan ?? ""}
                         </td>
                         <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                          {formatCurrency(item.pagu.toString())}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                          {methodLabel(item.metodePengadaan)}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-                            KAK {item.statusKak || "BELUM_ADA"} / HPS{" "}
-                            {item.statusHps || "BELUM_ADA"}
-                          </span>
+                          {formatCurrency(
+                            (item.totalEstimasi ?? item.pagu).toString(),
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-4 py-4">
                           <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[item.statusSirup] ?? "bg-slate-100 text-slate-600"}`}
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${priorityClass(item.prioritas)}`}
                           >
-                            {planningStatusLabels[item.statusSirup] ??
-                              humanize(item.statusSirup)}
+                            {item.prioritas ? humanize(item.prioritas) : "-"}
                           </span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-4">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[item.statusUsulan] ?? "bg-slate-100 text-slate-600"}`}
+                          >
+                            {planningStatusLabels[item.statusUsulan] ??
+                              humanize(item.statusUsulan)}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
+                          {item.createdAt.toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </td>
                         <td className="whitespace-nowrap px-4 py-4 text-right">
                           <div className="flex justify-end gap-2">
@@ -444,8 +308,23 @@ export default async function Page({ searchParams }: PageProps) {
                                 kegiatan: item.kegiatan,
                                 subKegiatan: item.subKegiatan,
                                 kodeRekening: item.kodeRekening,
+                                tahunAnggaran: item.tahunAnggaran,
+                                unitBidang: item.unitBidang,
+                                ppkPptk: item.ppkPptk,
+                                kontakPenanggungJawab:
+                                  item.kontakPenanggungJawab,
                                 sumberDana: item.sumberDana,
                                 pagu: item.pagu.toString(),
+                                jumlahKebutuhan:
+                                  item.jumlahKebutuhan?.toString() ?? null,
+                                satuanKebutuhan: item.satuanKebutuhan,
+                                spesifikasiAwal: item.spesifikasiAwal,
+                                estimasiHargaSatuan:
+                                  item.estimasiHargaSatuan?.toString() ?? null,
+                                totalEstimasi:
+                                  item.totalEstimasi?.toString() ?? null,
+                                prioritas: item.prioritas,
+                                justifikasi: item.justifikasi,
                                 metodePengadaan: item.metodePengadaan,
                                 jadwalPemilihan: item.jadwalPemilihan,
                                 picTindakLanjut: item.picTindakLanjut,
@@ -456,22 +335,22 @@ export default async function Page({ searchParams }: PageProps) {
                                   item.statusRancanganKontrak,
                                 statusDokumenPendukung:
                                   item.statusDokumenPendukung,
+                                revisionNote: item.revisionNote,
+                                revisionBy: item.revisionBy,
+                                revisionAt: item.revisionAt?.toISOString() ?? null,
+                                verifiedBy: item.verifiedBy,
+                                verifiedAt: item.verifiedAt?.toISOString() ?? null,
                                 catatan: item.catatan,
                                 statusSirup: item.statusSirup,
+                                statusUsulan: item.statusUsulan,
                               }}
-                              currentUserRoles={currentUserRoles}
-                              planningApprovalRoleFlow={
-                                planningApprovalRoleFlow
-                              }
-                              planningStatusLabels={planningStatusLabels}
-                              planningStatusStyles={planningStatusStyles}
-                              roleNames={roleNames}
-                              updatePlanningApprovalAction={
-                                updatePlanningApprovalAction
-                              }
                             />
-                            {canDeletePlanning ? (
+                            {canEditUsulan(
+                              currentUserRoles,
+                              item.statusUsulan,
+                            ) ? (
                               <EditRupModalButton
+                                defaultUnitPengusul={currentUserProfile?.unitKerja}
                                 sumberDanaOptions={sourceFunds}
                                 label="Edit Perencanaan"
                                 mode="planning"
@@ -495,8 +374,16 @@ export default async function Page({ searchParams }: PageProps) {
                                   pagu: item.pagu.toString(),
                                   uraianKebutuhan: item.uraianKebutuhan,
                                   volumeKebutuhan: item.volumeKebutuhan,
+                                  jumlahKebutuhan:
+                                    item.jumlahKebutuhan?.toString() ?? null,
                                   satuanKebutuhan: item.satuanKebutuhan,
                                   spesifikasiAwal: item.spesifikasiAwal,
+                                  estimasiHargaSatuan:
+                                    item.estimasiHargaSatuan?.toString() ??
+                                    null,
+                                  totalEstimasi:
+                                    item.totalEstimasi?.toString() ?? null,
+                                  justifikasi: item.justifikasi,
                                   outputDiharapkan: item.outputDiharapkan,
                                   prioritas: item.prioritas,
                                   waktuKebutuhan: item.waktuKebutuhan,
@@ -535,7 +422,7 @@ export default async function Page({ searchParams }: PageProps) {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={11} className="px-4 py-16 text-center">
+                      <td colSpan={12} className="px-4 py-16 text-center">
                         <FileSearch className="mx-auto h-14 w-14 text-slate-300" />
                         <p className="mt-4 text-base font-black text-slate-700">
                           Belum ada usulan perencanaan

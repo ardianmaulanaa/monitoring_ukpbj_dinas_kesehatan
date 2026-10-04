@@ -1,51 +1,58 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
-import { type RoleCode, type RupStatus } from "@prisma/client";
-import { CheckCircle2, FileCheck2, FileSearch, UsersRound } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, FileCheck2, FileSearch, RotateCcw } from "lucide-react";
 import ModalShell from "@/components/modal/ModalShell";
 import { formatCurrency } from "@/lib/currency";
+import { planningStatusLabels, planningStatusStyles } from "@/lib/planning-workflow";
 
 type PlanningProposalDetail = {
-  id: string;
-  kodeRup: string;
-  namaPaket: string;
-  unitPengusul: string;
-  program: string | null;
-  kegiatan: string | null;
-  subKegiatan: string | null;
-  kodeRekening: string | null;
-  sumberDana: string;
-  pagu: string;
-  metodePengadaan: string;
-  jadwalPemilihan: string | null;
-  picTindakLanjut: string | null;
-  tindakLanjut: string | null;
-  statusKak: string | null;
-  statusHps: string | null;
-  statusRancanganKontrak: string | null;
-  statusDokumenPendukung: string | null;
   catatan: string | null;
-  statusSirup: RupStatus;
-};
-
-type ApprovalStep = {
-  status: RupStatus;
-  label: string;
-  roles: RoleCode[];
-  helper: string;
+  id: string;
+  estimasiHargaSatuan: string | null;
+  jadwalPemilihan: string | null;
+  jumlahKebutuhan: string | null;
+  justifikasi: string | null;
+  kodeRekening: string | null;
+  kodeRup: string;
+  kontakPenanggungJawab: string | null;
+  kegiatan: string | null;
+  metodePengadaan: string;
+  namaPaket: string;
+  pagu: string;
+  picTindakLanjut: string | null;
+  prioritas: string | null;
+  program: string | null;
+  revisionAt: string | null;
+  revisionBy: string | null;
+  revisionNote: string | null;
+  satuanKebutuhan: string | null;
+  sumberDana: string;
+  spesifikasiAwal: string | null;
+  statusDokumenPendukung: string | null;
+  statusHps: string | null;
+  statusKak: string | null;
+  statusRancanganKontrak: string | null;
+  statusSirup: string;
+  statusUsulan: string;
+  subKegiatan: string | null;
+  tahunAnggaran: number;
+  tindakLanjut: string | null;
+  totalEstimasi: string | null;
+  unitBidang: string | null;
+  unitPengusul: string;
+  ppkPptk: string | null;
+  verifiedAt: string | null;
+  verifiedBy: string | null;
 };
 
 type PlanningDetailModalButtonProps = {
-  currentUserRoles: RoleCode[];
-  planningApprovalRoleFlow: ApprovalStep[];
-  planningStatusLabels: Record<string, string>;
-  planningStatusStyles: Record<string, string>;
   proposal: PlanningProposalDetail;
-  roleNames: Partial<Record<RoleCode, string>>;
-  updatePlanningApprovalAction: (formData: FormData) => Promise<void>;
 };
+
+function valueOrDash(value?: string | number | null) {
+  return value === null || value === undefined || value === "" ? "-" : String(value);
+}
 
 function humanize(value: string) {
   return value
@@ -67,45 +74,94 @@ function methodLabel(value: string) {
   return labels[value] ?? humanize(value);
 }
 
-function getVisibleRoles(step: ApprovalStep, userRoles: RoleCode[]) {
-  if (userRoles.includes("SUPER_ADMIN")) return step.roles;
+function dateLabel(value?: string | null) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
 
-  const matchingRoles = step.roles.filter((role) => userRoles.includes(role));
-  return matchingRoles.length > 0 ? matchingRoles : step.roles;
+function StatusUsulan({ proposal }: { proposal: PlanningProposalDetail }) {
+  if (proposal.statusUsulan === "DIAJUKAN") {
+    return (
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <p className="text-sm font-black text-blue-800">MENUNGGU VERIFIKASI</p>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+          Usulan telah diajukan dan sedang menunggu verifikasi Kepala Unit.
+        </p>
+      </div>
+    );
+  }
+
+  if (proposal.statusUsulan === "PERLU_REVISI") {
+    return (
+      <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+        <div className="flex items-center gap-2">
+          <RotateCcw className="h-5 w-5 text-orange-700" />
+          <p className="text-sm font-black text-orange-800">PERLU REVISI</p>
+        </div>
+        <p className="mt-3 text-xs font-black uppercase text-orange-700">
+          Catatan Kepala Unit
+        </p>
+        <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-700">
+          {proposal.revisionNote || proposal.catatan || "Belum ada catatan revisi."}
+        </p>
+        {proposal.revisionBy ? (
+          <p className="mt-2 text-xs font-bold text-slate-500">
+            Oleh {proposal.revisionBy} • {dateLabel(proposal.revisionAt)}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (
+    proposal.statusUsulan === "SIAP_RUP"
+  ) {
+    return (
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-[#08783f]" />
+          <p className="text-sm font-black text-[#08783f]">VERIFIKASI SELESAI</p>
+        </div>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
+          Diverifikasi oleh: {proposal.verifiedBy || "Kepala Unit"}
+        </p>
+        <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">
+          Tanggal: {dateLabel(proposal.verifiedAt)}
+        </p>
+        <p className="mt-2 text-sm font-black text-[#08783f]">Status: SIAP RUP</p>
+      </div>
+    );
+  }
+
+  if (proposal.statusUsulan === "RUP_TAYANG") {
+    return (
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+        <p className="text-sm font-black text-[#08783f]">RUP TAYANG</p>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
+          Usulan sudah diproses dan dicatat sebagai RUP tayang.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <p className="text-sm font-black text-slate-700">DRAFT</p>
+      <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+        Pengusul sedang membuat usulan.
+      </p>
+    </div>
+  );
 }
 
 export default function PlanningDetailModalButton({
-  currentUserRoles,
-  planningApprovalRoleFlow,
-  planningStatusLabels,
-  planningStatusStyles,
   proposal,
-  roleNames,
-  updatePlanningApprovalAction,
 }: PlanningDetailModalButtonProps) {
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const close = useCallback(() => setIsOpen(false), []);
-
-  const activeStep =
-    planningApprovalRoleFlow.find((step) => step.status === proposal.statusSirup) ??
-    null;
-  const canActHere = Boolean(
-    activeStep &&
-      (currentUserRoles.includes("SUPER_ADMIN") ||
-        activeStep.roles.some((role) => currentUserRoles.includes(role))),
-  );
-  const visibleRoles = activeStep
-    ? getVisibleRoles(activeStep, currentUserRoles)
-    : [];
-  const isRejected = proposal.statusSirup === "DITARIK";
-  const isComplete = proposal.statusSirup === "SUDAH_TAYANG";
-
-  async function handleAction(formData: FormData) {
-    await updatePlanningApprovalAction(formData);
-    router.refresh();
-    setIsOpen(false);
-  }
 
   return (
     <>
@@ -120,7 +176,7 @@ export default function PlanningDetailModalButton({
 
       <ModalShell
         isOpen={isOpen}
-        onClose={close}
+        onClose={() => setIsOpen(false)}
         eyebrow="Detail Perencanaan"
         title={proposal.namaPaket}
         maxWidthClassName="max-w-6xl"
@@ -134,42 +190,68 @@ export default function PlanningDetailModalButton({
                   Detail Usulan
                 </h3>
                 <p className="mt-1 text-xs font-bold text-slate-500">
-                  Approval tersedia di bagian bawah popup.
+                  Status verifikasi ditampilkan tanpa approval bertingkat.
                 </p>
               </div>
             </div>
             <span
-              className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[proposal.statusSirup] ?? "bg-slate-100 text-slate-600"}`}
+              className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[proposal.statusUsulan] ?? "bg-slate-100 text-slate-600"}`}
             >
-              {planningStatusLabels[proposal.statusSirup] ??
-                humanize(proposal.statusSirup)}
+              {planningStatusLabels[proposal.statusUsulan] ??
+                humanize(proposal.statusUsulan)}
             </span>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-3">
             {[
-              ["Kode RUP", proposal.kodeRup],
-              ["Nama Paket", proposal.namaPaket],
+              ["Kode Usulan", proposal.kodeRup],
+              ["Nama / Uraian", proposal.namaPaket],
               ["Unit Pengusul", proposal.unitPengusul],
-              ["Program", proposal.program || "-"],
-              ["Kegiatan", proposal.kegiatan || proposal.subKegiatan || "-"],
-              ["Kode Rekening", proposal.kodeRekening || "-"],
+              ["Tahun Anggaran", proposal.tahunAnggaran],
+              ["Unit / Bidang", proposal.unitBidang],
+              ["PPK / PPTK", proposal.ppkPptk],
+              ["Program", proposal.program],
+              ["Kegiatan", proposal.kegiatan],
+              ["Sub Kegiatan", proposal.subKegiatan],
+              ["Kode Rekening", proposal.kodeRekening],
               ["Sumber Dana", proposal.sumberDana],
-              ["Pagu", formatCurrency(proposal.pagu)],
+              ["Pagu / Total Estimasi", formatCurrency(proposal.totalEstimasi ?? proposal.pagu)],
+              ["Jumlah", `${valueOrDash(proposal.jumlahKebutuhan)} ${proposal.satuanKebutuhan ?? ""}`],
               ["Metode", methodLabel(proposal.metodePengadaan)],
-              ["Jadwal Pemilihan", proposal.jadwalPemilihan || "-"],
-              ["PIC Tindak Lanjut", proposal.picTindakLanjut || "-"],
-              ["Tindak Lanjut", proposal.tindakLanjut || "-"],
+              ["Jadwal Pemilihan", proposal.jadwalPemilihan],
+              ["Prioritas", proposal.prioritas],
+              ["PIC Tindak Lanjut", proposal.picTindakLanjut],
+              ["Tindak Lanjut", proposal.tindakLanjut],
             ].map(([label, value]) => (
               <div
-                key={label}
+                key={String(label)}
                 className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3"
               >
                 <p className="text-xs font-black uppercase text-slate-400">
                   {label}
                 </p>
                 <p className="mt-2 break-words text-sm font-bold text-slate-700">
-                  {value}
+                  {valueOrDash(value)}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            {[
+              ["Spesifikasi Awal", proposal.spesifikasiAwal],
+              ["Justifikasi", proposal.justifikasi],
+              ["Catatan", proposal.catatan],
+            ].map(([label, value]) => (
+              <div
+                key={String(label)}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3"
+              >
+                <p className="text-xs font-black uppercase text-slate-400">
+                  {label}
+                </p>
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-700">
+                  {valueOrDash(value)}
                 </p>
               </div>
             ))}
@@ -186,14 +268,8 @@ export default function PlanningDetailModalButton({
               {[
                 ["KAK", proposal.statusKak || "BELUM_ADA"],
                 ["HPS", proposal.statusHps || "BELUM_ADA"],
-                [
-                  "Rancangan Kontrak",
-                  proposal.statusRancanganKontrak || "BELUM_ADA",
-                ],
-                [
-                  "Dokumen Pendukung",
-                  proposal.statusDokumenPendukung || "BELUM_ADA",
-                ],
+                ["Rancangan Kontrak", proposal.statusRancanganKontrak || "BELUM_ADA"],
+                ["Dokumen Pendukung", proposal.statusDokumenPendukung || "BELUM_ADA"],
               ].map(([label, value]) => (
                 <div
                   key={label}
@@ -213,107 +289,13 @@ export default function PlanningDetailModalButton({
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-black uppercase text-slate-400">
-              Catatan / Revisi
-            </p>
-            <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-700">
-              {proposal.catatan || "Belum ada catatan revisi."}
-            </p>
-          </div>
-
           <div>
-            <div className="flex items-center gap-2">
-              <UsersRound className="h-5 w-5 text-[#08783f]" />
-              <h3 className="text-base font-black text-[#16227c]">
-                Approval Role
-              </h3>
+            <h3 className="text-base font-black text-[#16227c]">
+              Status Usulan
+            </h3>
+            <div className="mt-3">
+              <StatusUsulan proposal={proposal} />
             </div>
-
-            {activeStep ? (
-              <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="text-sm font-black text-slate-900">
-                      {activeStep.label}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-                      {activeStep.helper}
-                    </p>
-                    <p className="mt-2 text-[11px] font-black uppercase text-slate-400">
-                      {visibleRoles
-                        .map((role) => roleNames[role] ?? role)
-                        .join(" / ")}
-                    </p>
-                  </div>
-                  <span className="w-fit shrink-0 rounded-full bg-blue-100 px-2 py-1 text-[11px] font-black text-blue-700">
-                    Menunggu aksi
-                  </span>
-                </div>
-
-                <form action={handleAction} className="mt-4 grid gap-2">
-                  <input type="hidden" name="id" value={proposal.id} />
-                  <button
-                    name="action"
-                    value="approve"
-                    disabled={!canActHere}
-                    className="h-9 rounded-lg bg-[#08783f] px-3 text-xs font-black text-white transition hover:bg-[#066532] disabled:cursor-not-allowed disabled:bg-slate-300"
-                  >
-                    Approve
-                  </button>
-                </form>
-
-                <form action={handleAction} className="mt-2 grid gap-2">
-                  <input type="hidden" name="id" value={proposal.id} />
-                  <textarea
-                    name="catatanAksi"
-                    required={canActHere}
-                    disabled={!canActHere}
-                    placeholder="Alasan revisi / penolakan"
-                    className="min-h-20 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold leading-5 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100"
-                  />
-                  <button
-                    name="action"
-                    value="revise"
-                    disabled={!canActHere}
-                    className="h-9 rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-black text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-                  >
-                    Minta Revisi
-                  </button>
-                  <button
-                    name="action"
-                    value="reject"
-                    disabled={!canActHere}
-                    className="h-9 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-                  >
-                    Tolak
-                  </button>
-                </form>
-
-                {!canActHere ? (
-                  <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">
-                    Role login saat ini:{" "}
-                    {currentUserRoles.length > 0
-                      ? currentUserRoles
-                          .map((role) => roleNames[role] ?? role)
-                          .join(", ")
-                      : "-"}
-                    . Aksi hanya aktif untuk role yang sedang memegang status
-                    usulan.
-                  </p>
-                ) : null}
-              </div>
-            ) : (
-              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-black text-slate-700">
-                  {isComplete
-                    ? "Usulan sudah selesai disetujui."
-                    : isRejected
-                      ? "Usulan sudah ditolak."
-                      : "Tidak ada approval aktif untuk status ini."}
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </ModalShell>

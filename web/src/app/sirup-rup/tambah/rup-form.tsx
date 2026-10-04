@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
+import { Save, Send } from "lucide-react";
 
 const inputClass =
-  "h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100";
+  "h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100";
 const labelClass = "text-xs font-black uppercase tracking-wide text-slate-500";
 const textareaClass =
   "min-h-28 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100";
@@ -17,6 +17,7 @@ type SumberDanaOption = {
 
 type RupFormProps = {
   sumberDanaOptions: SumberDanaOption[];
+  defaultUnitPengusul?: string | null;
   onCancel?: () => void;
   onSaved?: () => void;
   variant?: "page" | "modal";
@@ -25,8 +26,31 @@ type RupFormProps = {
   submitLabel?: string;
 };
 
+const satuanOptions = [
+  "Unit",
+  "Buah",
+  "Set",
+  "Paket",
+  "Box",
+  "Kit",
+  "Botol",
+  "Liter",
+  "Kg",
+  "Jasa",
+];
+
 function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
+}
+
+function currency(value: string | number) {
+  const amount = Number(value);
+
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(amount) ? amount : 0);
 }
 
 function SectionTitle({
@@ -69,6 +93,7 @@ function DocumentStatusOptions() {
 }
 
 export default function RupForm({
+  defaultUnitPengusul,
   sumberDanaOptions,
   onCancel,
   onSaved,
@@ -78,19 +103,33 @@ export default function RupForm({
   submitLabel,
 }: RupFormProps) {
   const router = useRouter();
+  const isPlanning = mode === "planning";
+  const isEditing = Boolean(initialData?.id);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [submitIntent, setSubmitIntent] = useState<"draft" | "submit" | "save">(
+    "save",
+  );
   const [pagu, setPagu] = useState(onlyDigits(String(initialData?.pagu ?? "")));
-  const isEditing = Boolean(initialData?.id);
+  const [jumlah, setJumlah] = useState(
+    String(initialData?.jumlahKebutuhan ?? initialData?.volumeKebutuhan ?? ""),
+  );
+  const [hargaSatuan, setHargaSatuan] = useState(
+    onlyDigits(String(initialData?.estimasiHargaSatuan ?? "")),
+  );
+  const unitPengusulValue = String(
+    initialData?.unitPengusul ?? (isPlanning ? defaultUnitPengusul ?? "" : ""),
+  );
 
-  const formattedPagu = useMemo(() => {
-    const value = Number(pagu);
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(Number.isFinite(value) ? value : 0);
-  }, [pagu]);
+  const totalEstimasi = useMemo(() => {
+    const parsedJumlah = Number(jumlah);
+    const parsedHarga = Number(hargaSatuan);
+    if (!Number.isFinite(parsedJumlah) || !Number.isFinite(parsedHarga)) {
+      return 0;
+    }
+
+    return parsedJumlah * parsedHarga;
+  }, [hargaSatuan, jumlah]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -99,6 +138,16 @@ export default function RupForm({
 
     const formData = new FormData(event.currentTarget);
     const payload = Object.fromEntries(formData.entries());
+    const finalPayload = {
+      ...payload,
+      mode,
+      submitIntent,
+      jumlahKebutuhan: jumlah,
+      volumeKebutuhan: jumlah,
+      estimasiHargaSatuan: hargaSatuan,
+      totalEstimasi: String(totalEstimasi),
+      pagu: isPlanning ? String(totalEstimasi) : String(payload.pagu ?? pagu),
+    };
 
     const url = isEditing
       ? `/api/rup?id=${encodeURIComponent(String(initialData?.id))}`
@@ -106,14 +155,17 @@ export default function RupForm({
     const response = await fetch(url, {
       method: isEditing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(finalPayload),
     });
 
     const result = await response.json().catch(() => null);
     setSaving(false);
 
     if (!response.ok) {
-      setError(result?.message ?? "Data RUP gagal disimpan.");
+      const detail = Array.isArray(result?.errors)
+        ? result.errors.map((item: { message?: string }) => item.message).join(" ")
+        : "";
+      setError(result?.message ?? detail ?? "Data gagal disimpan.");
       return;
     }
 
@@ -122,7 +174,7 @@ export default function RupForm({
       return;
     }
 
-    router.push("/sirup-rup");
+    router.push(isPlanning ? "/perencanaan" : "/sirup-rup");
     router.refresh();
   }
 
@@ -138,13 +190,13 @@ export default function RupForm({
       {variant === "page" ? (
         <div className="border-b border-slate-100 px-5 py-4">
           <h1 className="text-lg font-black text-[#16227c]">
-            {mode === "planning"
+            {isPlanning
               ? "Form Usulan Perencanaan"
               : "Form Rencana Umum Pengadaan"}
           </h1>
           <p className="mt-1 text-sm font-semibold text-slate-500">
-            {mode === "planning"
-              ? "Isi kebutuhan unit, sumber dana, pagu, metode awal, jadwal, dan status approval."
+            {isPlanning
+              ? "Isi E-Planning & Usulan Kebutuhan dari unit pengusul."
               : "Isi data RUP seperti kode RUP, unit pengusul, sumber dana, pagu, metode, jadwal pemilihan, dan status tayang SIRUP."}
           </p>
         </div>
@@ -153,7 +205,10 @@ export default function RupForm({
       <div
         className={`grid min-w-0 gap-5 md:grid-cols-2 ${variant === "modal" ? "p-0" : "p-5"}`}
       >
-        {mode === "planning" ? (
+        <input type="hidden" name="mode" value={mode} />
+        <input type="hidden" name="submitIntent" value={submitIntent} />
+
+        {isPlanning ? (
           <SectionTitle
             number="1"
             title="Data OPD / Unit"
@@ -163,15 +218,21 @@ export default function RupForm({
 
         <label className="grid min-w-0 gap-2">
           <span className={labelClass}>
-            {mode === "planning" ? "Kode Usulan" : "Kode RUP"}
+            {isPlanning ? "Kode Usulan" : "Kode RUP"}
           </span>
           <input
             name="kodeRup"
-            required
+            readOnly={isPlanning}
+            required={!isPlanning}
             className={inputClass}
             defaultValue={String(initialData?.kodeRup ?? "")}
-            placeholder={mode === "planning" ? "USUL-2025-001" : undefined}
+            placeholder={isPlanning ? "Otomatis oleh sistem" : undefined}
           />
+          {isPlanning ? (
+            <span className="text-xs font-bold text-slate-500">
+              Format otomatis: USUL-{new Date().getFullYear()}-001
+            </span>
+          ) : null}
         </label>
 
         <label className="grid min-w-0 gap-2">
@@ -182,7 +243,9 @@ export default function RupForm({
             min="2000"
             required
             className={inputClass}
-            defaultValue={Number(initialData?.tahunAnggaran ?? new Date().getFullYear())}
+            defaultValue={Number(
+              initialData?.tahunAnggaran ?? new Date().getFullYear(),
+            )}
           />
         </label>
 
@@ -191,12 +254,18 @@ export default function RupForm({
           <input
             name="unitPengusul"
             required
+            readOnly={isPlanning && Boolean(defaultUnitPengusul)}
             className={inputClass}
-            defaultValue={String(initialData?.unitPengusul ?? "")}
+            defaultValue={unitPengusulValue}
           />
+          {isPlanning && defaultUnitPengusul ? (
+            <span className="text-xs font-bold text-slate-500">
+              Diambil dari unit kerja akun login agar verifikasi Kepala Unit tetap sesuai.
+            </span>
+          ) : null}
         </label>
 
-        {mode === "planning" ? (
+        {isPlanning ? (
           <>
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Unit / Bidang</span>
@@ -266,35 +335,14 @@ export default function RupForm({
                 defaultValue={String(initialData?.kodeRekening ?? "")}
               />
             </label>
-
-            <label className="grid min-w-0 gap-2 md:col-span-2">
-              <span className={labelClass}>Uraian Belanja</span>
-              <textarea
-                name="uraianBelanja"
-                className={textareaClass}
-                defaultValue={String(initialData?.uraianBelanja ?? "")}
-              />
-            </label>
           </>
         ) : null}
-
-        <label className="grid min-w-0 gap-2 md:col-span-2">
-          <span className={labelClass}>
-            {mode === "planning" ? "Nama Usulan" : "Nama Paket"}
-          </span>
-          <input
-            name="namaPaket"
-            required
-            className={inputClass}
-            defaultValue={String(initialData?.namaPaket ?? "")}
-          />
-        </label>
 
         <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Jenis Belanja</span>
           <select
             name="jenisBelanja"
-            required
+            required={!isPlanning}
             className={inputClass}
             defaultValue={String(initialData?.jenisBelanja ?? "Barang")}
           >
@@ -306,22 +354,14 @@ export default function RupForm({
         </label>
 
         <label className="grid min-w-0 gap-2">
-          <span className={labelClass}>Lokasi Paket</span>
-          <input
-            name="lokasiPaket"
-            required
-            className={inputClass}
-            defaultValue={String(initialData?.lokasiPaket ?? "")}
-          />
-        </label>
-
-        <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Sumber Dana</span>
           <select
             name="sumberDana"
             required
             className={inputClass}
-            defaultValue={String(initialData?.sumberDana ?? sumberDanaOptions[0]?.kode ?? "")}
+            defaultValue={String(
+              initialData?.sumberDana ?? sumberDanaOptions[0]?.kode ?? "",
+            )}
             disabled={sumberDanaOptions.length === 0}
           >
             {sumberDanaOptions.length === 0 ? (
@@ -335,57 +375,104 @@ export default function RupForm({
           </select>
         </label>
 
-        <label className="grid min-w-0 gap-2">
-          <span className={labelClass}>Pagu</span>
-          <input
-            name="pagu"
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            required
-            className={inputClass}
-            value={pagu}
-            onChange={(event) => setPagu(onlyDigits(event.target.value))}
-            placeholder="0"
+        <label className="grid min-w-0 gap-2 md:col-span-2">
+          <span className={labelClass}>Uraian Belanja</span>
+          <textarea
+            name="uraianBelanja"
+            className={textareaClass}
+            defaultValue={String(initialData?.uraianBelanja ?? "")}
           />
-          <span className="text-xs font-bold text-slate-500">
-            {formattedPagu}
-          </span>
         </label>
 
-        {mode === "planning" ? (
+        {!isPlanning ? (
           <>
-            <SectionTitle
-              number="3"
-              title="Data Kebutuhan"
-              helper="Rincian kebutuhan barang/jasa sebelum dipaketkan."
-            />
-
             <label className="grid min-w-0 gap-2 md:col-span-2">
-              <span className={labelClass}>Uraian Kebutuhan</span>
-              <textarea
-                name="uraianKebutuhan"
-                className={textareaClass}
-                defaultValue={String(initialData?.uraianKebutuhan ?? "")}
+              <span className={labelClass}>Nama Paket</span>
+              <input
+                name="namaPaket"
+                required
+                className={inputClass}
+                defaultValue={String(initialData?.namaPaket ?? "")}
               />
             </label>
 
             <label className="grid min-w-0 gap-2">
-              <span className={labelClass}>Volume / Jumlah</span>
+              <span className={labelClass}>Lokasi Paket</span>
               <input
-                name="volumeKebutuhan"
+                name="lokasiPaket"
+                required
                 className={inputClass}
-                defaultValue={String(initialData?.volumeKebutuhan ?? "")}
+                defaultValue={String(initialData?.lokasiPaket ?? "")}
+              />
+            </label>
+
+            <label className="grid min-w-0 gap-2">
+              <span className={labelClass}>Pagu</span>
+              <input
+                name="pagu"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                required
+                className={inputClass}
+                value={pagu}
+                onChange={(event) => setPagu(onlyDigits(event.target.value))}
+                placeholder="0"
+              />
+              <span className="text-xs font-bold text-slate-500">
+                {currency(pagu)}
+              </span>
+            </label>
+          </>
+        ) : null}
+
+        {isPlanning ? (
+          <>
+            <SectionTitle
+              number="3"
+              title="Data Usulan Kebutuhan"
+              helper="Detail barang, alat, bahan, atau jasa yang diusulkan oleh unit."
+            />
+
+            <label className="grid min-w-0 gap-2 md:col-span-2">
+              <span className={labelClass}>Uraian / Nama Kebutuhan</span>
+              <input
+                name="namaPaket"
+                required
+                className={inputClass}
+                defaultValue={String(initialData?.namaPaket ?? "")}
+                placeholder="Masukkan nama barang, alat, bahan, atau jasa"
+              />
+            </label>
+
+            <label className="grid min-w-0 gap-2">
+              <span className={labelClass}>Jumlah</span>
+              <input
+                name="jumlahKebutuhan"
+                type="number"
+                min="0"
+                step="0.01"
+                className={inputClass}
+                value={jumlah}
+                onChange={(event) => setJumlah(event.target.value)}
+                placeholder="1"
               />
             </label>
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Satuan</span>
-              <input
+              <select
                 name="satuanKebutuhan"
                 className={inputClass}
                 defaultValue={String(initialData?.satuanKebutuhan ?? "")}
-              />
+              >
+                <option value="">Pilih satuan</option>
+                {satuanOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="grid min-w-0 gap-2 md:col-span-2">
@@ -394,16 +481,43 @@ export default function RupForm({
                 name="spesifikasiAwal"
                 className={textareaClass}
                 defaultValue={String(initialData?.spesifikasiAwal ?? "")}
+                placeholder="Tuliskan spesifikasi awal kebutuhan"
               />
             </label>
 
-            <label className="grid min-w-0 gap-2 md:col-span-2">
-              <span className={labelClass}>Output yang Diharapkan</span>
-              <textarea
-                name="outputDiharapkan"
-                className={textareaClass}
-                defaultValue={String(initialData?.outputDiharapkan ?? "")}
+            <label className="grid min-w-0 gap-2">
+              <span className={labelClass}>Estimasi Harga Satuan</span>
+              <input
+                name="estimasiHargaSatuan"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className={inputClass}
+                value={hargaSatuan}
+                onChange={(event) =>
+                  setHargaSatuan(onlyDigits(event.target.value))
+                }
+                placeholder="150000000"
               />
+              <span className="text-xs font-bold text-slate-500">
+                {currency(hargaSatuan)}
+              </span>
+            </label>
+
+            <label className="grid min-w-0 gap-2">
+              <span className={labelClass}>Total Estimasi</span>
+              <input
+                readOnly
+                className={`${inputClass} bg-slate-50`}
+                value={currency(totalEstimasi)}
+              />
+              <input
+                type="hidden"
+                name="totalEstimasi"
+                value={String(totalEstimasi)}
+              />
+              <input type="hidden" name="pagu" value={String(totalEstimasi)} />
+              <input type="hidden" name="volumeKebutuhan" value={jumlah} />
             </label>
 
             <label className="grid min-w-0 gap-2">
@@ -411,10 +525,11 @@ export default function RupForm({
               <select
                 name="prioritas"
                 className={inputClass}
-                defaultValue={String(initialData?.prioritas ?? "NORMAL")}
+                defaultValue={String(initialData?.prioritas ?? "SEDANG")}
               >
-                <option value="NORMAL">Biasa</option>
-                <option value="STRATEGIS">Strategis</option>
+                <option value="RENDAH">Rendah</option>
+                <option value="SEDANG">Sedang</option>
+                <option value="TINGGI">Tinggi</option>
                 <option value="MENDESAK">Mendesak</option>
               </select>
             </label>
@@ -429,8 +544,112 @@ export default function RupForm({
               />
             </label>
 
+            <label className="grid min-w-0 gap-2 md:col-span-2">
+              <span className={labelClass}>Justifikasi / Alasan Kebutuhan</span>
+              <textarea
+                name="justifikasi"
+                className={textareaClass}
+                defaultValue={String(initialData?.justifikasi ?? "")}
+                placeholder="Jelaskan alasan dan urgensi kebutuhan ini..."
+              />
+            </label>
+
             <SectionTitle
               number="4"
+              title="Dokumen Pendukung"
+              helper="Checklist kesiapan KAK, HPS, rancangan kontrak, dan dokumen pendukung."
+            />
+
+            <label className="grid min-w-0 gap-2">
+              <span className={labelClass}>Status KAK / Spesifikasi</span>
+              <select
+                name="statusKak"
+                className={inputClass}
+                defaultValue={String(initialData?.statusKak ?? "BELUM_ADA")}
+              >
+                <DocumentStatusOptions />
+              </select>
+            </label>
+
+            <label className="grid min-w-0 gap-2">
+              <span className={labelClass}>Status HPS</span>
+              <select
+                name="statusHps"
+                className={inputClass}
+                defaultValue={String(initialData?.statusHps ?? "BELUM_ADA")}
+              >
+                <DocumentStatusOptions />
+              </select>
+            </label>
+
+            <label className="grid min-w-0 gap-2">
+              <span className={labelClass}>Status Rancangan Kontrak</span>
+              <select
+                name="statusRancanganKontrak"
+                className={inputClass}
+                defaultValue={String(
+                  initialData?.statusRancanganKontrak ?? "BELUM_ADA",
+                )}
+              >
+                <DocumentStatusOptions />
+              </select>
+            </label>
+
+            <label className="grid min-w-0 gap-2">
+              <span className={labelClass}>Status Dokumen Pendukung</span>
+              <select
+                name="statusDokumenPendukung"
+                className={inputClass}
+                defaultValue={String(
+                  initialData?.statusDokumenPendukung ?? "BELUM_ADA",
+                )}
+              >
+                <DocumentStatusOptions />
+              </select>
+            </label>
+
+            <label className="grid min-w-0 gap-2 md:col-span-2">
+              <span className={labelClass}>Catatan Kekurangan Dokumen</span>
+              <textarea
+                name="kekuranganDokumen"
+                className={textareaClass}
+                defaultValue={String(initialData?.kekuranganDokumen ?? "")}
+              />
+            </label>
+
+            <SectionTitle
+              number="5"
+              title="Ringkasan Usulan"
+              helper="Ringkasan otomatis sebelum usulan disimpan atau diajukan."
+            />
+
+            <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-4 md:col-span-2">
+              <div>
+                <p className={labelClass}>Jumlah Kebutuhan</p>
+                <p className="mt-2 text-sm font-black text-slate-700">
+                  {jumlah || "0"}
+                </p>
+              </div>
+              <div>
+                <p className={labelClass}>Total Estimasi</p>
+                <p className="mt-2 text-sm font-black text-[#08783f]">
+                  {currency(totalEstimasi)}
+                </p>
+              </div>
+              <div>
+                <p className={labelClass}>Tahun Anggaran</p>
+                <p className="mt-2 text-sm font-black text-slate-700">
+                  {String(initialData?.tahunAnggaran ?? new Date().getFullYear())}
+                </p>
+              </div>
+              <div>
+                <p className={labelClass}>Status</p>
+                <p className="mt-2 text-sm font-black text-slate-700">Draft</p>
+              </div>
+            </div>
+
+            <SectionTitle
+              number="6"
               title="Rencana Paket Pengadaan"
               helper="Rencana cara/metode pengadaan dan jadwal awal."
             />
@@ -475,7 +694,7 @@ export default function RupForm({
           />
         </label>
 
-        {mode === "planning" ? (
+        {isPlanning ? (
           <>
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Tanggal Masuk Grafik SIRUP/RUP</span>
@@ -485,10 +704,6 @@ export default function RupForm({
                 className={inputClass}
                 defaultValue={String(initialData?.jadwalMulaiRencana ?? "")}
               />
-              <span className="text-xs font-bold text-slate-500">
-                Dipakai sebagai bulan grafik setelah usulan disetujui sampai
-                Siap RUP/SIRUP.
-              </span>
             </label>
 
             <label className="grid min-w-0 gap-2">
@@ -500,108 +715,6 @@ export default function RupForm({
                 defaultValue={String(initialData?.jadwalSelesaiRencana ?? "")}
               />
             </label>
-          </>
-        ) : null}
-
-        <label className="grid min-w-0 gap-2">
-          <span className={labelClass}>
-            {mode === "planning" ? "Status Approval" : "Status SIRUP"}
-          </span>
-          <select
-            name="statusSirup"
-            required
-            className={inputClass}
-            defaultValue={String(initialData?.statusSirup ?? "BELUM_INPUT")}
-          >
-            {mode === "planning" ? (
-              <>
-                <option value="BELUM_INPUT">Draft Usulan</option>
-                <option value="PROSES_VERIFIKASI">Menunggu Kepala Unit</option>
-                <option value="MENUNGGU_PPTK">Menunggu PPTK</option>
-                <option value="MENUNGGU_PPK">Menunggu PPK</option>
-                <option value="MENUNGGU_KPA_PA">Menunggu KPA/PA</option>
-                <option value="REVISI_PAGU">Perlu Revisi</option>
-                <option value="SUDAH_TAYANG">Siap RUP/SIRUP</option>
-                <option value="DITARIK">Ditolak</option>
-              </>
-            ) : (
-              <>
-                <option value="BELUM_INPUT">Belum Input</option>
-                <option value="PROSES_VERIFIKASI">Proses Verifikasi</option>
-                <option value="SUDAH_TAYANG">Sudah Tayang</option>
-                <option value="REVISI_PAGU">Revisi Pagu</option>
-                <option value="DITARIK">Ditarik</option>
-              </>
-            )}
-          </select>
-        </label>
-
-        {mode === "planning" ? (
-          <>
-            <SectionTitle
-              number="5"
-              title="Kesiapan Dokumen"
-              helper="Checklist kesiapan KAK, HPS, rancangan kontrak, dan dokumen pendukung."
-            />
-
-            <label className="grid min-w-0 gap-2">
-              <span className={labelClass}>Status KAK / Spesifikasi</span>
-              <select
-                name="statusKak"
-                className={inputClass}
-                defaultValue={String(initialData?.statusKak ?? "BELUM_ADA")}
-              >
-                <DocumentStatusOptions />
-              </select>
-            </label>
-
-            <label className="grid min-w-0 gap-2">
-              <span className={labelClass}>Status HPS</span>
-              <select
-                name="statusHps"
-                className={inputClass}
-                defaultValue={String(initialData?.statusHps ?? "BELUM_ADA")}
-              >
-                <DocumentStatusOptions />
-              </select>
-            </label>
-
-            <label className="grid min-w-0 gap-2">
-              <span className={labelClass}>Status Rancangan Kontrak</span>
-              <select
-                name="statusRancanganKontrak"
-                className={inputClass}
-                defaultValue={String(initialData?.statusRancanganKontrak ?? "BELUM_ADA")}
-              >
-                <DocumentStatusOptions />
-              </select>
-            </label>
-
-            <label className="grid min-w-0 gap-2">
-              <span className={labelClass}>Status Dokumen Pendukung</span>
-              <select
-                name="statusDokumenPendukung"
-                className={inputClass}
-                defaultValue={String(initialData?.statusDokumenPendukung ?? "BELUM_ADA")}
-              >
-                <DocumentStatusOptions />
-              </select>
-            </label>
-
-            <label className="grid min-w-0 gap-2 md:col-span-2">
-              <span className={labelClass}>Catatan Kekurangan Dokumen</span>
-              <textarea
-                name="kekuranganDokumen"
-                className={textareaClass}
-                defaultValue={String(initialData?.kekuranganDokumen ?? "")}
-              />
-            </label>
-
-            <SectionTitle
-              number="6"
-              title="Status Monitoring"
-              helper="Catat hambatan dan tindak lanjut sebelum masuk tahap persiapan/pengadaan."
-            />
 
             <label className="grid min-w-0 gap-2 md:col-span-2">
               <span className={labelClass}>Kendala</span>
@@ -632,6 +745,39 @@ export default function RupForm({
           </>
         ) : null}
 
+        <label className="grid min-w-0 gap-2">
+          <span className={labelClass}>
+            {isPlanning ? "Status Workflow" : "Status SIRUP"}
+          </span>
+          <select
+            name="statusSirup"
+            required
+            className={inputClass}
+            defaultValue={String(
+              initialData?.statusSirup ?? (isPlanning ? "DRAFT" : "BELUM_INPUT"),
+            )}
+          >
+            {isPlanning ? (
+              <>
+                <option value="DRAFT">Draft</option>
+                <option value="DIAJUKAN">Diajukan</option>
+                <option value="VERIFIKASI">Verifikasi</option>
+                <option value="REVISI">Perlu Revisi</option>
+                <option value="DISETUJUI">Disetujui</option>
+                <option value="SIAP_RUP">Siap RUP</option>
+              </>
+            ) : (
+              <>
+                <option value="BELUM_INPUT">Belum Input</option>
+                <option value="PROSES_VERIFIKASI">Proses Verifikasi</option>
+                <option value="SUDAH_TAYANG">Sudah Tayang</option>
+                <option value="REVISI_PAGU">Revisi Pagu</option>
+                <option value="DITARIK">Ditarik</option>
+              </>
+            )}
+          </select>
+        </label>
+
         <label className="grid min-w-0 gap-2 md:col-span-2">
           <span className={labelClass}>Catatan</span>
           <textarea
@@ -660,21 +806,45 @@ export default function RupForm({
         >
           Batal
         </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:opacity-60"
-        >
-          <Save className="h-4 w-4" />
-          {saving
-            ? "Menyimpan..."
-            : submitLabel ??
-              (isEditing
-                ? "Simpan Perubahan"
-                : mode === "planning"
-                  ? "Simpan Usulan"
-                  : "Simpan RUP")}
-        </button>
+
+        {isPlanning ? (
+          <>
+            <button
+              type="submit"
+              disabled={saving}
+              onClick={() => setSubmitIntent("draft")}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-100 disabled:opacity-60"
+            >
+              <Save className="h-4 w-4" />
+              {saving && submitIntent === "draft"
+                ? "Menyimpan..."
+                : "Simpan Draft"}
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              onClick={() => setSubmitIntent("submit")}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:opacity-60"
+            >
+              <Send className="h-4 w-4" />
+              {saving && submitIntent === "submit"
+                ? "Mengajukan..."
+                : "Ajukan Usulan"}
+            </button>
+          </>
+        ) : (
+          <button
+            type="submit"
+            disabled={saving}
+            onClick={() => setSubmitIntent("save")}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:opacity-60"
+          >
+            <Save className="h-4 w-4" />
+            {saving
+              ? "Menyimpan..."
+              : submitLabel ?? (isEditing ? "Simpan Perubahan" : "Simpan RUP")}
+          </button>
+        )}
       </div>
     </form>
   );

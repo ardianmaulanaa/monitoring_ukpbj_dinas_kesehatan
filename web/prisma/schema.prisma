@@ -81,6 +81,12 @@ enum PaketStatus {
 }
 
 enum RupStatus {
+  DRAFT
+  DIAJUKAN
+  VERIFIKASI
+  REVISI
+  DISETUJUI
+  SIAP_RUP
   BELUM_INPUT
   PROSES_VERIFIKASI
   MENUNGGU_PPTK
@@ -89,6 +95,14 @@ enum RupStatus {
   SUDAH_TAYANG
   REVISI_PAGU
   DITARIK
+}
+
+enum StatusUsulan {
+  DRAFT
+  DIAJUKAN
+  PERLU_REVISI
+  SIAP_RUP
+  RUP_TAYANG
 }
 
 enum KontrakStatus {
@@ -341,8 +355,12 @@ model RencanaUmumPengadaan {
   pagu                     Decimal              @default(0) @db.Decimal(18, 2)
   uraianKebutuhan          String?              @map("uraian_kebutuhan") @db.Text
   volumeKebutuhan          String?              @map("volume_kebutuhan") @db.VarChar(80)
+  jumlahKebutuhan          Decimal?             @map("jumlah_kebutuhan") @db.Decimal(18, 2)
   satuanKebutuhan          String?              @map("satuan_kebutuhan") @db.VarChar(60)
   spesifikasiAwal          String?              @map("spesifikasi_awal") @db.Text
+  estimasiHargaSatuan      Decimal?             @map("estimasi_harga_satuan") @db.Decimal(18, 2)
+  totalEstimasi            Decimal?             @map("total_estimasi") @db.Decimal(18, 2)
+  justifikasi              String?              @db.Text
   outputDiharapkan         String?              @map("output_diharapkan") @db.Text
   prioritas                String?              @db.VarChar(80)
   waktuKebutuhan           String?              @map("waktu_kebutuhan") @db.VarChar(120)
@@ -374,6 +392,7 @@ model RencanaUmumPengadaan {
   jadwalSelesaiRencana     String?              @map("jadwal_selesai_rencana") @db.VarChar(120)
   tahunAnggaran            Int                  @map("tahun_anggaran")
   statusSirup              RupStatus            @default(BELUM_INPUT) @map("status_sirup")
+  statusUsulan             StatusUsulan         @default(DRAFT) @map("status_usulan")
   statusKak                String?              @map("status_kak") @db.VarChar(80)
   statusHps                String?              @map("status_hps") @db.VarChar(80)
   statusRancanganKontrak   String?              @map("status_rancangan_kontrak") @db.VarChar(80)
@@ -382,9 +401,20 @@ model RencanaUmumPengadaan {
   kendala                  String?              @db.Text
   tindakLanjut             String?              @map("tindak_lanjut") @db.Text
   picTindakLanjut          String?              @map("pic_tindak_lanjut") @db.VarChar(160)
+  submittedBy              String?              @map("submitted_by") @db.VarChar(160)
+  submittedAt              DateTime?            @map("submitted_at")
+  verifiedBy               String?              @map("verified_by") @db.VarChar(160)
+  verifiedAt               DateTime?            @map("verified_at")
+  verificationNote         String?              @map("verification_note") @db.Text
+  verificationChecklist    Json?                @map("verification_checklist")
+  revisionNote             String?              @map("revision_note") @db.Text
+  revisionBy               String?              @map("revision_by") @db.VarChar(160)
+  revisionAt               DateTime?            @map("revision_at")
   catatan                  String?              @db.Text
   createdAt                DateTime             @default(now()) @map("created_at")
   updatedAt                DateTime             @updatedAt @map("updated_at")
+
+  verificationHistory UsulanVerificationHistory[]
 
   @@index([namaPaket])
   @@index([unitPengusul])
@@ -394,9 +424,31 @@ model RencanaUmumPengadaan {
   @@index([tahunAnggaran])
   @@index([metodePengadaan])
   @@index([statusSirup])
+  @@index([statusUsulan])
   @@index([idRupSirup])
   @@index([statusTransaksiKatalog])
   @@map("rencana_umum_pengadaan")
+}
+
+model UsulanVerificationHistory {
+  id         String        @id @default(uuid()) @db.Char(36)
+  proposalId String        @map("proposal_id") @db.Char(36)
+  actorId    String?       @map("actor_id") @db.Char(36)
+  actorName  String        @map("actor_name") @db.VarChar(160)
+  action     String        @db.VarChar(80)
+  oldStatus  StatusUsulan? @map("old_status")
+  newStatus  StatusUsulan? @map("new_status")
+  note       String?       @db.Text
+  checklist  Json?
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  proposal RencanaUmumPengadaan @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("usulan_verification_history")
 }
 
 model SumberDana {

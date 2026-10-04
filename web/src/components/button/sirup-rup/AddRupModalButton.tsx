@@ -12,12 +12,14 @@ type SumberDanaOption = {
 };
 
 type AddRupModalButtonProps = {
+  defaultUnitPengusul?: string | null;
   sumberDanaOptions: SumberDanaOption[];
   label?: string;
   mode?: "rup" | "planning";
 };
 
 export default function AddRupModalButton({
+  defaultUnitPengusul,
   sumberDanaOptions,
   label = "Tambah RUP",
   mode = "rup",
@@ -49,6 +51,7 @@ export default function AddRupModalButton({
         title={label}
       >
         <RupForm
+          defaultUnitPengusul={defaultUnitPengusul}
           sumberDanaOptions={sumberDanaOptions}
           mode={mode}
           variant="modal"

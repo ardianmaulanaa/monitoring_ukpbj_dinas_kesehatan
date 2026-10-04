@@ -172,6 +172,7 @@ export default function CompleteSirupModalButton({
                 defaultValue={item.statusSirup}
                 className={inputClass}
               >
+                <option value="SIAP_RUP">Siap RUP</option>
                 <option value="BELUM_INPUT">Belum Input</option>
                 <option value="PROSES_VERIFIKASI">Proses Verifikasi</option>
                 <option value="SUDAH_TAYANG">Sudah Tayang</option>
