@@ -254,7 +254,7 @@ export default function SirupRupLineChart({
             Grafik distribusi pagu dan paket
           </h2>
           <p className="mt-1 text-sm font-bold text-slate-500">
-            Hanya paket perencanaan yang sudah approve sampai Siap RUP/SIRUP.
+            Mengikuti seluruh data hasil filter halaman SIRUP/RUP.
           </p>
         </div>
 

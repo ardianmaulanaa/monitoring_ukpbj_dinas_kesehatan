@@ -106,13 +106,19 @@ function formatCompactCurrency(value: number) {
 }
 
 function sourceFundClass(value: string) {
-  const normalized = value.toUpperCase();
+  const normalized = normalizeFundingSource(value);
 
   if (normalized.includes("BLUD")) return "bg-emerald-100 text-[#08783f]";
   if (normalized.includes("APBD")) return "bg-amber-100 text-amber-700";
   if (normalized.includes("DBHCHT")) return "bg-red-100 text-red-700";
 
   return "bg-emerald-100 text-emerald-700";
+}
+
+function normalizeFundingSource(value?: string | null) {
+  const normalized = value?.trim().replace(/\s+/g, " ").toUpperCase();
+
+  return normalized || "TIDAK TERISI";
 }
 
 function normalizeUnit(value?: string | null) {
@@ -214,24 +220,12 @@ export default async function Page({ searchParams }: RupPageProps) {
       return accumulator;
     }, {}),
   ).sort((left, right) => right.amount - left.amount);
-  const sourceFundSummary = Object.values(
-    rupData.reduce<
-      Record<string, { label: string; count: number; amount: number }>
-    >((accumulator, item) => {
-      const key = item.sumberDana;
-      const current = accumulator[key] ?? {
-        label: key,
-        count: 0,
-        amount: 0,
-      };
-
-      current.count += 1;
-      current.amount += decimalNumber(item.pagu);
-      accumulator[key] = current;
-
-      return accumulator;
-    }, {}),
-  ).sort((left, right) => right.amount - left.amount);
+  const sourceFundSummary = buildDistributionSummary(
+    rupData,
+    (item) => normalizeFundingSource(item.sumberDana),
+    (key) => key,
+    (item) => decimalNumber(item.pagu),
+  );
   const maxMethodAmount = Math.max(...methodSummary.map((item) => item.amount), 1);
   const maxSourceFundAmount = Math.max(
     ...sourceFundSummary.map((item) => item.amount),
@@ -239,20 +233,13 @@ export default async function Page({ searchParams }: RupPageProps) {
   );
   const dominantMethod = methodSummary[0];
   const dominantSourceFund = sourceFundSummary[0];
-  const approvedRupData = rupData.filter(
-    (item) => item.statusSirup === "SUDAH_TAYANG",
-  );
-  const approvedTotalPagu = approvedRupData.reduce(
-    (total, item) => total + decimalNumber(item.pagu),
-    0,
-  );
   const rupChartCategories = [
     {
       key: "sumberDana" as const,
       label: "Sumber Dana Utama",
       items: buildDistributionSummary(
-        approvedRupData,
-        (item) => item.sumberDana,
+        rupData,
+        (item) => normalizeFundingSource(item.sumberDana),
         (key) => key,
         (item) => decimalNumber(item.pagu),
       ),
@@ -261,7 +248,7 @@ export default async function Page({ searchParams }: RupPageProps) {
       key: "metodeFinal" as const,
       label: "Metode Final",
       items: buildDistributionSummary(
-        approvedRupData,
+        rupData,
         (item) => item.metodePengadaan,
         methodLabel,
         (item) => decimalNumber(item.pagu),
@@ -271,14 +258,14 @@ export default async function Page({ searchParams }: RupPageProps) {
       key: "jenisBarang" as const,
       label: "Jenis Barang",
       items: buildDistributionSummary(
-        approvedRupData,
+        rupData,
         (item) => item.jenisBelanja,
         (key) => key,
         (item) => decimalNumber(item.pagu),
       ),
     },
   ];
-  const dominantApprovedSourceFund = rupChartCategories[0]?.items[0];
+  const dominantChartSourceFund = rupChartCategories[0]?.items[0];
   const currentUser = await getCurrentUser();
   const canManageRup = canProcessRup(currentUser?.roles ?? []);
   const currentUserProfile = currentUser
@@ -292,7 +279,6 @@ export default async function Page({ searchParams }: RupPageProps) {
     <>
       <AppHeader
         title="SIRUP / RUP"
-        subtitle="UKPBJ › Data RUP"
         rightLabel="Publikasi SIRUP"
       />
 
@@ -302,9 +288,9 @@ export default async function Page({ searchParams }: RupPageProps) {
             <div className="xl:col-span-2">
               <SirupRupLineChart
                 categories={rupChartCategories}
-                primarySourceFund={dominantApprovedSourceFund?.label}
-                totalPackages={approvedRupData.length}
-                totalPagu={approvedTotalPagu}
+                primarySourceFund={dominantChartSourceFund?.label}
+                totalPackages={rupData.length}
+                totalPagu={totalPagu}
               />
             </div>
 
@@ -519,7 +505,7 @@ export default async function Page({ searchParams }: RupPageProps) {
                           <span
                             className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${sourceFundClass(item.sumberDana)}`}
                           >
-                            {item.sumberDana}
+                            {normalizeFundingSource(item.sumberDana)}
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
@@ -573,7 +559,9 @@ export default async function Page({ searchParams }: RupPageProps) {
                               unitPengusul: item.unitPengusul,
                               lokasiPaket: item.lokasiPaket,
                               jenisBelanja: item.jenisBelanja,
-                              sumberDana: item.sumberDana,
+                              sumberDana: normalizeFundingSource(
+                                item.sumberDana,
+                              ),
                               pagu: item.pagu.toString(),
                               metodePengadaan: item.metodePengadaan,
                               jadwalPemilihan: item.jadwalPemilihan,

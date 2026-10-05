@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, RotateCcw } from "lucide-react";
+import { CheckCircle2, FileSearch, RotateCcw } from "lucide-react";
 import ModalShell from "@/components/modal/ModalShell";
 import { formatCurrency } from "@/lib/currency";
 import { planningStatusLabels, planningStatusStyles } from "@/lib/planning-workflow";
@@ -136,6 +136,8 @@ export default function VerificationDetailModalButton({
   );
 
   async function openDetail() {
+    if (loading) return;
+
     setIsOpen(true);
     setLoading(true);
     setError("");
@@ -201,9 +203,11 @@ export default function VerificationDetailModalButton({
     <>
       <button
         type="button"
+        disabled={loading}
         onClick={openDetail}
-        className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532]"
+        className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-[#08783f] focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-55"
       >
+        <FileSearch className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
         Detail Pengajuan
       </button>
 
@@ -334,7 +338,7 @@ export default function VerificationDetailModalButton({
                   onChange={(event) => setNote(event.target.value)}
                   disabled={!canAct}
                   className="min-h-28 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100"
-                  placeholder="Tambahkan catatan hasil pemeriksaan..."
+                  placeholder="Tambahkan catatan hasil pemeriksaan jika diperlukan..."
                 />
               </label>
               {error ? (
@@ -395,7 +399,7 @@ export default function VerificationDetailModalButton({
                     className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
                     <CheckCircle2 className="h-4 w-4" />
-                    Setujui
+                    Setujui Usulan
                   </button>
                 </>
               ) : null}

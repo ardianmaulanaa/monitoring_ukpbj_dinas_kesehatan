@@ -147,7 +147,6 @@ export default async function Page({ searchParams }: PageProps) {
     <>
       <AppHeader
         title="Verifikasi Usulan"
-        subtitle="Periksa dan verifikasi usulan kebutuhan dari unit sebelum diproses menjadi RUP."
         rightLabel="Inbox"
       />
 

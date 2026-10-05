@@ -8,25 +8,17 @@ import NavBar from "./NavBar";
 import Sidebar from "./Sidebar";
 
 type AppHeaderProps = {
-  // Data title/subtitle dikirim dari halaman yang memakai AppHeader, misalnya app/dashboard/page.tsx.
+  // Subtitle tetap diterima untuk kompatibilitas lama, tetapi header baru hanya merender title.
   title: string;
   subtitle?: string;
   rightLabel?: string;
   filterPanel?: ReactNode;
 };
 
-export default function AppHeader({
-  title,
-  subtitle,
-  rightLabel,
-  filterPanel,
-}: AppHeaderProps) {
+export default function AppHeader(props: AppHeaderProps) {
+  const { title, rightLabel, filterPanel } = props;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roles, setRoles] = useState<RoleCode[]>([]);
-  const visibleSubtitle =
-    subtitle && !subtitle.includes("›") && !subtitle.includes(" / ")
-      ? subtitle
-      : undefined;
 
   // Ambil role user dari API auth supaya menu mobile bisa disaring sesuai hak akses.
   useEffect(() => {
@@ -89,7 +81,6 @@ export default function AppHeader({
       {/* NavBar adalah header atas: logo, judul halaman, notifikasi, dan profil. */}
       <NavBar
         title={title}
-        subtitle={visibleSubtitle}
         rightLabel={rightLabel}
         filterPanel={filterPanel ?? <GlobalFilterPanel />}
         onOpenMenu={() => setSidebarOpen(true)}
