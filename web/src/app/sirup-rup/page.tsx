@@ -1,13 +1,29 @@
 import { BarChart3, ClipboardList, Landmark, PieChart } from "lucide-react";
+
 import AppHeader from "@/components/appheader/AppHeader";
+
+import {
+  DataCardEmpty,
+  DataCardField,
+  DataCardRow,
+} from "@/components/data-card/DataCardList";
+
 import { getCurrentUser } from "@/lib/auth";
+
 import { formatCurrency } from "@/lib/currency";
+
 import { prisma } from "@/lib/prisma";
+
 import SirupRupLineChart from "@/components/charts/SirupRupLineChart";
+
 import CompleteSirupModalButton from "@/components/button/sirup-rup/CompleteSirupModalButton";
+
 import DeleteRupButton from "@/components/button/sirup-rup/DeleteRupButton";
+
 import ImportRupModalButton from "@/components/button/sirup-rup/ImportRupModalButton";
+
 import RupDetailModalButton from "@/components/button/sirup-rup/RupDetailModalButton";
+
 import { canProcessRup } from "@/lib/planning-workflow";
 
 type RupPageProps = {
@@ -16,49 +32,74 @@ type RupPageProps = {
 
 const statusStyles: Record<string, string> = {
   SIAP_RUP: "bg-emerald-100 text-emerald-700",
+
   BELUM_INPUT: "bg-slate-100 text-slate-600",
+
   PROSES_VERIFIKASI: "bg-amber-100 text-amber-700",
+
   MENUNGGU_PPTK: "bg-blue-100 text-blue-700",
+
   MENUNGGU_PPK: "bg-violet-100 text-violet-700",
+
   MENUNGGU_KPA_PA: "bg-indigo-100 text-indigo-700",
+
   SUDAH_TAYANG: "bg-emerald-100 text-emerald-700",
+
   REVISI_PAGU: "bg-orange-100 text-orange-700",
+
   DITARIK: "bg-red-100 text-red-700",
 };
 
 const statusLabels: Record<string, string> = {
   SIAP_RUP: "Siap RUP",
+
   BELUM_INPUT: "Belum Input",
+
   PROSES_VERIFIKASI: "Proses Verifikasi",
+
   MENUNGGU_PPTK: "Menunggu PPTK",
+
   MENUNGGU_PPK: "Menunggu PPK",
+
   MENUNGGU_KPA_PA: "Menunggu KPA/PA",
+
   SUDAH_TAYANG: "Sudah Tayang",
+
   REVISI_PAGU: "Perlu Revisi",
+
   DITARIK: "Ditarik",
 };
 
 function getParam(
   searchParams: Record<string, string | string[] | undefined>,
+
   key: string,
 ) {
   const value = searchParams[key];
+
   return Array.isArray(value) ? value[0] : value;
 }
 
 function labelize(value: string) {
   return value
+
     .replaceAll("_", " ")
+
     .toLowerCase()
+
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function methodLabel(value: string) {
   const labels: Record<string, string> = {
     TENDER: "Tender",
+
     NON_TENDER: "Non Tender",
-    E_PURCHASING: "e-Katalog",
+
+    E_PURCHASING: "E-Purchasing",
+
     PENGADAAN_LANGSUNG: "Pengadaan Langsung",
+
     SWAKELOLA: "Swakelola",
   };
 
@@ -68,9 +109,13 @@ function methodLabel(value: string) {
 function methodBarClass(value: string) {
   const styles: Record<string, string> = {
     E_PURCHASING: "bg-[#08783f]",
+
     TENDER: "bg-[#1976d2]",
+
     NON_TENDER: "bg-[#f57c00]",
+
     PENGADAAN_LANGSUNG: "bg-[#7c3aed]",
+
     SWAKELOLA: "bg-[#0f766e]",
   };
 
@@ -78,7 +123,15 @@ function methodBarClass(value: string) {
 }
 
 function sourceFundBarClass(index: number) {
-  const styles = ["bg-[#08783f]", "bg-[#f5bd20]", "bg-[#159cc3]", "bg-[#e53935]"];
+  const styles = [
+    "bg-[#08783f]",
+
+    "bg-[#f5bd20]",
+
+    "bg-[#159cc3]",
+
+    "bg-[#e53935]",
+  ];
 
   return styles[index % styles.length];
 }
@@ -109,7 +162,9 @@ function sourceFundClass(value: string) {
   const normalized = normalizeFundingSource(value);
 
   if (normalized.includes("BLUD")) return "bg-emerald-100 text-[#08783f]";
+
   if (normalized.includes("APBD")) return "bg-amber-100 text-amber-700";
+
   if (normalized.includes("DBHCHT")) return "bg-red-100 text-red-700";
 
   return "bg-emerald-100 text-emerald-700";
@@ -127,8 +182,11 @@ function normalizeUnit(value?: string | null) {
 
 function buildDistributionSummary<T>(
   data: T[],
+
   getKey: (item: T) => string | null | undefined,
+
   getLabel: (key: string) => string,
+
   getAmount: (item: T) => number,
 ) {
   return Object.values(
@@ -136,14 +194,19 @@ function buildDistributionSummary<T>(
       Record<string, { label: string; count: number; amount: number }>
     >((accumulator, item) => {
       const rawKey = getKey(item)?.trim() || "Tidak Terisi";
+
       const current = accumulator[rawKey] ?? {
         label: getLabel(rawKey),
+
         count: 0,
+
         amount: 0,
       };
 
       current.count += 1;
+
       current.amount += getAmount(item);
+
       accumulator[rawKey] = current;
 
       return accumulator;
@@ -153,10 +216,15 @@ function buildDistributionSummary<T>(
 
 export default async function Page({ searchParams }: RupPageProps) {
   const params = (await searchParams) ?? {};
+
   const q = getParam(params, "q")?.trim();
+
   const tahunAnggaran = getParam(params, "tahunAnggaran");
+
   const sumberDana = getParam(params, "sumberDana");
+
   const unitPengusul = getParam(params, "unitPengusul");
+
   const statusSirup = getParam(params, "statusSirup");
 
   const where = {
@@ -164,16 +232,24 @@ export default async function Page({ searchParams }: RupPageProps) {
       ? {
           OR: [
             { kodeRup: { contains: q } },
+
             { idRupSirup: { contains: q } },
+
             { namaPaket: { contains: q } },
+
             { unitPengusul: { contains: q } },
+
             { lokasiPaket: { contains: q } },
           ],
         }
       : {}),
+
     ...(tahunAnggaran ? { tahunAnggaran: Number(tahunAnggaran) } : {}),
+
     ...(sumberDana ? { sumberDana } : {}),
+
     ...(unitPengusul ? { unitPengusul } : {}),
+
     ...(statusSirup === "SIAP_RUP"
       ? { statusUsulan: "SIAP_RUP" as const }
       : statusSirup
@@ -193,94 +269,140 @@ export default async function Page({ searchParams }: RupPageProps) {
 
   const rupData = await prisma.rencanaUmumPengadaan.findMany({
     where,
+
     orderBy: [{ tahunAnggaran: "desc" }, { createdAt: "desc" }],
+
     take: 100,
   });
 
   const totalPagu = rupData.reduce(
     (total, item) => total + decimalNumber(item.pagu),
+
     0,
   );
+
   const methodSummary = Object.values(
     rupData.reduce<
-      Record<string, { label: string; key: string; count: number; amount: number }>
+      Record<
+        string,
+        { label: string; key: string; count: number; amount: number }
+      >
     >((accumulator, item) => {
       const key = item.metodePengadaan;
+
       const current = accumulator[key] ?? {
         key,
+
         label: methodLabel(key),
+
         count: 0,
+
         amount: 0,
       };
 
       current.count += 1;
+
       current.amount += decimalNumber(item.pagu);
+
       accumulator[key] = current;
 
       return accumulator;
     }, {}),
   ).sort((left, right) => right.amount - left.amount);
+
   const sourceFundSummary = buildDistributionSummary(
     rupData,
+
     (item) => normalizeFundingSource(item.sumberDana),
+
     (key) => key,
+
     (item) => decimalNumber(item.pagu),
   );
-  const maxMethodAmount = Math.max(...methodSummary.map((item) => item.amount), 1);
-  const maxSourceFundAmount = Math.max(
-    ...sourceFundSummary.map((item) => item.amount),
+
+  const maxMethodAmount = Math.max(
+    ...methodSummary.map((item) => item.amount),
+
     1,
   );
+
+  const maxSourceFundAmount = Math.max(
+    ...sourceFundSummary.map((item) => item.amount),
+
+    1,
+  );
+
   const dominantMethod = methodSummary[0];
+
   const dominantSourceFund = sourceFundSummary[0];
+
   const rupChartCategories = [
     {
       key: "sumberDana" as const,
+
       label: "Sumber Dana Utama",
+
       items: buildDistributionSummary(
         rupData,
+
         (item) => normalizeFundingSource(item.sumberDana),
+
         (key) => key,
+
         (item) => decimalNumber(item.pagu),
       ),
     },
+
     {
       key: "metodeFinal" as const,
+
       label: "Metode Final",
+
       items: buildDistributionSummary(
         rupData,
+
         (item) => item.metodePengadaan,
+
         methodLabel,
+
         (item) => decimalNumber(item.pagu),
       ),
     },
+
     {
       key: "jenisBarang" as const,
+
       label: "Jenis Barang",
+
       items: buildDistributionSummary(
         rupData,
+
         (item) => item.jenisBelanja,
+
         (key) => key,
+
         (item) => decimalNumber(item.pagu),
       ),
     },
   ];
+
   const dominantChartSourceFund = rupChartCategories[0]?.items[0];
+
   const currentUser = await getCurrentUser();
+
   const canManageRup = canProcessRup(currentUser?.roles ?? []);
+
   const currentUserProfile = currentUser
     ? await prisma.user.findUnique({
         where: { id: currentUser.id },
+
         select: { unitKerja: true },
       })
     : null;
 
   return (
     <>
-      <AppHeader
-        title="SIRUP / RUP"
-        rightLabel="Publikasi SIRUP"
-      />
+      <AppHeader title="SIRUP / RUP" rightLabel="Publikasi SIRUP" />
 
       <main className="bg-[#f4f7f5]">
         <section className="px-3 py-5 sm:px-6 sm:py-6 lg:px-8">
@@ -300,10 +422,12 @@ export default async function Page({ searchParams }: RupPageProps) {
                   <p className="text-[11px] font-black uppercase text-[#08783f]">
                     Grafik Metode
                   </p>
+
                   <h2 className="mt-1 text-base font-black leading-tight text-[#16227c] sm:text-lg">
                     Distribusi paket berdasarkan metode
                   </h2>
                 </div>
+
                 <BarChart3 className="h-6 w-6 text-[#08783f]" />
               </div>
 
@@ -312,22 +436,27 @@ export default async function Page({ searchParams }: RupPageProps) {
                   <p className="text-[11px] font-black uppercase text-slate-400">
                     Total Paket
                   </p>
+
                   <p className="mt-1 truncate text-xl font-black text-slate-950 sm:text-2xl">
                     {rupData.length.toLocaleString("id-ID")}
                   </p>
                 </div>
+
                 <div className="rounded-xl bg-slate-50 p-3 sm:p-4">
                   <p className="text-[11px] font-black uppercase text-slate-400">
                     Total Pagu
                   </p>
+
                   <p className="mt-1 truncate text-xl font-black text-slate-950 sm:text-2xl">
                     {formatCompactCurrency(totalPagu)}
                   </p>
                 </div>
+
                 <div className="rounded-xl bg-slate-50 p-3 sm:p-4">
                   <p className="text-[11px] font-black uppercase text-slate-400">
                     Metode Dominan
                   </p>
+
                   <p className="mt-1 truncate text-xl font-black text-slate-950 sm:text-2xl">
                     {dominantMethod?.label ?? "-"}
                   </p>
@@ -343,14 +472,17 @@ export default async function Page({ searchParams }: RupPageProps) {
                           <p className="truncate text-sm font-black text-slate-900">
                             {item.label}
                           </p>
+
                           <p className="mt-0.5 text-xs font-semibold text-slate-500">
                             {item.count.toLocaleString("id-ID")} paket
                           </p>
                         </div>
+
                         <p className="text-sm font-black text-slate-900 sm:shrink-0">
                           {formatCompactCurrency(item.amount)}
                         </p>
                       </div>
+
                       <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                         <div
                           className={`h-full rounded-full ${methodBarClass(item.key)}`}
@@ -375,10 +507,12 @@ export default async function Page({ searchParams }: RupPageProps) {
                   <p className="text-[11px] font-black uppercase text-[#08783f]">
                     Grafik Sumber Dana
                   </p>
+
                   <h2 className="mt-1 text-base font-black leading-tight text-[#16227c] sm:text-lg">
                     Distribusi pagu berdasarkan sumber dana
                   </h2>
                 </div>
+
                 <PieChart className="h-6 w-6 text-[#08783f]" />
               </div>
 
@@ -387,14 +521,17 @@ export default async function Page({ searchParams }: RupPageProps) {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#08783f]">
                     <Landmark className="h-5 w-5" strokeWidth={2.5} />
                   </div>
+
                   <div className="min-w-0">
                     <p className="text-[11px] font-black uppercase text-[#08783f]">
                       Sumber dana terbesar
                     </p>
+
                     <p className="mt-1 truncate text-lg font-black text-slate-950 sm:text-xl">
                       {dominantSourceFund?.label ?? "-"}
                     </p>
                   </div>
+
                   <p className="text-sm font-black text-slate-900 sm:ml-auto sm:shrink-0">
                     {formatCompactCurrency(dominantSourceFund?.amount ?? 0)}
                   </p>
@@ -410,14 +547,17 @@ export default async function Page({ searchParams }: RupPageProps) {
                           <p className="truncate text-sm font-black text-slate-900">
                             {item.label}
                           </p>
+
                           <p className="mt-0.5 text-xs font-semibold text-slate-500">
                             {item.count.toLocaleString("id-ID")} paket
                           </p>
                         </div>
+
                         <p className="text-sm font-black text-slate-900 sm:shrink-0">
                           {formatCompactCurrency(item.amount)}
                         </p>
                       </div>
+
                       <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                         <div
                           className={`h-full rounded-full ${sourceFundBarClass(index)}`}
@@ -441,6 +581,7 @@ export default async function Page({ searchParams }: RupPageProps) {
             <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-2">
                 <ClipboardList className="h-5 w-5 shrink-0 text-[#08783f]" />
+
                 <h1 className="truncate text-lg font-black text-[#16227c]">
                   Paket Perencanaan ke SIRUP / RUP
                 </h1>
@@ -448,225 +589,347 @@ export default async function Page({ searchParams }: RupPageProps) {
 
               <div className="flex flex-col gap-2 sm:items-end">
                 {canManageRup ? <ImportRupModalButton /> : null}
-                <p className="text-sm font-semibold text-slate-500">
+
+                <p className="max-w-xl text-right text-sm font-semibold leading-5 text-slate-500">
                   Paket diambil dari Perencanaan, lalu dilengkapi data tayang
                   SIRUP.
                 </p>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-[1320px] w-full border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
-                    <th className="px-4 py-3">Kode Usulan</th>
-                    <th className="px-4 py-3">ID RUP SIRUP</th>
-                    <th className="px-4 py-3">Nama Paket</th>
-
-                    <th className="px-4 py-3">Unit Pengusul</th>
-                    <th className="px-4 py-3">Jenis Belanja</th>
-                    <th className="px-4 py-3">Lokasi Paket</th>
-                    <th className="px-4 py-3">Sumber Dana</th>
-                    <th className="px-4 py-3">Pagu (Rp)</th>
-                    <th className="px-4 py-3">Metode Final</th>
-                    <th className="px-4 py-3">Tanggal Tayang</th>
-                    <th className="px-4 py-3">Status SIRUP</th>
-                    <th className="px-4 py-3 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {rupData.length > 0 ? (
-                    rupData.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="transition hover:bg-slate-50"
-                      >
-                        <td className="whitespace-nowrap px-4 py-4 font-mono text-xs font-bold text-slate-500">
-                          {item.kodeRup}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4 font-mono text-xs font-bold text-slate-500">
-                          {item.idRupSirup || "-"}
-                        </td>
-                        <td className="max-w-[280px] px-4 py-4 font-black text-[#16227c]">
-                          {item.namaPaket}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                          {item.unitPengusul}
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                          {item.jenisBelanja || "-"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                          {item.lokasiPaket || "-"}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${sourceFundClass(item.sumberDana)}`}
-                          >
-                            {normalizeFundingSource(item.sumberDana)}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                          {formatCurrency(item.pagu.toString())}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                          {methodLabel(item.metodePengadaan)}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                          {item.tanggalTayangSirup || "-"}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${statusStyles[item.statusSirup]}`}
-                          >
-                            {labelize(item.statusSirup)}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <div className="flex justify-end gap-2">
-                          <RupDetailModalButton
-                            item={{
-                              id: item.id,
-                              kodeRup: item.kodeRup,
-                              idRupSirup: item.idRupSirup,
-                              jenisKatalog: item.jenisKatalog,
-                              etalaseKatalog: item.etalaseKatalog,
-                              namaProdukKatalog: item.namaProdukKatalog,
-                              spesifikasiProdukKatalog:
-                                item.spesifikasiProdukKatalog,
-                              merekTipeKatalog: item.merekTipeKatalog,
-                              jumlahProdukKatalog: item.jumlahProdukKatalog,
-                              satuanProdukKatalog: item.satuanProdukKatalog,
-                              hargaSatuanKatalog:
-                                item.hargaSatuanKatalog?.toString() ?? null,
-                              totalHargaKatalog:
-                                item.totalHargaKatalog?.toString() ?? null,
-                              namaPenyediaKatalog:
-                                item.namaPenyediaKatalog,
-                              statusNegosiasiKatalog:
-                                item.statusNegosiasiKatalog,
-                              hargaNegosiasiKatalog:
-                                item.hargaNegosiasiKatalog?.toString() ?? null,
-                              nomorSuratPesanan: item.nomorSuratPesanan,
-                              tanggalSuratPesanan:
-                                item.tanggalSuratPesanan,
-                              statusTransaksiKatalog:
-                                item.statusTransaksiKatalog,
-                              catatanKatalog: item.catatanKatalog,
-                              namaPaket: item.namaPaket,
-                              unitPengusul: item.unitPengusul,
-                              lokasiPaket: item.lokasiPaket,
-                              jenisBelanja: item.jenisBelanja,
-                              sumberDana: normalizeFundingSource(
-                                item.sumberDana,
-                              ),
-                              pagu: item.pagu.toString(),
-                              metodePengadaan: item.metodePengadaan,
-                              jadwalPemilihan: item.jadwalPemilihan,
-                              tanggalInputSirup: item.tanggalInputSirup,
-                              tanggalTayangSirup: item.tanggalTayangSirup,
-                              linkSirup: item.linkSirup,
-                              tahunAnggaran: item.tahunAnggaran,
-                              statusSirup: item.statusSirup,
-                              catatan: item.catatan,
-                            }}
-                            statusLabel={
-                              statusLabels[item.statusSirup] ??
-                              labelize(item.statusSirup)
-                            }
-                            statusStyle={
-                              statusStyles[item.statusSirup] ??
-                              "bg-slate-100 text-slate-600"
-                            }
-                            canEditRevision={
-                              currentUser?.roles.includes("SUPER_ADMIN") ||
-                              normalizeUnit(currentUserProfile?.unitKerja) ===
-                                normalizeUnit(item.unitPengusul) ||
-                              normalizeUnit(currentUser?.name) ===
-                                normalizeUnit(item.unitPengusul)
-                            }
-                          />
-                          {canManageRup ? (
-                            <>
-                              <CompleteSirupModalButton
-                                label={
-                                  item.statusUsulan === "SIAP_RUP"
-                                    ? "Proses RUP"
-                                    : "Edit SIRUP/RUP"
-                                }
+            <div className="bg-slate-50/50 p-4 sm:p-5">
+              {rupData.length > 0 ? (
+                <>
+                  <div className="-mx-1 max-w-full overflow-x-auto overflow-y-hidden px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin]">
+                    <div className="w-max min-w-full space-y-3">
+                      {rupData.map((item) => (
+                        <DataCardRow
+                          key={item.id}
+                          minWidth="2600px"
+                          className="xl:min-w-[2600px]"
+                          icon={
+                            <ClipboardList
+                              className="h-5 w-5"
+                              strokeWidth={2.4}
+                            />
+                          }
+                          columns="56px 132px 124px minmax(300px,1fr) 150px 138px 165px 145px 190px 170px 155px 165px 420px"
+                          actions={
+                            <div className="flex min-w-max flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
+                              <RupDetailModalButton
                                 item={{
                                   id: item.id,
+
                                   kodeRup: item.kodeRup,
+
                                   idRupSirup: item.idRupSirup,
+
                                   jenisKatalog: item.jenisKatalog,
+
                                   etalaseKatalog: item.etalaseKatalog,
+
                                   namaProdukKatalog: item.namaProdukKatalog,
+
                                   spesifikasiProdukKatalog:
                                     item.spesifikasiProdukKatalog,
+
                                   merekTipeKatalog: item.merekTipeKatalog,
-                                  jumlahProdukKatalog:
-                                    item.jumlahProdukKatalog,
-                                  satuanProdukKatalog:
-                                    item.satuanProdukKatalog,
+
+                                  jumlahProdukKatalog: item.jumlahProdukKatalog,
+
+                                  satuanProdukKatalog: item.satuanProdukKatalog,
+
                                   hargaSatuanKatalog:
-                                    item.hargaSatuanKatalog?.toString() ??
-                                    null,
+                                    item.hargaSatuanKatalog?.toString() ?? null,
+
                                   totalHargaKatalog:
                                     item.totalHargaKatalog?.toString() ?? null,
-                                  namaPenyediaKatalog:
-                                    item.namaPenyediaKatalog,
+
+                                  namaPenyediaKatalog: item.namaPenyediaKatalog,
+
                                   statusNegosiasiKatalog:
                                     item.statusNegosiasiKatalog,
+
                                   hargaNegosiasiKatalog:
                                     item.hargaNegosiasiKatalog?.toString() ??
                                     null,
+
                                   nomorSuratPesanan: item.nomorSuratPesanan,
-                                  tanggalSuratPesanan:
-                                    item.tanggalSuratPesanan,
+
+                                  tanggalSuratPesanan: item.tanggalSuratPesanan,
+
                                   statusTransaksiKatalog:
                                     item.statusTransaksiKatalog,
+
                                   catatanKatalog: item.catatanKatalog,
+
                                   namaPaket: item.namaPaket,
+
                                   unitPengusul: item.unitPengusul,
-                                  sumberDana: item.sumberDana,
+
+                                  lokasiPaket: item.lokasiPaket,
+
+                                  jenisBelanja: item.jenisBelanja,
+
+                                  sumberDana: normalizeFundingSource(
+                                    item.sumberDana,
+                                  ),
+
                                   pagu: item.pagu.toString(),
+
                                   metodePengadaan: item.metodePengadaan,
+
                                   jadwalPemilihan: item.jadwalPemilihan,
+
                                   tanggalInputSirup: item.tanggalInputSirup,
+
                                   tanggalTayangSirup: item.tanggalTayangSirup,
+
                                   linkSirup: item.linkSirup,
+
                                   tahunAnggaran: item.tahunAnggaran,
+
                                   statusSirup: item.statusSirup,
+
                                   catatan: item.catatan,
                                 }}
+                                statusLabel={
+                                  statusLabels[item.statusSirup] ??
+                                  labelize(item.statusSirup)
+                                }
+                                statusStyle={
+                                  statusStyles[item.statusSirup] ??
+                                  "bg-slate-100 text-slate-600"
+                                }
+                                canEditRevision={
+                                  currentUser?.roles.includes("SUPER_ADMIN") ||
+                                  normalizeUnit(
+                                    currentUserProfile?.unitKerja,
+                                  ) === normalizeUnit(item.unitPengusul) ||
+                                  normalizeUnit(currentUser?.name) ===
+                                    normalizeUnit(item.unitPengusul)
+                                }
                               />
-                              <DeleteRupButton
-                                id={item.id}
-                                namaPaket={item.namaPaket}
-                              />
-                            </>
-                          ) : null}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={12} className="px-4 py-12 text-center">
-                        <p className="text-base font-black text-slate-700">
-                          Belum ada paket perencanaan
-                        </p>
-                        <p className="mt-2 text-sm font-semibold text-slate-500">
-                          Tambahkan paket di halaman Perencanaan, lalu lengkapi
-                          data SIRUP di halaman ini.
-                        </p>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+
+                              {canManageRup ? (
+                                <>
+                                  <CompleteSirupModalButton
+                                    label={
+                                      item.statusUsulan === "SIAP_RUP"
+                                        ? "Proses RUP"
+                                        : "Edit SIRUP/RUP"
+                                    }
+                                    item={{
+                                      id: item.id,
+
+                                      kodeRup: item.kodeRup,
+
+                                      idRupSirup: item.idRupSirup,
+
+                                      jenisKatalog: item.jenisKatalog,
+
+                                      etalaseKatalog: item.etalaseKatalog,
+
+                                      namaProdukKatalog: item.namaProdukKatalog,
+
+                                      spesifikasiProdukKatalog:
+                                        item.spesifikasiProdukKatalog,
+
+                                      merekTipeKatalog: item.merekTipeKatalog,
+
+                                      jumlahProdukKatalog:
+                                        item.jumlahProdukKatalog,
+
+                                      satuanProdukKatalog:
+                                        item.satuanProdukKatalog,
+
+                                      hargaSatuanKatalog:
+                                        item.hargaSatuanKatalog?.toString() ??
+                                        null,
+
+                                      totalHargaKatalog:
+                                        item.totalHargaKatalog?.toString() ??
+                                        null,
+
+                                      namaPenyediaKatalog:
+                                        item.namaPenyediaKatalog,
+
+                                      statusNegosiasiKatalog:
+                                        item.statusNegosiasiKatalog,
+
+                                      hargaNegosiasiKatalog:
+                                        item.hargaNegosiasiKatalog?.toString() ??
+                                        null,
+
+                                      nomorSuratPesanan: item.nomorSuratPesanan,
+
+                                      tanggalSuratPesanan:
+                                        item.tanggalSuratPesanan,
+
+                                      statusTransaksiKatalog:
+                                        item.statusTransaksiKatalog,
+
+                                      catatanKatalog: item.catatanKatalog,
+
+                                      namaPaket: item.namaPaket,
+
+                                      unitPengusul: item.unitPengusul,
+
+                                      sumberDana: item.sumberDana,
+
+                                      pagu: item.pagu.toString(),
+
+                                      metodePengadaan: item.metodePengadaan,
+
+                                      jadwalPemilihan: item.jadwalPemilihan,
+
+                                      tanggalInputSirup: item.tanggalInputSirup,
+
+                                      tanggalTayangSirup:
+                                        item.tanggalTayangSirup,
+
+                                      linkSirup: item.linkSirup,
+
+                                      tahunAnggaran: item.tahunAnggaran,
+
+                                      statusSirup: item.statusSirup,
+
+                                      catatan: item.catatan,
+                                    }}
+                                  />
+
+                                  <DeleteRupButton
+                                    id={item.id}
+                                    namaPaket={item.namaPaket}
+                                  />
+                                </>
+                              ) : null}
+                            </div>
+                          }
+                        >
+                          <DataCardField
+                            label="Kode Usulan"
+                            valueClassName="font-mono text-xs font-black text-slate-600"
+                          >
+                            <span className="truncate">{item.kodeRup}</span>
+                          </DataCardField>
+
+                          <DataCardField
+                            label="ID RUP SIRUP"
+                            valueClassName="font-mono text-xs font-black text-slate-600"
+                          >
+                            <span className="truncate">
+                              {item.idRupSirup || "-"}
+                            </span>
+                          </DataCardField>
+
+                          <DataCardField
+                            label="Nama Paket"
+                            valueClassName="font-black text-[#16227c]"
+                          >
+                            <p className="line-clamp-2 leading-5">
+                              {item.namaPaket}
+                            </p>
+
+                            <p className="mt-1 truncate text-xs font-bold text-slate-500">
+                              Unit: {item.unitPengusul}
+                            </p>
+                          </DataCardField>
+
+                          <DataCardField label="Unit Pengusul">
+                            <span className="truncate">
+                              {item.unitPengusul}
+                            </span>
+                          </DataCardField>
+
+                          <DataCardField label="Jenis Belanja">
+                            <span className="inline-flex max-w-full rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                              <span className="truncate">
+                                {item.jenisBelanja || "-"}
+                              </span>
+                            </span>
+                          </DataCardField>
+
+                          <DataCardField label="Lokasi Paket">
+                            <span className="truncate">
+                              {item.lokasiPaket || "-"}
+                            </span>
+                          </DataCardField>
+
+                          <DataCardField label="Sumber Dana">
+                            <span
+                              className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${sourceFundClass(item.sumberDana)}`}
+                            >
+                              <span className="truncate">
+                                {normalizeFundingSource(item.sumberDana)}
+                              </span>
+                            </span>
+                          </DataCardField>
+
+                          <DataCardField
+                            label="Pagu"
+                            valueClassName="whitespace-nowrap font-black text-slate-800"
+                          >
+                            {formatCurrency(item.pagu.toString())}
+                          </DataCardField>
+
+                          <DataCardField
+                            label="Metode Final"
+                            valueClassName="whitespace-nowrap"
+                          >
+                            <span className="truncate">
+                              {methodLabel(item.metodePengadaan)}
+                            </span>
+                          </DataCardField>
+
+                          <DataCardField
+                            label="Tanggal Tayang"
+                            valueClassName="whitespace-nowrap"
+                          >
+                            <span className="truncate">
+                              {item.tanggalTayangSirup || "-"}
+                            </span>
+                          </DataCardField>
+
+                          <DataCardField
+                            label="Status SIRUP"
+                            valueClassName="whitespace-nowrap"
+                          >
+                            <span
+                              className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${statusStyles[item.statusSirup]}`}
+                            >
+                              <span className="truncate">
+                                {labelize(item.statusSirup)}
+                              </span>
+                            </span>
+                          </DataCardField>
+                        </DataCardRow>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-1 flex items-center justify-end gap-2 text-xs font-bold text-slate-400 2xl:hidden">
+                    <span>
+                      Geser horizontal untuk melihat seluruh data dan aksi
+                    </span>
+
+                    <span aria-hidden="true">→</span>
+                  </div>
+                </>
+              ) : (
+                <DataCardEmpty>
+                  <div>
+                    <p className="text-base font-black text-slate-700">
+                      Belum ada paket perencanaan
+                    </p>
+
+                    <p className="mt-2 text-sm font-semibold text-slate-500">
+                      Tambahkan paket di halaman Perencanaan, lalu lengkapi data
+                      SIRUP di halaman ini.
+                    </p>
+                  </div>
+                </DataCardEmpty>
+              )}
             </div>
           </div>
         </section>

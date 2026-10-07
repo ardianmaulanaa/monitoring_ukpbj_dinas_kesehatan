@@ -1,18 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
-  CircleDollarSign,
   ClipboardList,
   FileCheck2,
   Handshake,
   PackageSearch,
-  RotateCcw,
   Save,
   Truck,
+  WalletCards,
 } from "lucide-react";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { updateKatalogWorkflowAction } from "@/app/katalog-v6-v5/actions";
@@ -25,955 +23,571 @@ type RupSummary = {
   unitPengusul: string;
   sumberDana: string;
   pagu: number;
+  tahunAnggaran: number;
+  program?: string | null;
+  kegiatan?: string | null;
+  subKegiatan?: string | null;
+  ppkPptk?: string | null;
+  metodePengadaan: string;
 };
 
-type ProductData = {
-  namaProduk: string;
-  merk: string;
-  jumlah: number;
-  satuan: string;
+export type EPurchasingDraft = {
+  alamatPenyediaKatalog?: string | null;
+  catatanKatalog?: string | null;
+  emailPenyediaKatalog?: string | null;
+  etalaseKatalog?: string | null;
+  hargaNegosiasiKatalog?: string | null;
+  hargaPenawaranKatalog?: string | null;
+  hargaSatuanKatalog?: string | null;
+  hasilPemeriksaan?: string | null;
+  jenisKatalog?: string | null;
+  jumlahProdukKatalog?: string | null;
+  kategoriProdukKatalog?: string | null;
+  kontakPenyediaKatalog?: string | null;
+  linkProdukKatalog?: string | null;
+  merekTipeKatalog?: string | null;
+  namaPenyediaKatalog?: string | null;
+  namaProdukKatalog?: string | null;
+  nilaiPembayaran?: string | null;
+  nomorBaPemeriksaan?: string | null;
+  nomorBaUjiFungsi?: string | null;
+  nomorBast?: string | null;
+  nomorFaktur?: string | null;
+  nomorInvoice?: string | null;
+  nomorSpkKontrak?: string | null;
+  nomorSpmk?: string | null;
+  nomorSppbj?: string | null;
+  nomorSuratJalan?: string | null;
+  nomorSuratPesanan?: string | null;
+  satuanProdukKatalog?: string | null;
+  spesifikasiProdukKatalog?: string | null;
+  statusDokumenPembayaran?: string | null;
+  statusNegosiasiKatalog?: string | null;
+  statusPembayaranEp?: string | null;
+  statusPemeriksaanEp?: string | null;
+  statusPengirimanEp?: string | null;
+  statusSuratPesanan?: string | null;
+  statusTransaksiKatalog?: string | null;
+  statusUjiFungsi?: string | null;
+  tanggalAktualKirim?: string | null;
+  tanggalBast?: string | null;
+  tanggalKontrakEp?: string | null;
+  tanggalPembayaranEp?: string | null;
+  tanggalPemeriksaan?: string | null;
+  tanggalRencanaKirim?: string | null;
+  tanggalSpmk?: string | null;
+  tanggalSppbj?: string | null;
+  tanggalSuratPesanan?: string | null;
+  tanggalUjiFungsi?: string | null;
+  totalHargaKatalog?: string | null;
 };
 
-type ProviderData = {
-  namaPenyedia: string;
-  hargaTayang: number;
-  estimasiPengiriman: string;
-};
+type TabKey =
+  | "overview"
+  | "product"
+  | "provider"
+  | "negotiation"
+  | "contract"
+  | "delivery"
+  | "inspection"
+  | "payment"
+  | "documents";
 
-type NegotiationData = {
-  hargaPenawaran: number;
-  hargaKesepakatan: number;
-  catatan: string;
-};
+const inputClass =
+  "h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100";
+const labelClass = "text-xs font-black uppercase tracking-wide text-slate-500";
+const textareaClass =
+  "min-h-24 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-semibold leading-6 text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100";
 
-type ManualCatalogDraft = {
-  product?: ProductData;
-  provider?: ProviderData;
-  negotiation?: NegotiationData;
-};
+function rupiah(value: number | string | null | undefined) {
+  const amount = Number(value ?? 0);
 
-type EditableStep = 2 | 3 | 4;
-
-function rupiah(value: number) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
-  }).format(Number.isFinite(value) ? value : 0);
+  }).format(Number.isFinite(amount) ? amount : 0);
+}
+
+function numberValue(value: string | null | undefined) {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <p className={labelClass}>{label}</p>
+      <p className="mt-2 break-words text-sm font-black text-slate-800">
+        {value || "-"}
+      </p>
+    </div>
+  );
+}
+
+function SubmitButton({
+  children,
+  pending,
+}: {
+  children: React.ReactNode;
+  pending: boolean;
+}) {
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      <Save className="h-4 w-4" />
+      {pending ? "Menyimpan..." : children}
+    </button>
+  );
 }
 
 export default function KatalogManualWorkflowClient({
   initialDraft,
   rup,
 }: {
-  initialDraft?: ManualCatalogDraft;
+  initialDraft: EPurchasingDraft;
   rup: RupSummary;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [draft, setDraft] = useState<ManualCatalogDraft>(initialDraft ?? {});
-  const [activeStep, setActiveStep] = useState<EditableStep>(
-    !initialDraft?.product ? 2 : !initialDraft.provider ? 3 : 4,
-  );
+  const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [productForm, setProductForm] = useState({
-    namaProduk: initialDraft?.product?.namaProduk ?? "",
-    merk: initialDraft?.product?.merk ?? "",
-    jumlah: String(initialDraft?.product?.jumlah ?? 1),
-    satuan: initialDraft?.product?.satuan ?? "Unit",
-  });
+  const jumlah = numberValue(initialDraft.jumlahProdukKatalog) || 1;
+  const hargaTayang = numberValue(initialDraft.hargaSatuanKatalog);
+  const totalHargaTayang = jumlah * hargaTayang;
+  const hargaFinal = numberValue(initialDraft.hargaNegosiasiKatalog);
+  const selisihPagu = Math.max(rup.pagu - hargaFinal, 0);
 
-  const [providerForm, setProviderForm] = useState({
-    namaPenyedia: initialDraft?.provider?.namaPenyedia ?? "",
-    hargaTayang: initialDraft?.provider
-      ? String(initialDraft.provider.hargaTayang)
-      : "",
-    estimasiPengiriman: initialDraft?.provider?.estimasiPengiriman ?? "",
-  });
+  const progress = useMemo(
+    () => [
+      { label: "RUP", done: true },
+      { label: "Produk", done: Boolean(initialDraft.namaProdukKatalog) },
+      { label: "Penyedia", done: Boolean(initialDraft.namaPenyediaKatalog) },
+      { label: "Negosiasi", done: Boolean(initialDraft.hargaNegosiasiKatalog) },
+      { label: "Kontrak", done: Boolean(initialDraft.nomorSuratPesanan || initialDraft.nomorSpkKontrak) },
+      { label: "Pengiriman", done: Boolean(initialDraft.statusPengirimanEp) },
+      { label: "Pemeriksaan", done: Boolean(initialDraft.nomorBaPemeriksaan || initialDraft.nomorBast) },
+      { label: "Pembayaran", done: initialDraft.statusPembayaranEp === "DIBAYAR" },
+    ],
+    [initialDraft],
+  );
 
-  const [negotiationForm, setNegotiationForm] = useState({
-    hargaPenawaran: initialDraft?.negotiation
-      ? String(initialDraft.negotiation.hargaPenawaran)
-      : "",
-    hargaKesepakatan: initialDraft?.negotiation
-      ? String(initialDraft.negotiation.hargaKesepakatan)
-      : "",
-    catatan: initialDraft?.negotiation?.catatan ?? "",
-  });
-
-  const currentStep = !draft.product
-    ? 2
-    : !draft.provider
-      ? 3
-      : !draft.negotiation
-        ? 4
-        : 5;
-
-  const totalHargaTayang = useMemo(() => {
-    if (!draft.product || !draft.provider) return 0;
-    return draft.product.jumlah * draft.provider.hargaTayang;
-  }, [draft.product, draft.provider]);
-
-  const sisaPagu = rup.pagu - totalHargaTayang;
-
-  const stepItems = [
-    {
-      no: 1,
-      title: "RUP Tayang",
-      helper: "Paket sudah tayang dan siap diproses melalui e-Katalog.",
-      icon: ClipboardList,
-    },
-    {
-      no: 2,
-      title: "Pilih Produk",
-      helper: "Isi nama produk, merk, jumlah, dan satuan secara manual.",
-      icon: PackageSearch,
-    },
-    {
-      no: 3,
-      title: "Pilih Penyedia",
-      helper: "Isi penyedia, harga tayang per unit, dan estimasi pengiriman.",
-      icon: Truck,
-    },
-    {
-      no: 4,
-      title: "Negosiasi",
-      helper: "Catat harga penawaran, kesepakatan, dan catatan negosiasi.",
-      icon: Handshake,
-    },
-    {
-      no: 5,
-      title: "Surat Pesanan",
-      helper: "Lanjutkan ke modul Kontrak & Surat Pesanan setelah negosiasi.",
-      icon: FileCheck2,
-    },
-    {
-      no: 6,
-      title: "Pengiriman",
-      helper: "Pantau pengiriman atau pelaksanaan setelah surat pesanan.",
-      icon: Truck,
-    },
-    {
-      no: 7,
-      title: "BAST",
-      helper: "Catat pemeriksaan dan serah terima.",
-      icon: CheckCircle2,
-    },
-    {
-      no: 8,
-      title: "Pembayaran",
-      helper: "Lengkapi proses pembayaran setelah serah terima.",
-      icon: CircleDollarSign,
-    },
+  const tabs: { key: TabKey; label: string; icon: typeof ClipboardList }[] = [
+    { key: "overview", label: "Overview", icon: ClipboardList },
+    { key: "product", label: "Produk", icon: PackageSearch },
+    { key: "provider", label: "Penyedia", icon: Truck },
+    { key: "negotiation", label: "Negosiasi", icon: Handshake },
+    { key: "contract", label: "Kontrak", icon: FileCheck2 },
+    { key: "delivery", label: "Pengiriman", icon: Truck },
+    { key: "inspection", label: "Pemeriksaan", icon: CheckCircle2 },
+    { key: "payment", label: "Pembayaran", icon: WalletCards },
+    { key: "documents", label: "Dokumen", icon: ClipboardList },
   ];
 
-  function stepState(no: number) {
-    if (no === 1) return "done";
-    if (no < currentStep) return "done";
-    if (no === currentStep) return "active";
-    return "waiting";
-  }
-
-  function canOpenStep(no: number) {
-    if (no === 2) return true;
-    if (no === 3) return Boolean(draft.product);
-    if (no === 4) return Boolean(draft.product && draft.provider);
-    return false;
-  }
-
-  function openStep(no: number) {
-    if (!canOpenStep(no)) return;
-    setError("");
-    setSuccess("");
-    setActiveStep(no as EditableStep);
-  }
-
-  function saveProduct(event: FormEvent<HTMLFormElement>) {
+  function submit(
+    event: FormEvent<HTMLFormElement>,
+    buildPayload: (formData: FormData) => Parameters<typeof updateKatalogWorkflowAction>[0],
+  ) {
     event.preventDefault();
     setError("");
     setSuccess("");
 
-    const jumlah = Number(productForm.jumlah);
-
-    if (!productForm.namaProduk.trim()) {
-      setError("Nama produk wajib diisi.");
-      return;
-    }
-
-    if (!Number.isFinite(jumlah) || jumlah <= 0) {
-      setError("Jumlah produk harus lebih dari 0.");
-      return;
-    }
-
-    const product: ProductData = {
-      namaProduk: productForm.namaProduk.trim(),
-      merk: productForm.merk.trim(),
-      jumlah,
-      satuan: productForm.satuan.trim() || "Unit",
-    };
+    const formData = new FormData(event.currentTarget);
 
     startTransition(async () => {
-      const result = await updateKatalogWorkflowAction({
-        step: "product",
-        id: rup.id,
-        ...product,
-      });
+      const result = await updateKatalogWorkflowAction(buildPayload(formData));
 
       if (!result.ok) {
         setError(result.message);
         return;
       }
 
-      setDraft({ product });
-      setProviderForm({
-        namaPenyedia: "",
-        hargaTayang: "",
-        estimasiPengiriman: "",
-      });
-      setNegotiationForm({
-        hargaPenawaran: "",
-        hargaKesepakatan: "",
-        catatan: "",
-      });
       setSuccess(result.message);
-      setActiveStep(3);
-      router.refresh();
-    });
-  }
-
-  function saveProvider(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
-
-    if (!draft.product) {
-      setError("Pilih produk terlebih dahulu.");
-      setActiveStep(2);
-      return;
-    }
-
-    const hargaTayang = Number(providerForm.hargaTayang);
-    const total = draft.product.jumlah * hargaTayang;
-
-    if (!providerForm.namaPenyedia.trim()) {
-      setError("Nama penyedia wajib diisi.");
-      return;
-    }
-
-    if (!Number.isFinite(hargaTayang) || hargaTayang <= 0) {
-      setError("Harga tayang per unit harus lebih dari 0.");
-      return;
-    }
-
-    if (total > rup.pagu) {
-      setError(
-        `Total harga tayang ${rupiah(total)} melebihi pagu RUP ${rupiah(rup.pagu)}.`,
-      );
-      return;
-    }
-
-    const provider: ProviderData = {
-      namaPenyedia: providerForm.namaPenyedia.trim(),
-      hargaTayang,
-      estimasiPengiriman: providerForm.estimasiPengiriman.trim(),
-    };
-
-    startTransition(async () => {
-      const result = await updateKatalogWorkflowAction({
-        step: "provider",
-        id: rup.id,
-        ...provider,
-        totalHarga: total,
-      });
-
-      if (!result.ok) {
-        setError(result.message);
-        return;
-      }
-
-      setDraft({
-        product: draft.product,
-        provider,
-      });
-      setNegotiationForm({
-        hargaPenawaran: "",
-        hargaKesepakatan: "",
-        catatan: "",
-      });
-      setSuccess(result.message);
-      setActiveStep(4);
-      router.refresh();
-    });
-  }
-
-  function saveNegotiation(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
-
-    if (!draft.product || !draft.provider) {
-      setError("Produk dan penyedia harus dipilih terlebih dahulu.");
-      return;
-    }
-
-    const hargaPenawaran = Number(negotiationForm.hargaPenawaran);
-    const hargaKesepakatan = Number(negotiationForm.hargaKesepakatan);
-    const totalTayang = draft.product.jumlah * draft.provider.hargaTayang;
-
-    if (!Number.isFinite(hargaPenawaran) || hargaPenawaran <= 0) {
-      setError("Harga penawaran wajib diisi.");
-      return;
-    }
-
-    if (!Number.isFinite(hargaKesepakatan) || hargaKesepakatan <= 0) {
-      setError("Harga kesepakatan wajib diisi.");
-      return;
-    }
-
-    if (hargaKesepakatan > totalTayang) {
-      setError("Harga kesepakatan tidak boleh melebihi total harga tayang.");
-      return;
-    }
-
-    if (hargaKesepakatan > rup.pagu) {
-      setError("Harga kesepakatan tidak boleh melebihi pagu RUP.");
-      return;
-    }
-
-    const negotiation = {
-      hargaPenawaran,
-      hargaKesepakatan,
-      catatan: negotiationForm.catatan.trim(),
-    };
-
-    startTransition(async () => {
-      const result = await updateKatalogWorkflowAction({
-        step: "negotiation",
-        id: rup.id,
-        ...negotiation,
-      });
-
-      if (!result.ok) {
-        setError(result.message);
-        return;
-      }
-
-      setDraft({
-        product: draft.product,
-        provider: draft.provider,
-        negotiation,
-      });
-      setSuccess(result.message);
-      router.refresh();
-    });
-  }
-
-  function resetDraft() {
-    const confirmed = window.confirm(
-      "Hapus seluruh input manual produk, penyedia, dan negosiasi untuk paket ini?",
-    );
-    if (!confirmed) return;
-
-    setError("");
-    setSuccess("");
-
-    startTransition(async () => {
-      const result = await updateKatalogWorkflowAction({
-        step: "reset",
-        id: rup.id,
-      });
-
-      if (!result.ok) {
-        setError(result.message);
-        return;
-      }
-
-      setDraft({});
-      setProductForm({
-        namaProduk: "",
-        merk: "",
-        jumlah: "1",
-        satuan: "Unit",
-      });
-      setProviderForm({
-        namaPenyedia: "",
-        hargaTayang: "",
-        estimasiPengiriman: "",
-      });
-      setNegotiationForm({
-        hargaPenawaran: "",
-        hargaKesepakatan: "",
-        catatan: "",
-      });
-      setSuccess(result.message);
-      setActiveStep(2);
       router.refresh();
     });
   }
 
   return (
-    <div>
-      {(draft.product || draft.provider || draft.negotiation) && (
-        <div className="mb-3 flex justify-end">
-          <button
-            type="button"
-            onClick={resetDraft}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-red-200 bg-white px-3 text-xs font-black text-red-600 transition hover:bg-red-50"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Reset Proses
-          </button>
-        </div>
-      )}
+    <div className="grid gap-5">
+      <div className="overflow-x-auto border-b border-slate-200 pb-2">
+        <div className="flex min-w-max gap-2">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.key;
 
-      <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {stepItems.map((step) => {
-          const state = stepState(step.no);
-          const Icon = step.icon;
-          const clickable = canOpenStep(step.no);
-
-          return (
-            <button
-              key={step.no}
-              type="button"
-              disabled={!clickable}
-              onClick={() => openStep(step.no)}
-              className={`flex min-h-[70px] w-full items-center gap-2 rounded-md border px-3 py-2 text-left transition ${
-                state === "done"
-                  ? "border-emerald-200 bg-white"
-                  : state === "active"
-                    ? "border-amber-300 bg-amber-50"
-                    : "border-slate-200 bg-white"
-              } ${
-                clickable
-                  ? "cursor-pointer hover:border-[#08783f]"
-                  : "cursor-default"
-              }`}
-            >
-              <span
-                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${
-                  state === "done"
-                    ? "bg-[#08783f] text-white"
-                    : state === "active"
-                      ? "bg-amber-500 text-white"
-                      : "bg-slate-200 text-slate-500"
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-black transition ${
+                  active
+                    ? "border-[#08783f] bg-emerald-50 text-[#08783f]"
+                    : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                 }`}
               >
-                {state === "done" ? "✓" : step.no}
-              </span>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <Icon
-                    className={`h-3.5 w-3.5 shrink-0 ${
-                      state === "done"
-                        ? "text-[#08783f]"
-                        : state === "active"
-                          ? "text-amber-600"
-                          : "text-slate-400"
-                    }`}
-                  />
-                  <p className="truncate text-xs font-black text-slate-900">
-                    {step.title}
-                  </p>
-                </div>
-                <p
-                  className={`mt-1 text-[10px] font-black uppercase tracking-wide ${
-                    state === "done"
-                      ? "text-[#08783f]"
-                      : state === "active"
-                        ? "text-amber-700"
-                        : "text-slate-400"
-                  }`}
-                >
-                  {state === "done"
-                    ? "Selesai"
-                    : state === "active"
-                      ? "Saat ini"
-                      : "Menunggu"}
-                </p>
-              </div>
-            </button>
-          );
-        })}
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {error && (
-        <div className="mt-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+      {error ? (
+        <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
-      )}
+      ) : null}
 
-      {success && (
-        <div className="mt-4 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+      {success ? (
+        <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{success}</span>
         </div>
-      )}
+      ) : null}
 
-      <div className="mt-5 grid gap-5">
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 px-4 py-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#08783f]">
-              Input Manual
-            </p>
-            <h3 className="mt-1 font-black text-[#16227c]">
-              {activeStep === 2
-                ? "Pilih Produk"
-                : activeStep === 3
-                  ? "Pilih Penyedia"
-                  : "Negosiasi"}
-            </h3>
+      {activeTab === "overview" ? (
+        <section className="grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <ReadOnlyField label="Kode RUP" value={rup.kodeRup} />
+            <ReadOnlyField label="Unit" value={rup.unitPengusul} />
+            <ReadOnlyField label="Tahun Anggaran" value={`TA ${rup.tahunAnggaran}`} />
+            <ReadOnlyField label="Pagu" value={rupiah(rup.pagu)} />
+            <ReadOnlyField label="Program" value={rup.program ?? "-"} />
+            <ReadOnlyField label="Kegiatan" value={rup.kegiatan ?? "-"} />
+            <ReadOnlyField label="Sub Kegiatan" value={rup.subKegiatan ?? "-"} />
+            <ReadOnlyField label="PP / PPK" value={rup.ppkPptk ?? "-"} />
+            <ReadOnlyField label="Sumber Dana" value={rup.sumberDana} />
+            <ReadOnlyField label="Metode Final" value="E-Purchasing" />
+            <ReadOnlyField label="Lokasi" value={rup.lokasiPaket ?? "-"} />
+            <ReadOnlyField
+              label="Tahap Saat Ini"
+              value={initialDraft.statusTransaksiKatalog ?? "PERSIAPAN"}
+            />
           </div>
 
-          {activeStep === 2 && (
-            <form onSubmit={saveProduct} className="space-y-3 p-4">
-              <div>
-                <label className="text-xs font-black uppercase text-slate-500">
-                  Nama Produk *
-                </label>
-                <input
-                  value={productForm.namaProduk}
-                  onChange={(e) =>
-                    setProductForm((prev) => ({
-                      ...prev,
-                      namaProduk: e.target.value,
-                    }))
-                  }
-                  placeholder="Contoh: Mikropipet 100–1000 µL"
-                  className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-black uppercase text-slate-500">
-                  Merk
-                </label>
-                <input
-                  value={productForm.merk}
-                  onChange={(e) =>
-                    setProductForm((prev) => ({
-                      ...prev,
-                      merk: e.target.value,
-                    }))
-                  }
-                  placeholder="Contoh: Eppendorf"
-                  className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-black uppercase text-slate-500">
-                    Jumlah *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={productForm.jumlah}
-                    onChange={(e) =>
-                      setProductForm((prev) => ({
-                        ...prev,
-                        jumlah: e.target.value,
-                      }))
-                    }
-                    className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-black uppercase text-slate-500">
-                    Satuan *
-                  </label>
-                  <input
-                    value={productForm.satuan}
-                    onChange={(e) =>
-                      setProductForm((prev) => ({
-                        ...prev,
-                        satuan: e.target.value,
-                      }))
-                    }
-                    placeholder="Unit"
-                    className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isPending}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Save className="h-4 w-4" />
-                {isPending ? "Menyimpan..." : "Simpan Produk"}
-              </button>
-            </form>
-          )}
-
-          {activeStep === 3 && (
-            <form onSubmit={saveProvider} className="space-y-3 p-4">
-              {!draft.product ? (
-                <p className="text-sm font-semibold text-slate-500">
-                  Pilih produk terlebih dahulu.
-                </p>
-              ) : (
-                <>
-                  <div className="rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2.5">
-                    <p className="text-xs font-black uppercase text-emerald-700">
-                      Produk Terpilih
-                    </p>
-                    <p className="mt-1 text-sm font-black text-slate-800">
-                      {draft.product.namaProduk}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">
-                      {draft.product.jumlah} {draft.product.satuan}
-                      {draft.product.merk ? ` · ${draft.product.merk}` : ""}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase text-slate-500">
-                      Nama Penyedia *
-                    </label>
-                    <input
-                      value={providerForm.namaPenyedia}
-                      onChange={(e) =>
-                        setProviderForm((prev) => ({
-                          ...prev,
-                          namaPenyedia: e.target.value,
-                        }))
-                      }
-                      placeholder="Contoh: PT ABC Laboratory"
-                      className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase text-slate-500">
-                      Harga Tayang / Unit *
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={providerForm.hargaTayang}
-                      onChange={(e) =>
-                        setProviderForm((prev) => ({
-                          ...prev,
-                          hargaTayang: e.target.value,
-                        }))
-                      }
-                      placeholder="4000000"
-                      className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                    />
-                    <p className="mt-1 text-xs font-semibold text-slate-400">
-                      Masukkan angka tanpa titik/koma.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase text-slate-500">
-                      Estimasi Pengiriman
-                    </label>
-                    <input
-                      value={providerForm.estimasiPengiriman}
-                      onChange={(e) =>
-                        setProviderForm((prev) => ({
-                          ...prev,
-                          estimasiPengiriman: e.target.value,
-                        }))
-                      }
-                      placeholder="Contoh: 14 hari"
-                      className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                    />
-                  </div>
-
-                  {Number(providerForm.hargaTayang) > 0 && (
-                    <div className="rounded-md bg-slate-50 p-3">
-                      <p className="text-xs font-black uppercase text-slate-400">
-                        Total Harga Tayang
-                      </p>
-                      <p className="mt-1 text-lg font-black text-[#16227c]">
-                        {rupiah(
-                          draft.product.jumlah *
-                            Number(providerForm.hargaTayang),
-                        )}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">
-                        Pagu RUP: {rupiah(rup.pagu)}
-                      </p>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Save className="h-4 w-4" />
-                    {isPending ? "Menyimpan..." : "Simpan Penyedia"}
-                  </button>
-                </>
-              )}
-            </form>
-          )}
-
-          {activeStep === 4 && (
-            <form onSubmit={saveNegotiation} className="space-y-3 p-4">
-              {!draft.product || !draft.provider ? (
-                <p className="text-sm font-semibold text-slate-500">
-                  Produk dan penyedia harus disimpan terlebih dahulu.
-                </p>
-              ) : (
-                <>
-                  <div className="rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2.5">
-                    <p className="text-xs font-black uppercase text-emerald-700">
-                      Dasar Negosiasi
-                    </p>
-                    <p className="mt-1 text-sm font-black text-slate-800">
-                      {draft.provider.namaPenyedia}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">
-                      Harga tayang total: {rupiah(totalHargaTayang)}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase text-slate-500">
-                      Harga Penawaran Total *
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={negotiationForm.hargaPenawaran}
-                      onChange={(e) =>
-                        setNegotiationForm((prev) => ({
-                          ...prev,
-                          hargaPenawaran: e.target.value,
-                        }))
-                      }
-                      placeholder="19000000"
-                      className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase text-slate-500">
-                      Harga Kesepakatan Total *
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={negotiationForm.hargaKesepakatan}
-                      onChange={(e) =>
-                        setNegotiationForm((prev) => ({
-                          ...prev,
-                          hargaKesepakatan: e.target.value,
-                        }))
-                      }
-                      placeholder="19250000"
-                      className="mt-2 h-10 w-full rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase text-slate-500">
-                      Catatan
-                    </label>
-                    <textarea
-                      value={negotiationForm.catatan}
-                      onChange={(e) =>
-                        setNegotiationForm((prev) => ({
-                          ...prev,
-                          catatan: e.target.value,
-                        }))
-                      }
-                      rows={4}
-                      placeholder="Contoh: Harga sudah termasuk pengiriman."
-                      className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Save className="h-4 w-4" />
-                    {isPending ? "Menyimpan..." : "Simpan Hasil Negosiasi"}
-                  </button>
-                </>
-              )}
-            </form>
-          )}
-        </section>
-
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 px-4 py-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#08783f]">
-              Ringkasan
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <p className="text-xs font-black uppercase tracking-wide text-[#08783f]">
+              Progress E-Purchasing
             </p>
-            <h3 className="mt-1 font-black text-[#16227c]">
-              Produk, Penyedia & Harga
-            </h3>
-          </div>
-
-          <div className="space-y-3 p-4">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs font-black uppercase text-slate-400">
-                Produk
-              </p>
-              {draft.product ? (
-                <>
-                  <p className="mt-2 text-sm font-black text-slate-800">
-                    {draft.product.namaProduk}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
-                    Merk: {draft.product.merk || "-"}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
-                    {draft.product.jumlah} {draft.product.satuan}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => openStep(2)}
-                    className="mt-3 text-xs font-black text-[#08783f] hover:underline"
-                  >
-                    Ubah produk
-                  </button>
-                </>
-              ) : (
-                <p className="mt-2 text-sm font-semibold text-slate-400">
-                  Belum dipilih.
-                </p>
-              )}
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs font-black uppercase text-slate-400">
-                Penyedia
-              </p>
-              {draft.provider ? (
-                <>
-                  <p className="mt-2 text-sm font-black text-slate-800">
-                    {draft.provider.namaPenyedia}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
-                    Harga/unit: {rupiah(draft.provider.hargaTayang)}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
-                    Estimasi: {draft.provider.estimasiPengiriman || "-"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => openStep(3)}
-                    className="mt-3 text-xs font-black text-[#08783f] hover:underline"
-                  >
-                    Ubah penyedia
-                  </button>
-                </>
-              ) : (
-                <p className="mt-2 text-sm font-semibold text-slate-400">
-                  Menunggu produk dipilih.
-                </p>
-              )}
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-xs font-black uppercase text-slate-400">
-                  Total Harga Tayang
-                </p>
-                <p className="mt-2 text-base font-black text-slate-800">
-                  {draft.provider ? rupiah(totalHargaTayang) : "-"}
-                </p>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-xs font-black uppercase text-slate-400">
-                  Sisa Pagu
-                </p>
-                <p
-                  className={`mt-2 text-base font-black ${
-                    sisaPagu < 0 ? "text-red-600" : "text-[#08783f]"
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {progress.map((item) => (
+                <div
+                  key={item.label}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-black ${
+                    item.done
+                      ? "border-emerald-200 bg-emerald-50 text-[#08783f]"
+                      : "border-slate-200 bg-slate-50 text-slate-400"
                   }`}
                 >
-                  {draft.provider ? rupiah(sisaPagu) : rupiah(rup.pagu)}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs font-black uppercase text-slate-400">
-                Hasil Negosiasi
-              </p>
-              {draft.negotiation ? (
-                <>
-                  <div className="mt-3 space-y-2 text-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold text-slate-500">
-                        Penawaran
-                      </span>
-                      <span className="font-black text-slate-800">
-                        {rupiah(draft.negotiation.hargaPenawaran)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold text-slate-500">
-                        Kesepakatan
-                      </span>
-                      <span className="font-black text-[#08783f]">
-                        {rupiah(draft.negotiation.hargaKesepakatan)}
-                      </span>
-                    </div>
-                  </div>
-                  {draft.negotiation.catatan && (
-                    <p className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-semibold leading-5 text-slate-500">
-                      {draft.negotiation.catatan}
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => openStep(4)}
-                    className="mt-3 text-xs font-black text-[#08783f] hover:underline"
-                  >
-                    Ubah negosiasi
-                  </button>
-                </>
-              ) : (
-                <p className="mt-2 text-sm font-semibold text-slate-400">
-                  Menunggu produk dan penyedia selesai.
-                </p>
-              )}
-            </div>
-
-            {draft.negotiation && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#08783f]" />
-                  <div>
-                    <p className="text-sm font-black text-[#08783f]">
-                      Negosiasi selesai
-                    </p>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
-                      Tahap berikutnya adalah membuat atau mencatat Surat
-                      Pesanan.
-                    </p>
-                    <Link
-                      href="/kontrak-sp"
-                      className="mt-3 inline-flex h-9 items-center justify-center rounded-md bg-[#08783f] px-4 text-xs font-black text-white transition hover:bg-[#066a37]"
-                    >
-                      Lanjut ke Surat Pesanan
-                    </Link>
-                  </div>
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs">
+                    {item.done ? "✓" : "○"}
+                  </span>
+                  {item.label}
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </section>
-      </div>
+      ) : null}
+
+      {activeTab === "product" ? (
+        <form
+          onSubmit={(event) =>
+            submit(event, (formData) => ({
+              step: "product",
+              id: rup.id,
+              namaProduk: String(formData.get("namaProduk") ?? ""),
+              merk: String(formData.get("merk") ?? ""),
+              jumlah: Number(formData.get("jumlah") ?? 0),
+              satuan: String(formData.get("satuan") ?? ""),
+              spesifikasi: String(formData.get("spesifikasi") ?? ""),
+              etalase: String(formData.get("etalase") ?? ""),
+              platform: String(formData.get("platform") ?? ""),
+              kategori: String(formData.get("kategori") ?? ""),
+              linkProduk: String(formData.get("linkProduk") ?? ""),
+              hargaTayang: Number(formData.get("hargaTayang") ?? 0),
+            }))
+          }
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <label className="grid gap-2">
+            <span className={labelClass}>Nama Produk *</span>
+            <input name="namaProduk" defaultValue={initialDraft.namaProdukKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Merk / Tipe</span>
+            <input name="merk" defaultValue={initialDraft.merekTipeKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Jumlah *</span>
+            <input name="jumlah" type="number" min="1" defaultValue={initialDraft.jumlahProdukKatalog ?? "1"} className={inputClass} />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Satuan *</span>
+            <input name="satuan" defaultValue={initialDraft.satuanProdukKatalog ?? "Unit"} className={inputClass} />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Platform / Versi Katalog</span>
+            <select name="platform" defaultValue={initialDraft.jenisKatalog ?? "Katalog V6"} className={inputClass}>
+              <option value="Katalog V6">Katalog V6</option>
+              <option value="Katalog V5">Katalog V5</option>
+            </select>
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Etalase / Kategori</span>
+            <input name="etalase" defaultValue={initialDraft.etalaseKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Kategori Produk</span>
+            <input name="kategori" defaultValue={initialDraft.kategoriProdukKatalog ?? ""} className={inputClass} placeholder="TKDN / Import / Non-TKDN" />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Harga Tayang Satuan *</span>
+            <input name="hargaTayang" type="number" min="1" defaultValue={initialDraft.hargaSatuanKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2 sm:col-span-2">
+            <span className={labelClass}>Link Produk Katalog</span>
+            <input name="linkProduk" type="url" defaultValue={initialDraft.linkProdukKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2 sm:col-span-2">
+            <span className={labelClass}>Spesifikasi Katalog</span>
+            <textarea name="spesifikasi" defaultValue={initialDraft.spesifikasiProdukKatalog ?? ""} className={textareaClass} />
+          </label>
+          <div className="rounded-lg bg-slate-50 p-3 sm:col-span-2">
+            <p className={labelClass}>Harga Tayang Total</p>
+            <p className="mt-1 text-lg font-black text-[#16227c]">
+              {rupiah(totalHargaTayang)}
+            </p>
+          </div>
+          <div className="sm:col-span-2">
+            <SubmitButton pending={isPending}>Simpan Produk</SubmitButton>
+          </div>
+        </form>
+      ) : null}
+
+      {activeTab === "provider" ? (
+        <form
+          onSubmit={(event) =>
+            submit(event, (formData) => ({
+              step: "provider",
+              id: rup.id,
+              namaPenyedia: String(formData.get("namaPenyedia") ?? ""),
+              kontakPenyedia: String(formData.get("kontakPenyedia") ?? ""),
+              emailPenyedia: String(formData.get("emailPenyedia") ?? ""),
+              alamatPenyedia: String(formData.get("alamatPenyedia") ?? ""),
+            }))
+          }
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <label className="grid gap-2">
+            <span className={labelClass}>Nama Penyedia / Vendor *</span>
+            <input name="namaPenyedia" defaultValue={initialDraft.namaPenyediaKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Nomor Kontak Penyedia</span>
+            <input name="kontakPenyedia" defaultValue={initialDraft.kontakPenyediaKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Email</span>
+            <input name="emailPenyedia" type="email" defaultValue={initialDraft.emailPenyediaKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2 sm:col-span-2">
+            <span className={labelClass}>Alamat / Informasi Penyedia</span>
+            <textarea name="alamatPenyedia" defaultValue={initialDraft.alamatPenyediaKatalog ?? ""} className={textareaClass} />
+          </label>
+          <div className="sm:col-span-2">
+            <SubmitButton pending={isPending}>Simpan Penyedia</SubmitButton>
+          </div>
+        </form>
+      ) : null}
+
+      {activeTab === "negotiation" ? (
+        <form
+          onSubmit={(event) =>
+            submit(event, (formData) => ({
+              step: "negotiation",
+              id: rup.id,
+              hargaPenawaran: Number(formData.get("hargaPenawaran") ?? 0),
+              hargaKesepakatan: Number(formData.get("hargaKesepakatan") ?? 0),
+              statusNegosiasi: String(formData.get("statusNegosiasi") ?? ""),
+              catatan: String(formData.get("catatan") ?? ""),
+            }))
+          }
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <ReadOnlyField label="Pagu Total" value={rupiah(rup.pagu)} />
+          <ReadOnlyField label="Harga Tayang Total" value={rupiah(initialDraft.totalHargaKatalog ?? totalHargaTayang)} />
+          <label className="grid gap-2">
+            <span className={labelClass}>Harga Penawaran Total *</span>
+            <input name="hargaPenawaran" type="number" min="1" defaultValue={initialDraft.hargaPenawaranKatalog ?? initialDraft.totalHargaKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Harga Nego Final *</span>
+            <input name="hargaKesepakatan" type="number" min="1" defaultValue={initialDraft.hargaNegosiasiKatalog ?? ""} className={inputClass} />
+          </label>
+          <label className="grid gap-2">
+            <span className={labelClass}>Status Negosiasi</span>
+            <select name="statusNegosiasi" defaultValue={initialDraft.statusNegosiasiKatalog ?? "PROSES"} className={inputClass}>
+              <option value="BELUM_DIMULAI">Belum Dimulai</option>
+              <option value="PROSES">Proses</option>
+              <option value="SELESAI">Selesai</option>
+              <option value="BATAL">Batal</option>
+            </select>
+          </label>
+          <ReadOnlyField label="Selisih Pagu" value={rupiah(selisihPagu)} />
+          <label className="grid gap-2 sm:col-span-2">
+            <span className={labelClass}>Catatan Negosiasi</span>
+            <textarea name="catatan" defaultValue={initialDraft.catatanKatalog ?? ""} className={textareaClass} />
+          </label>
+          <div className="sm:col-span-2">
+            <SubmitButton pending={isPending}>Simpan Negosiasi</SubmitButton>
+          </div>
+        </form>
+      ) : null}
+
+      {activeTab === "contract" ? (
+        <form
+          onSubmit={(event) =>
+            submit(event, (formData) => ({
+              step: "contract",
+              id: rup.id,
+              nomorSppbj: String(formData.get("nomorSppbj") ?? ""),
+              tanggalSppbj: String(formData.get("tanggalSppbj") ?? ""),
+              statusSuratPesanan: String(formData.get("statusSuratPesanan") ?? ""),
+              nomorSuratPesanan: String(formData.get("nomorSuratPesanan") ?? ""),
+              tanggalSuratPesanan: String(formData.get("tanggalSuratPesanan") ?? ""),
+              nomorSpkKontrak: String(formData.get("nomorSpkKontrak") ?? ""),
+              tanggalKontrak: String(formData.get("tanggalKontrak") ?? ""),
+              nomorSpmk: String(formData.get("nomorSpmk") ?? ""),
+              tanggalSpmk: String(formData.get("tanggalSpmk") ?? ""),
+            }))
+          }
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <label className="grid gap-2"><span className={labelClass}>Nomor SPPBJ</span><input name="nomorSppbj" defaultValue={initialDraft.nomorSppbj ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal SPPBJ</span><input name="tanggalSppbj" type="date" defaultValue={initialDraft.tanggalSppbj ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Status Surat Pesanan</span><select name="statusSuratPesanan" defaultValue={initialDraft.statusSuratPesanan ?? ""} className={inputClass}><option value="">Belum Ada</option><option value="DRAFT">Draft</option><option value="TERBIT">Terbit</option><option value="DITANDATANGANI">Ditandatangani</option></select></label>
+          <label className="grid gap-2"><span className={labelClass}>Nomor Surat Pesanan</span><input name="nomorSuratPesanan" defaultValue={initialDraft.nomorSuratPesanan ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal Surat Pesanan</span><input name="tanggalSuratPesanan" type="date" defaultValue={initialDraft.tanggalSuratPesanan ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Nomor SPK / Kontrak</span><input name="nomorSpkKontrak" defaultValue={initialDraft.nomorSpkKontrak ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal Kontrak</span><input name="tanggalKontrak" type="date" defaultValue={initialDraft.tanggalKontrakEp ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Nomor SPMK</span><input name="nomorSpmk" defaultValue={initialDraft.nomorSpmk ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal SPMK</span><input name="tanggalSpmk" type="date" defaultValue={initialDraft.tanggalSpmk ?? ""} className={inputClass} /></label>
+          <div className="sm:col-span-2"><SubmitButton pending={isPending}>Simpan Kontrak & Pesanan</SubmitButton></div>
+        </form>
+      ) : null}
+
+      {activeTab === "delivery" ? (
+        <form
+          onSubmit={(event) =>
+            submit(event, (formData) => ({
+              step: "delivery",
+              id: rup.id,
+              statusPengiriman: String(formData.get("statusPengiriman") ?? ""),
+              tanggalRencanaKirim: String(formData.get("tanggalRencanaKirim") ?? ""),
+              tanggalAktualKirim: String(formData.get("tanggalAktualKirim") ?? ""),
+              nomorSuratJalan: String(formData.get("nomorSuratJalan") ?? ""),
+              catatan: String(formData.get("catatan") ?? ""),
+            }))
+          }
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <label className="grid gap-2"><span className={labelClass}>Status Pengiriman</span><select name="statusPengiriman" defaultValue={initialDraft.statusPengirimanEp ?? "BELUM_DIKIRIM"} className={inputClass}><option value="BELUM_DIKIRIM">Belum Dikirim</option><option value="DIJADWALKAN">Dijadwalkan</option><option value="DALAM_PENGIRIMAN">Dalam Pengiriman</option><option value="DITERIMA">Diterima</option><option value="TERLAMBAT">Terlambat</option></select></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal Rencana Pengiriman</span><input name="tanggalRencanaKirim" type="date" defaultValue={initialDraft.tanggalRencanaKirim ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal Aktual</span><input name="tanggalAktualKirim" type="date" defaultValue={initialDraft.tanggalAktualKirim ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Surat Jalan</span><input name="nomorSuratJalan" defaultValue={initialDraft.nomorSuratJalan ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2 sm:col-span-2"><span className={labelClass}>Catatan</span><textarea name="catatan" defaultValue={initialDraft.catatanKatalog ?? ""} className={textareaClass} /></label>
+          <div className="sm:col-span-2"><SubmitButton pending={isPending}>Simpan Pengiriman</SubmitButton></div>
+        </form>
+      ) : null}
+
+      {activeTab === "inspection" ? (
+        <form
+          onSubmit={(event) =>
+            submit(event, (formData) => ({
+              step: "inspection",
+              id: rup.id,
+              statusUjiFungsi: String(formData.get("statusUjiFungsi") ?? ""),
+              nomorBaUjiFungsi: String(formData.get("nomorBaUjiFungsi") ?? ""),
+              tanggalUjiFungsi: String(formData.get("tanggalUjiFungsi") ?? ""),
+              statusPemeriksaan: String(formData.get("statusPemeriksaan") ?? ""),
+              nomorBaPemeriksaan: String(formData.get("nomorBaPemeriksaan") ?? ""),
+              tanggalPemeriksaan: String(formData.get("tanggalPemeriksaan") ?? ""),
+              hasilPemeriksaan: String(formData.get("hasilPemeriksaan") ?? ""),
+              nomorBast: String(formData.get("nomorBast") ?? ""),
+              tanggalBast: String(formData.get("tanggalBast") ?? ""),
+              catatan: String(formData.get("catatan") ?? ""),
+            }))
+          }
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <label className="grid gap-2"><span className={labelClass}>Status Uji Fungsi</span><select name="statusUjiFungsi" defaultValue={initialDraft.statusUjiFungsi ?? ""} className={inputClass}><option value="">Belum</option><option value="PROSES">Proses</option><option value="SELESAI">Selesai</option><option value="TIDAK_PERLU">Tidak Perlu</option></select></label>
+          <label className="grid gap-2"><span className={labelClass}>Nomor BA Uji Fungsi</span><input name="nomorBaUjiFungsi" defaultValue={initialDraft.nomorBaUjiFungsi ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal Uji Fungsi</span><input name="tanggalUjiFungsi" type="date" defaultValue={initialDraft.tanggalUjiFungsi ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Status Pemeriksaan</span><select name="statusPemeriksaan" defaultValue={initialDraft.statusPemeriksaanEp ?? ""} className={inputClass}><option value="">Belum</option><option value="PROSES">Proses</option><option value="SELESAI">Selesai</option></select></label>
+          <label className="grid gap-2"><span className={labelClass}>Nomor BA Pemeriksaan</span><input name="nomorBaPemeriksaan" defaultValue={initialDraft.nomorBaPemeriksaan ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal Pemeriksaan</span><input name="tanggalPemeriksaan" type="date" defaultValue={initialDraft.tanggalPemeriksaan ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Hasil Pemeriksaan</span><select name="hasilPemeriksaan" defaultValue={initialDraft.hasilPemeriksaan ?? ""} className={inputClass}><option value="">Belum Ada</option><option value="DITERIMA">Diterima</option><option value="DITERIMA_DENGAN_CATATAN">Diterima Dengan Catatan</option><option value="DITOLAK">Ditolak</option></select></label>
+          <label className="grid gap-2"><span className={labelClass}>Nomor BAST</span><input name="nomorBast" defaultValue={initialDraft.nomorBast ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal BAST</span><input name="tanggalBast" type="date" defaultValue={initialDraft.tanggalBast ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2 sm:col-span-2"><span className={labelClass}>Catatan Pemeriksaan</span><textarea name="catatan" defaultValue={initialDraft.catatanKatalog ?? ""} className={textareaClass} /></label>
+          <div className="sm:col-span-2"><SubmitButton pending={isPending}>Simpan Pemeriksaan</SubmitButton></div>
+        </form>
+      ) : null}
+
+      {activeTab === "payment" ? (
+        <form
+          onSubmit={(event) =>
+            submit(event, (formData) => ({
+              step: "payment",
+              id: rup.id,
+              statusDokumenPembayaran: String(formData.get("statusDokumenPembayaran") ?? ""),
+              statusPembayaran: String(formData.get("statusPembayaran") ?? ""),
+              nilaiPembayaran: Number(formData.get("nilaiPembayaran") ?? 0),
+              nomorInvoice: String(formData.get("nomorInvoice") ?? ""),
+              nomorFaktur: String(formData.get("nomorFaktur") ?? ""),
+              tanggalPembayaran: String(formData.get("tanggalPembayaran") ?? ""),
+              catatan: String(formData.get("catatan") ?? ""),
+            }))
+          }
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <label className="grid gap-2"><span className={labelClass}>Status Dokumen Pembayaran</span><select name="statusDokumenPembayaran" defaultValue={initialDraft.statusDokumenPembayaran ?? "BELUM_LENGKAP"} className={inputClass}><option value="BELUM_LENGKAP">Belum Lengkap</option><option value="LENGKAP">Lengkap</option></select></label>
+          <label className="grid gap-2"><span className={labelClass}>Status Pembayaran</span><select name="statusPembayaran" defaultValue={initialDraft.statusPembayaranEp ?? "BELUM"} className={inputClass}><option value="BELUM">Belum</option><option value="PROSES">Proses</option><option value="DIBAYAR">Dibayar</option></select></label>
+          <label className="grid gap-2"><span className={labelClass}>Nilai Pembayaran</span><input name="nilaiPembayaran" type="number" min="0" defaultValue={initialDraft.nilaiPembayaran ?? initialDraft.hargaNegosiasiKatalog ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Invoice</span><input name="nomorInvoice" defaultValue={initialDraft.nomorInvoice ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Faktur</span><input name="nomorFaktur" defaultValue={initialDraft.nomorFaktur ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2"><span className={labelClass}>Tanggal Pembayaran</span><input name="tanggalPembayaran" type="date" defaultValue={initialDraft.tanggalPembayaranEp ?? ""} className={inputClass} /></label>
+          <label className="grid gap-2 sm:col-span-2"><span className={labelClass}>Keterangan</span><textarea name="catatan" defaultValue={initialDraft.catatanKatalog ?? ""} className={textareaClass} /></label>
+          <div className="sm:col-span-2"><SubmitButton pending={isPending}>Simpan Pembayaran</SubmitButton></div>
+        </form>
+      ) : null}
+
+      {activeTab === "documents" ? (
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ["SPPBJ", initialDraft.nomorSppbj],
+            ["Surat Pesanan", initialDraft.nomorSuratPesanan],
+            ["SPK / Kontrak", initialDraft.nomorSpkKontrak],
+            ["SPMK", initialDraft.nomorSpmk],
+            ["BA Uji Fungsi", initialDraft.nomorBaUjiFungsi],
+            ["BA Pemeriksaan", initialDraft.nomorBaPemeriksaan],
+            ["BAST", initialDraft.nomorBast],
+            ["Invoice", initialDraft.nomorInvoice],
+            ["Faktur", initialDraft.nomorFaktur],
+          ].map(([label, value]) => (
+            <ReadOnlyField key={label} label={label ?? ""} value={value ?? "-"} />
+          ))}
+        </section>
+      ) : null}
     </div>
   );
 }

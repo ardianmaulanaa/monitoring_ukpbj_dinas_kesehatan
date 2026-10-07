@@ -676,7 +676,7 @@ export default function RupForm({
             className={inputClass}
             defaultValue={String(initialData?.metodePengadaan ?? "E_PURCHASING")}
           >
-            <option value="E_PURCHASING">e-Katalog</option>
+            <option value="E_PURCHASING">E-Purchasing</option>
             <option value="TENDER">Tender</option>
             <option value="NON_TENDER">Non Tender</option>
             <option value="PENGADAAN_LANGSUNG">Pengadaan Langsung</option>

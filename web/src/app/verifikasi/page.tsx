@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { ClipboardCheck, FileSearch } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
+import {
+  DataCardEmpty,
+  DataCardField,
+  DataCardRow,
+} from "@/components/data-card/DataCardList";
 import VerificationDetailModalButton from "@/app/verifikasi/VerificationDetailModalButton";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
@@ -229,73 +234,64 @@ export default async function Page({ searchParams }: PageProps) {
             </form>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-[1120px] w-full border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
-                  <th className="px-4 py-3">Kode Usulan</th>
-                  <th className="px-4 py-3">Nama / Uraian</th>
-                  <th className="px-4 py-3">Unit</th>
-                  <th className="px-4 py-3">Tahun</th>
-                  <th className="px-4 py-3">Total Estimasi</th>
-                  <th className="px-4 py-3">Prioritas</th>
-                  <th className="px-4 py-3">Tanggal Pengajuan</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.length > 0 ? (
-                  rows.map((item) => (
-                    <tr key={item.id} className="transition hover:bg-slate-50">
-                      <td className="whitespace-nowrap px-4 py-4 font-mono text-xs font-bold text-slate-500">
-                        {item.kodeRup}
-                      </td>
-                      <td className="max-w-[280px] px-4 py-4 font-black text-[#16227c]">
-                        {item.namaPaket}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                        {item.unitPengusul}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                        {item.tahunAnggaran}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                        {formatCurrency((item.totalEstimasi ?? item.pagu).toString())}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${priorityClass(item.prioritas)}`}
-                        >
-                          {item.prioritas ?? "-"}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
-                        {dateLabel(item.submittedAt ?? item.createdAt)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[item.statusUsulan] ?? "bg-slate-100 text-slate-600"}`}
-                        >
-                          {planningStatusLabels[item.statusUsulan] ?? item.statusUsulan}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-right">
-                        <VerificationDetailModalButton proposalId={item.id} />
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={9} className="px-4 py-12 text-center">
-                      <p className="text-base font-black text-slate-700">
-                        Tidak ada usulan yang menunggu verifikasi.
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="bg-slate-50/50 p-4 sm:p-5">
+            {rows.length > 0 ? (
+              <>
+                <div className="-mx-1 max-w-full overflow-x-auto px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin]">
+                  <div className="space-y-3">
+                    {rows.map((item) => (
+                      <DataCardRow
+                        key={item.id}
+                        icon={<ClipboardCheck className="h-5 w-5" strokeWidth={2.4} />}
+                        minWidth="1600px"
+                        columns="56px minmax(118px,0.8fr) minmax(240px,1.6fr) minmax(120px,0.8fr) minmax(76px,0.45fr) minmax(126px,0.8fr) minmax(98px,0.62fr) minmax(118px,0.76fr) minmax(128px,0.82fr) minmax(164px,auto)"
+                        actions={<VerificationDetailModalButton proposalId={item.id} />}
+                      >
+                  <DataCardField label="Kode Usulan" valueClassName="font-mono text-xs font-black text-slate-600">
+                    <span className="truncate">{item.kodeRup}</span>
+                  </DataCardField>
+                  <DataCardField label="Nama / Uraian" valueClassName="font-black text-[#16227c]">
+                    <p className="line-clamp-2 leading-5">{item.namaPaket}</p>
+                    <p className="mt-1 truncate text-xs font-bold text-slate-500">
+                      Unit: {item.unitPengusul}
+                    </p>
+                  </DataCardField>
+                  <DataCardField label="Unit">
+                    <span className="truncate">{item.unitPengusul}</span>
+                  </DataCardField>
+                  <DataCardField label="Tahun">{item.tahunAnggaran}</DataCardField>
+                  <DataCardField label="Total Estimasi" valueClassName="font-black text-slate-800">
+                    {formatCurrency((item.totalEstimasi ?? item.pagu).toString())}
+                  </DataCardField>
+                  <DataCardField label="Prioritas">
+                    <span className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${priorityClass(item.prioritas)}`}>
+                      <span className="truncate">{item.prioritas ?? "-"}</span>
+                    </span>
+                  </DataCardField>
+                  <DataCardField label="Tanggal Pengajuan">
+                    <span className="whitespace-nowrap">{dateLabel(item.submittedAt ?? item.createdAt)}</span>
+                  </DataCardField>
+                  <DataCardField label="Status">
+                    <span className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[item.statusUsulan] ?? "bg-slate-100 text-slate-600"}`}>
+                      <span className="truncate">{planningStatusLabels[item.statusUsulan] ?? item.statusUsulan}</span>
+                    </span>
+                  </DataCardField>
+                      </DataCardRow>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-1 flex items-center justify-end gap-2 text-xs font-bold text-slate-400 2xl:hidden">
+                  <span>Geser horizontal untuk melihat seluruh data dan aksi</span>
+                  <span aria-hidden="true">→</span>
+                </div>
+              </>
+            ) : (
+              <DataCardEmpty>
+                <p className="text-base font-black text-slate-700">
+                  Tidak ada usulan yang menunggu verifikasi.
+                </p>
+              </DataCardEmpty>
+            )}
           </div>
         </section>
       </main>

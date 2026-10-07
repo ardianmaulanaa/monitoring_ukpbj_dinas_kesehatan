@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
   Eye,
   EyeOff,
@@ -18,6 +20,7 @@ const protectedRedirectPrefixes = [
   "/dashboard",
   "/sirup-rup",
   "/perencanaan",
+  "/e-purchasing",
   "/katalog-v6-v5",
   "/tender-non-tender",
   "/kontrak-sp",
@@ -289,16 +292,24 @@ export default function LoginPage() {
                 </header>
 
                 {/* Kartu login */}
-                <div className="mt-20 overflow-hidden rounded-[1.65rem] border border-white bg-white shadow-[0_24px_65px_rgba(4,94,50,0.14)] sm:rounded-[2rem]">
+                <div className="login-panel-enter mt-20 overflow-hidden rounded-[1.65rem] border border-white bg-white shadow-[0_24px_65px_rgba(4,94,50,0.14)] sm:rounded-[2rem]">
                   <div className="px-5 py-5 sm:px-8 sm:py-7 xl:px-9 xl:py-8">
                     {/* Header form */}
                     <div className="mb-5 sm:mb-6">
+                      <Link
+                        href="/"
+                        className="mb-5 inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-black text-[#08783f] transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2"
+                      >
+                        <ArrowLeft className="h-4 w-4" strokeWidth={2.5} />
+                        Kembali ke Beranda
+                      </Link>
+
                       <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-[#08783f] sm:mb-2 sm:text-xs">
                         Login
                       </p>
 
                       <h2 className="text-2xl font-black tracking-[-0.04em] text-slate-950 sm:text-3xl">
-                        Masuk ke sistem
+                        Login
                       </h2>
                     </div>
 
@@ -317,7 +328,7 @@ export default function LoginPage() {
 
                         <div className="group relative">
                           <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-[#08783f]">
-                            <Mail className="h-20 w-5" strokeWidth={2} />
+                            <Mail className="h-5 w-5" strokeWidth={2} />
                           </div>
 
                           <input
@@ -404,8 +415,8 @@ export default function LoginPage() {
                         {isOpeningDashboard
                           ? "Membuka dashboard..."
                           : isSubmitting
-                          ? "Memeriksa akun..."
-                          : "Masuk ke Dashboard"}
+                            ? "Memeriksa akun..."
+                            : "Masuk ke Dashboard"}
                         {isSubmitting ? (
                           <Loader2
                             className="h-5 w-5 animate-spin"

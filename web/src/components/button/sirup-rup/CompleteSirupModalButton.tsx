@@ -66,7 +66,7 @@ function methodLabel(value: string) {
   const labels: Record<string, string> = {
     TENDER: "Tender",
     NON_TENDER: "Non Tender",
-    E_PURCHASING: "e-Katalog",
+    E_PURCHASING: "E-Purchasing",
     PENGADAAN_LANGSUNG: "Pengadaan Langsung",
     SWAKELOLA: "Swakelola",
   };
@@ -210,7 +210,7 @@ export default function CompleteSirupModalButton({
                 onChange={(event) => setMetodePengadaan(event.target.value)}
                 className={inputClass}
               >
-                <option value="E_PURCHASING">e-Katalog</option>
+                <option value="E_PURCHASING">E-Purchasing</option>
                 <option value="TENDER">Tender</option>
                 <option value="NON_TENDER">Non Tender</option>
                 <option value="PENGADAAN_LANGSUNG">Pengadaan Langsung</option>
@@ -249,7 +249,7 @@ export default function CompleteSirupModalButton({
               <div className="grid gap-4 rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 sm:col-span-2 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <p className="text-xs font-black uppercase tracking-wide text-[#08783f]">
-                    Detail e-Katalog
+                    Detail E-Purchasing
                   </p>
                   <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
                     Diisi setelah paket RUP tayang dan mulai diproses melalui
@@ -446,7 +446,7 @@ export default function CompleteSirupModalButton({
                 </label>
 
                 <label className="grid gap-2 sm:col-span-2">
-                  <span className={labelClass}>Catatan e-Katalog</span>
+                  <span className={labelClass}>Catatan E-Purchasing</span>
                   <textarea
                     name="catatanKatalog"
                     defaultValue={item.catatanKatalog ?? ""}

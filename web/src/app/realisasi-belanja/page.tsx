@@ -52,6 +52,11 @@ import UnitManagementPanel, {
   type UnitOption,
 } from "@/app/pengaturan/UnitManagementPanel";
 import AppHeader from "@/components/appheader/AppHeader";
+import {
+  DataCardEmpty,
+  DataCardField,
+  DataCardRow,
+} from "@/components/data-card/DataCardList";
 import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
 import GenericInputModalButton from "@/components/button/shared/GenericInputModalButton";
 
@@ -3919,56 +3924,97 @@ async function ModuleListView({
             />
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
-                  {table.columns.map((column) => (
-                    <th
-                      key={column}
-                      className={`px-4 py-3 ${column === "Aksi" ? "text-right" : ""}`}
-                    >
-                      {column}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {table.rows.length > 0 ? (
-                  table.rows.map((row, rowIndex) => (
-                    <tr
-                      key={`${row[0]}-${rowIndex}`}
-                      className="hover:bg-slate-50"
-                    >
-                      {table.columns.map((column, columnIndex) => (
-                        <td
-                          key={`${column}-${columnIndex}`}
-                          className={`whitespace-nowrap px-4 py-3 font-semibold text-slate-600 ${
-                            column === "Aksi" ? "text-right" : ""
-                          }`}
+          <div className="bg-slate-50/50 p-4 sm:p-5">
+            {table.rows.length > 0 ? (
+              <>
+                <div className="-mx-1 max-w-full overflow-x-auto px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin]">
+                  <div className="space-y-3">
+                    {table.rows.map((row, rowIndex) => {
+                const actionIndex = table.columns.findIndex(
+                  (column) => column === "Aksi",
+                );
+                const fields = table.columns
+                  .map((column, columnIndex) => ({
+                    column,
+                    columnIndex,
+                    value: row[columnIndex] ?? "-",
+                  }))
+                  .filter((item) => item.column !== "Aksi");
+                const action =
+                  actionIndex >= 0
+                    ? tableCellContent(
+                        "Aksi",
+                        row[actionIndex] ?? "-",
+                        rowIndex,
+                      )
+                    : null;
+                const primaryFieldIndex = Math.min(1, fields.length - 1);
+                const dataCardMinWidth = `${Math.max(
+                  1320,
+                  56 + fields.length * 154 + (action ? 240 : 0),
+                )}px`;
+                const dataCardColumns = [
+                  "56px",
+                  ...fields.map((_, fieldIndex) =>
+                    fieldIndex === primaryFieldIndex
+                      ? "minmax(260px,1.45fr)"
+                      : "minmax(132px,0.78fr)",
+                  ),
+                  action ? "minmax(220px,auto)" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+
+                return (
+                  <DataCardRow
+                    key={`${row[0]}-${rowIndex}`}
+                    icon={<config.icon className="h-5 w-5" strokeWidth={2.4} />}
+                    minWidth={dataCardMinWidth}
+                    columns={dataCardColumns}
+                    actions={
+                      action ? (
+                        <div className="flex w-full min-w-max flex-nowrap justify-start whitespace-nowrap sm:w-auto xl:justify-end">
+                          {action}
+                        </div>
+                      ) : null
+                    }
+                  >
+                    {fields.map(({ column, columnIndex, value }) => (
+                      <DataCardField
+                        key={`${column}-${columnIndex}`}
+                        label={column}
+                        valueClassName={
+                          columnIndex === primaryFieldIndex
+                            ? "font-black text-[#16227c]"
+                            : "font-semibold text-slate-600"
+                        }
+                      >
+                        <div
+                          className={
+                            columnIndex === primaryFieldIndex
+                              ? "line-clamp-2 leading-5"
+                              : "truncate"
+                          }
                         >
-                          {tableCellContent(
-                            column,
-                            row[columnIndex] ?? "-",
-                            rowIndex,
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={table.columns.length}
-                      className="px-4 py-16 text-center text-sm font-semibold text-slate-500"
-                    >
-                      Data {config.title.toLowerCase()} belum tersedia di
-                      database.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                          {tableCellContent(column, value, rowIndex)}
+                        </div>
+                      </DataCardField>
+                    ))}
+                  </DataCardRow>
+                );
+                    })}
+                  </div>
+                </div>
+                <div className="mt-1 flex items-center justify-end gap-2 text-xs font-bold text-slate-400 2xl:hidden">
+                  <span>Geser horizontal untuk melihat seluruh data dan aksi</span>
+                  <span aria-hidden="true">→</span>
+                </div>
+              </>
+            ) : (
+              <DataCardEmpty>
+                Data {config.title.toLowerCase()} belum tersedia di database.
+              </DataCardEmpty>
+            )}
           </div>
         </section>
       </div>

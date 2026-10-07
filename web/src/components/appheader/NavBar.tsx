@@ -124,7 +124,7 @@ export default function NavBar({
 
   return (
     <>
-      <header className="app-header-static sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm">
+      <header className="app-header-static sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm">
         {/* Garis warna identitas aplikasi di paling atas header. */}
         <div className="grid h-1.5 grid-cols-3">
           <div className="bg-[#08783f]" />

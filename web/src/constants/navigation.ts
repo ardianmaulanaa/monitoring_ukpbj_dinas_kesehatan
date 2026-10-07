@@ -3,7 +3,7 @@ export const NAVIGATION = [
   "sirup-rup",
   "perencanaan",
   "verifikasi",
-  "katalog-v6-v5",
+  "e-purchasing",
   "tender-non-tender",
   "kontrak-sp",
   "realisasi-belanja",

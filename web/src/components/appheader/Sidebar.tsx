@@ -73,7 +73,7 @@ const sections: NavigationSection[] = [
   {
     title: "Pengadaan",
     items: [
-      { href: "/katalog-v6-v5", label: "Katalog V6/V5", icon: ShoppingCart },
+      { href: "/e-purchasing", label: "E-Purchasing", icon: ShoppingCart },
       {
         href: "/tender-non-tender",
         label: "Tender & Non Tender",

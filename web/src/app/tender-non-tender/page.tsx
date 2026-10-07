@@ -20,6 +20,11 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
+import {
+  DataCardEmpty,
+  DataCardField,
+  DataCardRow,
+} from "@/components/data-card/DataCardList";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
 import { hasAnyRole } from "@/lib/permissions";
@@ -1159,21 +1164,6 @@ export default async function Page({ searchParams }: PageProps) {
     },
   ];
 
-  const tableColumns = [
-    "Kode Paket",
-    "Nama Paket",
-    "Unit",
-    "Sumber Dana",
-    "Metode",
-    "Akses Penyedia",
-    "Pagu",
-    "HPS",
-    "Dokumen Tahap 1",
-    "Status",
-    "Tahapan Berikutnya",
-    "Detail Pengisian",
-    "Aksi",
-  ];
   const internalControlCards = [
     {
       icon: ShieldCheck,
@@ -1409,20 +1399,12 @@ export default async function Page({ searchParams }: PageProps) {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1450px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
-                    {tableColumns.map((column) => (
-                      <th key={column} className="px-4 py-3">
-                        {column}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {displayRows.length > 0 ? (
-                    displayRows.map((item) => {
+            <div className="bg-slate-50/50 p-4 sm:p-5">
+              {displayRows.length > 0 ? (
+                <>
+                  <div className="-mx-1 max-w-full overflow-x-auto px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin]">
+                    <div className="space-y-3">
+                      {displayRows.map((item) => {
                       const stageRequirement = item.statusPaket
                         ? getWorkflowStageRequirement(
                             item.statusPaket,
@@ -1436,36 +1418,131 @@ export default async function Page({ searchParams }: PageProps) {
                       );
 
                       return (
-                      <tr key={item.id} className="hover:bg-slate-50">
-                        <td className="whitespace-nowrap px-4 py-3 font-black text-slate-800">
-                          {item.kodePaket}
-                        </td>
-                        <td className="min-w-[260px] px-4 py-3 font-semibold text-slate-700">
-                          {item.namaPaket}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-600">
-                          {item.unitPemohon}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-600">
-                          {item.sumberDana}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
+                        <DataCardRow
+                          key={item.id}
+                          icon={<FileCheck2 className="h-5 w-5" strokeWidth={2.4} />}
+                          minWidth="2200px"
+                          columns="56px minmax(118px,0.75fr) minmax(240px,1.45fr) minmax(116px,0.72fr) minmax(112px,0.7fr) minmax(112px,0.7fr) minmax(116px,0.72fr) minmax(116px,0.72fr) minmax(160px,0.95fr) minmax(126px,0.78fr) minmax(118px,0.74fr) minmax(142px,0.86fr) minmax(176px,auto)"
+                          actions={
+                            <div className="flex w-full min-w-max flex-nowrap justify-start whitespace-nowrap sm:w-auto xl:justify-end">
+                              {canExecute && item.source === "rup" ? (
+                                <form action={startTenderNonTenderAction}>
+                                  <input
+                                    type="hidden"
+                                    name="rupId"
+                                    value={item.sourceId}
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="rounded-md bg-[#08783f] px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-[#066b38]"
+                                  >
+                                    Mulai Proses
+                                  </button>
+                                </form>
+                              ) : canExecute &&
+                                item.paketId &&
+                                item.statusPaket === "PERSIAPAN_DOKUMEN" ? (
+                                <PreparationDocumentsModalButton
+                                  action={completePreparationDocumentsAction}
+                                  buttonLabel={
+                                    item.metodePengadaan === "NON_TENDER"
+                                      ? "Lengkapi Dokumen Non Tender"
+                                      : "Lengkapi Dokumen"
+                                  }
+                                  documents={preparationDocuments}
+                                  existingDocuments={item.preparationDocuments}
+                                  namaPaket={item.namaPaket}
+                                  paketId={item.paketId}
+                                  submitLabel={
+                                    item.metodePengadaan === "NON_TENDER"
+                                      ? "Simpan & Lanjut Jadwal Non Tender"
+                                      : "Simpan & Lanjut Jadwal"
+                                  }
+                                  title={
+                                    item.metodePengadaan === "NON_TENDER"
+                                      ? "Dokumen Non Tender"
+                                      : "Persiapan Dokumen"
+                                  }
+                                />
+                              ) : canExecute &&
+                                item.paketId &&
+                                item.statusPaket &&
+                                stageRequirement ? (
+                                <StageDocumentsModalButton
+                                  action={completeWorkflowStageAction}
+                                  buttonLabel={stageRequirement.buttonLabel}
+                                  currentStatus={item.statusPaket}
+                                  documents={stageRequirement.documents}
+                                  existingDocuments={item.preparationDocuments}
+                                  eyebrow={stageRequirement.eyebrow}
+                                  namaPaket={item.namaPaket}
+                                  paketId={item.paketId}
+                                  submitLabel={stageRequirement.submitLabel}
+                                  targetStatus={stageRequirement.targetStatus}
+                                  title={stageRequirement.title}
+                                />
+                              ) : canExecute &&
+                                item.paketId &&
+                                item.actionStatus &&
+                                item.actionLabel ? (
+                                <form action={updateTenderNonTenderStatusAction}>
+                                  <input
+                                    type="hidden"
+                                    name="paketId"
+                                    value={item.paketId}
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="targetStatus"
+                                    value={item.actionStatus}
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="rounded-md border border-[#08783f] px-3 py-2 text-xs font-black text-[#08783f] transition hover:bg-emerald-50"
+                                  >
+                                    {item.actionLabel}
+                                  </button>
+                                </form>
+                              ) : (
+                                <span className="text-xs font-bold text-slate-400">
+                                  {canExecute ? "Tidak ada aksi" : "Internal"}
+                                </span>
+                              )}
+                            </div>
+                          }
+                        >
+                        <DataCardField label="Kode Paket" valueClassName="font-black text-slate-800">
+                          <span className="truncate">{item.kodePaket}</span>
+                        </DataCardField>
+                        <DataCardField label="Nama Paket" valueClassName="font-black text-[#16227c]">
+                          <p className="line-clamp-2 leading-5">{item.namaPaket}</p>
+                          <p className="mt-1 truncate text-xs font-bold text-slate-500">
+                            Unit: {item.unitPemohon}
+                          </p>
+                        </DataCardField>
+                        <DataCardField label="Unit">
+                          <span className="truncate">{item.unitPemohon}</span>
+                        </DataCardField>
+                        <DataCardField label="Sumber Dana">
+                          <span className="truncate">{item.sumberDana}</span>
+                        </DataCardField>
+                        <DataCardField label="Metode">
                           <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-[#16227c]">
                             {methodLabel(item.metodePengadaan)}
                           </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
+                        </DataCardField>
+                        <DataCardField label="Akses">
                           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
                             Tidak ada akses
                           </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-600">
+                        </DataCardField>
+                        <DataCardField label="Pagu" valueClassName="font-black text-slate-800">
                           {formatCompactCurrency(decimalNumber(item.pagu))}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-600">
+                        </DataCardField>
+                        <DataCardField label="HPS" valueClassName="font-black text-slate-800">
                           {formatCompactCurrency(decimalNumber(item.hps))}
-                        </td>
-                        <td className="min-w-[190px] px-4 py-3">
+                        </DataCardField>
+                        <DataCardField label="Dokumen">
                           {item.paketId ? (
                             <div className="space-y-1">
                               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">
@@ -1503,18 +1580,18 @@ export default async function Page({ searchParams }: PageProps) {
                               Belum mulai
                             </span>
                           )}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
+                        </DataCardField>
+                        <DataCardField label="Status">
                           <span
                             className={`rounded-full px-3 py-1 text-xs font-black ${item.statusClassName}`}
                           >
                             {item.statusLabel}
                           </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-600">
-                          {item.nextLabel}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
+                        </DataCardField>
+                        <DataCardField label="Berikutnya">
+                          <span className="truncate">{item.nextLabel}</span>
+                        </DataCardField>
+                        <DataCardField label="Detail Dokumen">
                           {item.paketId ? (
                             <DetailDocumentsModalButton
                               documents={item.preparationDocuments}
@@ -1528,107 +1605,22 @@ export default async function Page({ searchParams }: PageProps) {
                               Belum mulai
                             </span>
                           )}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
-                          {canExecute && item.source === "rup" ? (
-                            <form action={startTenderNonTenderAction}>
-                              <input
-                                type="hidden"
-                                name="rupId"
-                                value={item.sourceId}
-                              />
-                              <button
-                                type="submit"
-                                className="rounded-md bg-[#08783f] px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-[#066b38]"
-                              >
-                                Mulai Proses
-                              </button>
-                            </form>
-                          ) : canExecute &&
-                            item.paketId &&
-                            item.statusPaket === "PERSIAPAN_DOKUMEN" ? (
-                            <PreparationDocumentsModalButton
-                              action={completePreparationDocumentsAction}
-                              buttonLabel={
-                                item.metodePengadaan === "NON_TENDER"
-                                  ? "Lengkapi Dokumen Non Tender"
-                                  : "Lengkapi Dokumen"
-                              }
-                              documents={preparationDocuments}
-                              existingDocuments={item.preparationDocuments}
-                              namaPaket={item.namaPaket}
-                              paketId={item.paketId}
-                              submitLabel={
-                                item.metodePengadaan === "NON_TENDER"
-                                  ? "Simpan & Lanjut Jadwal Non Tender"
-                                  : "Simpan & Lanjut Jadwal"
-                              }
-                              title={
-                                item.metodePengadaan === "NON_TENDER"
-                                  ? "Dokumen Non Tender"
-                                  : "Persiapan Dokumen"
-                              }
-                            />
-                          ) : canExecute &&
-                            item.paketId &&
-                            item.statusPaket &&
-                            stageRequirement ? (
-                            <StageDocumentsModalButton
-                              action={completeWorkflowStageAction}
-                              buttonLabel={stageRequirement.buttonLabel}
-                              currentStatus={item.statusPaket}
-                              documents={stageRequirement.documents}
-                              existingDocuments={item.preparationDocuments}
-                              eyebrow={stageRequirement.eyebrow}
-                              namaPaket={item.namaPaket}
-                              paketId={item.paketId}
-                              submitLabel={stageRequirement.submitLabel}
-                              targetStatus={stageRequirement.targetStatus}
-                              title={stageRequirement.title}
-                            />
-                          ) : canExecute &&
-                            item.paketId &&
-                            item.actionStatus &&
-                            item.actionLabel ? (
-                            <form action={updateTenderNonTenderStatusAction}>
-                              <input
-                                type="hidden"
-                                name="paketId"
-                                value={item.paketId}
-                              />
-                              <input
-                                type="hidden"
-                                name="targetStatus"
-                                value={item.actionStatus}
-                              />
-                              <button
-                                type="submit"
-                                className="rounded-md border border-[#08783f] px-3 py-2 text-xs font-black text-[#08783f] transition hover:bg-emerald-50"
-                              >
-                                {item.actionLabel}
-                              </button>
-                            </form>
-                          ) : (
-                            <span className="text-xs font-bold text-slate-400">
-                              {canExecute ? "Tidak ada aksi" : "Internal"}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
+                        </DataCardField>
+                      </DataCardRow>
                       );
-                    })
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={tableColumns.length}
-                        className="px-4 py-16 text-center text-sm font-semibold text-slate-500"
-                      >
-                        Data tender dan non tender belum tersedia di database.
-                      </td>
-                    </tr>
+                      })}
+                    </div>
+                  </div>
+                  <div className="mt-1 flex items-center justify-end gap-2 text-xs font-bold text-slate-400 2xl:hidden">
+                    <span>Geser horizontal untuk melihat seluruh data dan aksi</span>
+                    <span aria-hidden="true">→</span>
+                  </div>
+                </>
+              ) : (
+                    <DataCardEmpty>
+                      Data tender dan non tender belum tersedia di database.
+                    </DataCardEmpty>
                   )}
-                </tbody>
-              </table>
             </div>
           </section>
         </div>

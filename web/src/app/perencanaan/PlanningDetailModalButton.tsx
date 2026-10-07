@@ -66,7 +66,7 @@ function methodLabel(value: string) {
   const labels: Record<string, string> = {
     TENDER: "Tender",
     NON_TENDER: "Non Tender",
-    E_PURCHASING: "e-Katalog",
+    E_PURCHASING: "E-Purchasing",
     PENGADAAN_LANGSUNG: "Pengadaan Langsung",
     SWAKELOLA: "Swakelola",
   };

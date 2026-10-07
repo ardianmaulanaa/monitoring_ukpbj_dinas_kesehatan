@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, RotateCcw, Save } from "lucide-react";
@@ -92,7 +93,7 @@ function methodLabel(value: string) {
   const labels: Record<string, string> = {
     TENDER: "Tender",
     NON_TENDER: "Non Tender",
-    E_PURCHASING: "e-Katalog",
+    E_PURCHASING: "E-Purchasing",
     PENGADAAN_LANGSUNG: "Pengadaan Langsung",
     SWAKELOLA: "Swakelola",
   };
@@ -196,6 +197,15 @@ export default function RupDetailModalButton({
             >
               {statusLabel}
             </span>
+            {item.metodePengadaan === "E_PURCHASING" &&
+            item.statusSirup === "SUDAH_TAYANG" ? (
+              <Link
+                href={`/e-purchasing?detailId=${item.id}`}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50"
+              >
+                Proses E-Purchasing
+              </Link>
+            ) : null}
           </div>
 
           <dl className="grid gap-3 sm:grid-cols-2">
@@ -350,7 +360,7 @@ export default function RupDetailModalButton({
             ["Kekurangan Dokumen", item.kekuranganDokumen],
             ["Kendala", item.kendala],
             ["Tindak Lanjut", item.tindakLanjut],
-            ["Catatan e-Katalog", item.catatanKatalog],
+            ["Catatan E-Purchasing", item.catatanKatalog],
           ].map(([label, value]) => (
             <div
               key={label}
