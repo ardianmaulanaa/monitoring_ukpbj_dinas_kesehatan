@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { isEligibleForEPurchasing } from "@/lib/e-purchasing-eligibility";
 import { getEPurchasingCompleteness } from "@/lib/workflow-completeness";
 
 export type KatalogWorkflowState = {
@@ -197,6 +198,7 @@ export async function updateKatalogWorkflowAction(
       statusSirup: true,
       statusSuratPesanan: true,
       statusTransaksiKatalog: true,
+      statusUsulan: true,
       sumberDana: true,
       tanggalAktualKirim: true,
       tanggalBast: true,
@@ -215,14 +217,11 @@ export async function updateKatalogWorkflowAction(
     return { ok: false, message: "Data RUP tidak ditemukan." };
   }
 
-  if (
-    existing.metodePengadaan !== "E_PURCHASING" ||
-    existing.statusSirup !== "SUDAH_TAYANG"
-  ) {
+  if (!isEligibleForEPurchasing(existing)) {
     return {
       ok: false,
       message:
-        "E-Purchasing hanya dapat diproses untuk RUP tayang dengan metode E-Purchasing.",
+        "E-Purchasing hanya dapat diproses untuk paket eligible dengan metode E-Purchasing.",
     };
   }
 

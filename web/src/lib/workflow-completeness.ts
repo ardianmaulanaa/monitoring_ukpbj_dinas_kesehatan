@@ -20,6 +20,32 @@ export type WorkflowValidationError = {
   message: string;
 };
 
+export const planningFieldLabels: Record<string, string> = {
+  caraPengadaan: "Cara Pengadaan",
+  jadwalPemilihan: "Jadwal Pemilihan",
+  jumlahKebutuhan: "Jumlah Kebutuhan",
+  justifikasi: "Justifikasi",
+  kegiatan: "Kegiatan",
+  kodeRup: "Kode Usulan",
+  kodeRekening: "Kode Rekening",
+  kontakPenanggungJawab: "Kontak Penanggung Jawab",
+  metodePengadaan: "Metode Pengadaan",
+  namaPaket: "Uraian / Nama Kebutuhan",
+  pagu: "Pagu",
+  ppkPptk: "PPK / PPTK",
+  prioritas: "Prioritas",
+  program: "Program",
+  satuanKebutuhan: "Satuan",
+  spesifikasiAwal: "Spesifikasi Awal",
+  subKegiatan: "Sub Kegiatan",
+  sumberDana: "Sumber Dana",
+  tahunAnggaran: "Tahun Anggaran",
+  totalEstimasi: "Total Estimasi",
+  unitBidang: "Unit / Bidang",
+  unitPengusul: "Unit Pengusul / OPD",
+  uraianKebutuhan: "Uraian Kebutuhan",
+};
+
 export class WorkflowGuardError extends Error {
   errors: WorkflowValidationError[];
   missingFields: string[];
@@ -90,6 +116,7 @@ export type PlanningCompletenessInput = {
   jumlahKebutuhan?: MaybeNumber;
   justifikasi?: string | null;
   kegiatan?: string | null;
+  kodeRup?: string | null;
   kodeRekening?: string | null;
   kontakPenanggungJawab?: string | null;
   metodePengadaan?: PaketMetodePengadaan | string | null;
@@ -114,6 +141,7 @@ export type PlanningCompletenessInput = {
 export function getPlanningCompleteness(data: PlanningCompletenessInput) {
   return result({
     unit: section("Data Unit", [
+      [filled(data.kodeRup), "kodeRup"],
       [filled(data.tahunAnggaran), "tahunAnggaran"],
       [filled(data.unitPengusul), "unitPengusul"],
       [filled(data.unitBidang), "unitBidang"],
@@ -146,16 +174,11 @@ export function getPlanningCompleteness(data: PlanningCompletenessInput) {
         "jadwalPemilihan",
       ],
     ]),
-    documents: section("Dokumen", [
-      [statusComplete(data.statusKak, ["SIAP", "TIDAK_PERLU", "LENGKAP"]), "statusKak"],
-      [statusComplete(data.statusHps, ["SIAP", "TIDAK_PERLU", "LENGKAP"]), "statusHps"],
-      [
-        statusComplete(data.statusDokumenPendukung, ["SIAP", "TIDAK_PERLU", "LENGKAP"]),
-        "statusDokumenPendukung",
-      ],
-    ]),
+    documents: section("Dokumen", []),
   });
 }
+
+export const validatePlanningSubmission = getPlanningCompleteness;
 
 export type RupCompletenessInput = PlanningCompletenessInput & {
   idRupSirup?: string | null;

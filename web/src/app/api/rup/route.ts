@@ -5,7 +5,10 @@ import { canDeletePlanningProposal } from "@/lib/permissions";
 import { canEditUsulan, canSubmitTransition } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/response";
-import { getPlanningCompleteness } from "@/lib/workflow-completeness";
+import {
+  planningFieldLabels,
+  validatePlanningSubmission,
+} from "@/lib/workflow-completeness";
 
 const rupStatuses = [
   "DRAFT",
@@ -161,37 +164,6 @@ const createRupSchema = z
     }
 
     if (!isPlanningSubmit) return;
-
-    const requiredFields: Array<[keyof typeof data, string]> = [
-      ["kodeRup", "Kode usulan wajib diisi."],
-      ["namaPaket", "Uraian / nama kebutuhan wajib diisi."],
-      ["unitPengusul", "Unit pengusul wajib diisi."],
-      ["tahunAnggaran", "Tahun anggaran wajib diisi."],
-      ["sumberDana", "Sumber dana wajib diisi."],
-      ["satuanKebutuhan", "Satuan wajib dipilih."],
-      ["spesifikasiAwal", "Spesifikasi awal wajib diisi."],
-      ["prioritas", "Prioritas wajib dipilih."],
-      ["justifikasi", "Justifikasi wajib diisi."],
-    ];
-
-    requiredFields.forEach(([field, message]) => {
-      const value = data[field];
-      if (value === undefined || value === null || String(value).trim() === "") {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [field],
-          message,
-        });
-      }
-    });
-
-    if (!data.jumlahKebutuhan || data.jumlahKebutuhan <= 0) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["jumlahKebutuhan"],
-        message: "Jumlah harus lebih dari 0.",
-      });
-    }
   });
 
 function nullableText(value?: string) {
@@ -201,7 +173,7 @@ function nullableText(value?: string) {
 function completionErrors(fields: string[]) {
   return fields.map((field) => ({
     field,
-    message: `${field} belum lengkap.`,
+    message: `${planningFieldLabels[field] ?? field} belum lengkap.`,
   }));
 }
 
@@ -417,21 +389,6 @@ async function appendUsulanHistory({
   });
 }
 
-async function generateKodeUsulan(tahunAnggaran: number) {
-  const prefix = `USUL-${tahunAnggaran}-`;
-  const latest = await prisma.rencanaUmumPengadaan.findFirst({
-    where: { kodeRup: { startsWith: prefix } },
-    orderBy: { kodeRup: "desc" },
-    select: { kodeRup: true },
-  });
-  const latestNumber = latest?.kodeRup
-    ? Number(latest.kodeRup.slice(prefix.length))
-    : 0;
-  const nextNumber = Number.isFinite(latestNumber) ? latestNumber + 1 : 1;
-
-  return `${prefix}${String(nextNumber).padStart(3, "0")}`;
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const parsed = rupQuerySchema.safeParse({
@@ -494,11 +451,7 @@ export async function POST(request: Request) {
 
   try {
     const planningPayload = parsed.data;
-    const kodeRup =
-      planningPayload.kodeRup ||
-      (planningPayload.mode === "planning"
-        ? await generateKodeUsulan(planningPayload.tahunAnggaran)
-        : "");
+    const kodeRup = planningPayload.kodeRup || "";
 
     if (!kodeRup) {
       return apiError(
@@ -519,7 +472,7 @@ export async function POST(request: Request) {
     }
 
     if (planningPayload.mode === "planning" && planningPayload.submitIntent === "submit") {
-      const completeness = getPlanningCompleteness({
+      const completeness = validatePlanningSubmission({
         ...planningPayload,
         pagu: planningPayload.pagu,
       });
@@ -647,11 +600,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const kodeRup =
-      planningPayload.kodeRup ||
-      (planningPayload.mode === "planning"
-        ? await generateKodeUsulan(planningPayload.tahunAnggaran)
-        : "");
+    const kodeRup = planningPayload.kodeRup || "";
 
     if (!kodeRup) {
       return apiError(
@@ -672,7 +621,7 @@ export async function PUT(request: Request) {
     }
 
     if (planningPayload.mode === "planning" && planningPayload.submitIntent === "submit") {
-      const completeness = getPlanningCompleteness({
+      const completeness = validatePlanningSubmission({
         ...planningPayload,
         pagu: planningPayload.pagu,
       });

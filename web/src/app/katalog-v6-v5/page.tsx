@@ -64,6 +64,12 @@ import {
 import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
 import GenericInputModalButton from "@/components/button/shared/GenericInputModalButton";
 import EPurchasingDetailModal from "@/app/katalog-v6-v5/EPurchasingDetailModal";
+import ProcurementCompactCard, {
+  CompactManageLink,
+} from "@/components/procurement/ProcurementCompactCard";
+import { buildEPurchasingEligibilityWhere } from "@/lib/e-purchasing-eligibility";
+
+export const dynamic = "force-dynamic";
 
 type PageConfig = {
   title: string;
@@ -3086,9 +3092,7 @@ async function KatalogWorkflowView({
   const unitPengusul = getParam(searchParams, "unitPengusul") ?? "";
   const detailId = getParam(searchParams, "detailId") ?? "";
 
-  const rupWhere: Prisma.RencanaUmumPengadaanWhereInput = {
-    statusSirup: RupStatus.SUDAH_TAYANG,
-    metodePengadaan: PaketMetodePengadaan.E_PURCHASING,
+  const rupWhere = buildEPurchasingEligibilityWhere({
     ...(tahunAnggaran ? { tahunAnggaran: Number(tahunAnggaran) } : {}),
     ...(sumberDana ? { sumberDana } : {}),
     ...(unitPengusul ? { unitPengusul } : {}),
@@ -3101,7 +3105,9 @@ async function KatalogWorkflowView({
           ],
         }
       : {}),
-  };
+  });
+
+  const eligibleRupWhere = buildEPurchasingEligibilityWhere();
 
   const [rupRows, years, sourceFunds, units, existingPackages] =
     await Promise.all([
@@ -3111,20 +3117,14 @@ async function KatalogWorkflowView({
         take: 100,
       }),
       prisma.rencanaUmumPengadaan.findMany({
-        where: {
-          statusSirup: RupStatus.SUDAH_TAYANG,
-          metodePengadaan: PaketMetodePengadaan.E_PURCHASING,
-        },
+        where: eligibleRupWhere,
         distinct: ["tahunAnggaran"],
         orderBy: { tahunAnggaran: "desc" },
         select: { tahunAnggaran: true },
       }),
       getActiveSumberDanaOptions(),
       prisma.rencanaUmumPengadaan.findMany({
-        where: {
-          statusSirup: RupStatus.SUDAH_TAYANG,
-          metodePengadaan: PaketMetodePengadaan.E_PURCHASING,
-        },
+        where: eligibleRupWhere,
         distinct: ["unitPengusul"],
         orderBy: { unitPengusul: "asc" },
         select: { unitPengusul: true },
@@ -3269,7 +3269,7 @@ async function KatalogWorkflowView({
             {
               label: "Paket E-Purchasing",
               value: rupRows.length.toLocaleString("id-ID"),
-              helper: "RUP tayang metode E-Purchasing",
+              helper: "RUP eligible metode E-Purchasing",
               tone: "border-l-[#1976d2]",
             },
             {
@@ -3442,7 +3442,50 @@ async function KatalogWorkflowView({
           <div className="bg-slate-50/50 p-4 sm:p-5">
             {linkedRows.length > 0 ? (
               <>
-                <div className="-mx-1 max-w-full overflow-x-auto px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin]">
+                <div className="space-y-3 md:hidden">
+                  {linkedRows.map(({ rup, paket }) => {
+                    const tahap = rup.statusTransaksiKatalog || "PERSIAPAN";
+                    const status =
+                      rup.statusTransaksiKatalog ||
+                      katalogProcessLabel(paket?.statusPaket);
+
+                    return (
+                      <ProcurementCompactCard
+                        key={rup.id}
+                        icon={ShoppingCart}
+                        title={rup.namaPaket}
+                        codeLabel={`RUP ${rup.idRupSirup || rup.kodeRup}`}
+                        sourceFund={rup.sumberDana}
+                        sourceFundClassName={sourceFundClass(rup.sumberDana)}
+                        status={status}
+                        statusClassName={katalogProcessStyle(
+                          rup.statusTransaksiKatalog || paket?.statusPaket,
+                        )}
+                        rows={[
+                          {
+                            label: "Pagu",
+                            value: formatCompactCurrency(
+                              decimalNumber(rup.pagu),
+                            ),
+                          },
+                          { label: "Tahap", value: tahap },
+                          {
+                            label: "Unit",
+                            value: rup.unitPengusul,
+                            hideWhenEmpty: true,
+                          },
+                        ]}
+                        actions={
+                          <CompactManageLink
+                            href={`/e-purchasing?detailId=${rup.id}`}
+                          />
+                        }
+                      />
+                    );
+                  })}
+                </div>
+
+                <div className="-mx-1 hidden max-w-full overflow-x-auto px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin] md:block">
                   <div className="space-y-3">
                     {linkedRows.map(({ rup, paket }) => {
                       const tahap = rup.statusTransaksiKatalog || "PERSIAPAN";
@@ -3539,14 +3582,14 @@ async function KatalogWorkflowView({
                     })}
                   </div>
                 </div>
-                <div className="mt-1 flex items-center justify-end gap-2 text-xs font-bold text-slate-400 2xl:hidden">
+                <div className="mt-1 hidden items-center justify-end gap-2 text-xs font-bold text-slate-400 md:flex 2xl:hidden">
                   <span>Geser horizontal untuk melihat seluruh data dan aksi</span>
                   <span aria-hidden="true">→</span>
                 </div>
               </>
             ) : (
               <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-4 text-center text-sm font-semibold text-slate-400">
-                Belum ada RUP tayang dengan metode E-Purchasing.
+                Belum ada paket eligible dengan metode E-Purchasing.
               </div>
             )}
           </div>

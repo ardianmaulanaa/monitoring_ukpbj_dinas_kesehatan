@@ -29,6 +29,7 @@ import ImportRupModalButton from "@/components/button/sirup-rup/ImportRupModalBu
 import RupDetailModalButton from "@/components/button/sirup-rup/RupDetailModalButton";
 
 import { canProcessRup } from "@/lib/planning-workflow";
+import ProcurementCompactCard from "@/components/procurement/ProcurementCompactCard";
 
 type RupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -604,7 +605,167 @@ export default async function Page({ searchParams }: RupPageProps) {
             <div className="bg-slate-50/50 p-4 sm:p-5">
               {rupData.length > 0 ? (
                 <>
-                  <div className="-mx-1 max-w-full overflow-x-auto overflow-y-hidden px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin]">
+                  <div className="space-y-3 md:hidden">
+                    {rupData.map((item) => (
+                      <ProcurementCompactCard
+                        key={item.id}
+                        icon={ClipboardList}
+                        title={item.namaPaket}
+                        codeLabel={`USUL / RUP ${item.idRupSirup || item.kodeRup}`}
+                        sourceFund={normalizeFundingSource(item.sumberDana)}
+                        sourceFundClassName={sourceFundClass(item.sumberDana)}
+                        status={
+                          statusLabels[item.statusSirup] ??
+                          labelize(item.statusSirup)
+                        }
+                        statusClassName={
+                          statusStyles[item.statusSirup] ??
+                          "bg-slate-100 text-slate-600"
+                        }
+                        rows={[
+                          {
+                            label: "Pagu",
+                            value: formatCompactCurrency(
+                              decimalNumber(item.pagu),
+                            ),
+                          },
+                          {
+                            label: "Metode",
+                            value: methodLabel(item.metodePengadaan),
+                          },
+                          {
+                            label: "Unit",
+                            value: item.unitPengusul,
+                            hideWhenEmpty: true,
+                          },
+                        ]}
+                        actions={
+                          <div className="grid grid-cols-2 gap-2">
+                            <RupDetailModalButton
+                              item={{
+                                id: item.id,
+                                kodeRup: item.kodeRup,
+                                idRupSirup: item.idRupSirup,
+                                jenisKatalog: item.jenisKatalog,
+                                etalaseKatalog: item.etalaseKatalog,
+                                namaProdukKatalog: item.namaProdukKatalog,
+                                spesifikasiProdukKatalog:
+                                  item.spesifikasiProdukKatalog,
+                                merekTipeKatalog: item.merekTipeKatalog,
+                                jumlahProdukKatalog: item.jumlahProdukKatalog,
+                                satuanProdukKatalog: item.satuanProdukKatalog,
+                                hargaSatuanKatalog:
+                                  item.hargaSatuanKatalog?.toString() ?? null,
+                                totalHargaKatalog:
+                                  item.totalHargaKatalog?.toString() ?? null,
+                                namaPenyediaKatalog: item.namaPenyediaKatalog,
+                                statusNegosiasiKatalog:
+                                  item.statusNegosiasiKatalog,
+                                hargaNegosiasiKatalog:
+                                  item.hargaNegosiasiKatalog?.toString() ??
+                                  null,
+                                nomorSuratPesanan: item.nomorSuratPesanan,
+                                tanggalSuratPesanan:
+                                  item.tanggalSuratPesanan,
+                                statusTransaksiKatalog:
+                                  item.statusTransaksiKatalog,
+                                catatanKatalog: item.catatanKatalog,
+                                namaPaket: item.namaPaket,
+                                unitPengusul: item.unitPengusul,
+                                lokasiPaket: item.lokasiPaket,
+                                jenisBelanja: item.jenisBelanja,
+                                sumberDana: normalizeFundingSource(
+                                  item.sumberDana,
+                                ),
+                                pagu: item.pagu.toString(),
+                                metodePengadaan: item.metodePengadaan,
+                                jadwalPemilihan: item.jadwalPemilihan,
+                                tanggalInputSirup: item.tanggalInputSirup,
+                                tanggalTayangSirup: item.tanggalTayangSirup,
+                                linkSirup: item.linkSirup,
+                                tahunAnggaran: item.tahunAnggaran,
+                                statusSirup: item.statusSirup,
+                                catatan: item.catatan,
+                              }}
+                              statusLabel={
+                                statusLabels[item.statusSirup] ??
+                                labelize(item.statusSirup)
+                              }
+                              statusStyle={
+                                statusStyles[item.statusSirup] ??
+                                "bg-slate-100 text-slate-600"
+                              }
+                              canEditRevision={
+                                currentUser?.roles.includes("SUPER_ADMIN") ||
+                                normalizeUnit(currentUserProfile?.unitKerja) ===
+                                  normalizeUnit(item.unitPengusul) ||
+                                normalizeUnit(currentUser?.name) ===
+                                  normalizeUnit(item.unitPengusul)
+                              }
+                            />
+
+                            {canManageRup ? (
+                              <CompleteSirupModalButton
+                                label={
+                                  item.statusUsulan === "SIAP_RUP"
+                                    ? "Proses RUP"
+                                    : "Edit"
+                                }
+                                item={{
+                                  id: item.id,
+                                  kodeRup: item.kodeRup,
+                                  idRupSirup: item.idRupSirup,
+                                  jenisKatalog: item.jenisKatalog,
+                                  etalaseKatalog: item.etalaseKatalog,
+                                  namaProdukKatalog: item.namaProdukKatalog,
+                                  spesifikasiProdukKatalog:
+                                    item.spesifikasiProdukKatalog,
+                                  merekTipeKatalog: item.merekTipeKatalog,
+                                  jumlahProdukKatalog:
+                                    item.jumlahProdukKatalog,
+                                  satuanProdukKatalog:
+                                    item.satuanProdukKatalog,
+                                  hargaSatuanKatalog:
+                                    item.hargaSatuanKatalog?.toString() ??
+                                    null,
+                                  totalHargaKatalog:
+                                    item.totalHargaKatalog?.toString() ?? null,
+                                  namaPenyediaKatalog:
+                                    item.namaPenyediaKatalog,
+                                  statusNegosiasiKatalog:
+                                    item.statusNegosiasiKatalog,
+                                  hargaNegosiasiKatalog:
+                                    item.hargaNegosiasiKatalog?.toString() ??
+                                    null,
+                                  nomorSuratPesanan: item.nomorSuratPesanan,
+                                  tanggalSuratPesanan:
+                                    item.tanggalSuratPesanan,
+                                  statusTransaksiKatalog:
+                                    item.statusTransaksiKatalog,
+                                  catatanKatalog: item.catatanKatalog,
+                                  namaPaket: item.namaPaket,
+                                  unitPengusul: item.unitPengusul,
+                                  sumberDana: item.sumberDana,
+                                  pagu: item.pagu.toString(),
+                                  metodePengadaan: item.metodePengadaan,
+                                  jadwalPemilihan: item.jadwalPemilihan,
+                                  tanggalInputSirup: item.tanggalInputSirup,
+                                  tanggalTayangSirup:
+                                    item.tanggalTayangSirup,
+                                  linkSirup: item.linkSirup,
+                                  tahunAnggaran: item.tahunAnggaran,
+                                  statusSirup: item.statusSirup,
+                                  catatan: item.catatan,
+                                }}
+                              />
+                            ) : null}
+                          </div>
+                        }
+                      />
+                    ))}
+                  </div>
+
+                  <div className="-mx-1 hidden max-w-full overflow-x-auto overflow-y-hidden px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin] md:block">
                     <div className="min-w-full space-y-3">
                       {rupData.map((item) => (
                         <DataCardRow
@@ -918,7 +1079,7 @@ export default async function Page({ searchParams }: RupPageProps) {
                     </div>
                   </div>
 
-                  <div className="mt-1 flex items-center justify-end gap-2 text-xs font-bold text-slate-400 2xl:hidden">
+                  <div className="mt-1 hidden items-center justify-end gap-2 text-xs font-bold text-slate-400 md:flex 2xl:hidden">
                     <span>
                       Geser horizontal untuk melihat seluruh data dan aksi
                     </span>

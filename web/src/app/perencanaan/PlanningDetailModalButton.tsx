@@ -30,7 +30,7 @@ import {
   planningStatusStyles,
 } from "@/lib/planning-workflow";
 
-type PlanningProposalDetail = {
+export type PlanningProposalDetail = {
   catatan: string | null;
   createdAt: string | null;
   id: string;
@@ -91,6 +91,11 @@ type PlanningProposalDetail = {
 
 type PlanningDetailModalButtonProps = {
   proposal: PlanningProposalDetail;
+};
+
+type PlanningDetailContentProps = {
+  proposal: PlanningProposalDetail;
+  verificationAction?: ReactNode;
 };
 
 type TabKey =
@@ -415,10 +420,10 @@ function HistoryPanel({ proposal }: { proposal: PlanningProposalDetail }) {
   );
 }
 
-export default function PlanningDetailModalButton({
+export function PlanningDetailContent({
   proposal,
-}: PlanningDetailModalButtonProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  verificationAction,
+}: PlanningDetailContentProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const progress = useMemo(
     () => getPlanningProgress(proposal.statusUsulan),
@@ -426,24 +431,7 @@ export default function PlanningDetailModalButton({
   );
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50"
-      >
-        <FileSearch className="h-4 w-4" strokeWidth={2.4} />
-        Detail
-      </button>
-
-      <ModalShell
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        eyebrow="Perencanaan"
-        title={proposal.namaPaket}
-        maxWidthClassName="max-w-7xl"
-      >
-        <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5 overflow-x-hidden">
           <DetailModalHeader
             code={proposal.kodeRup}
             title={proposal.namaPaket}
@@ -465,7 +453,10 @@ export default function PlanningDetailModalButton({
                 value: formatCurrency(proposal.totalEstimasi ?? proposal.pagu),
               },
               { label: "Metode", value: methodLabel(proposal.metodePengadaan) },
-              { label: "Sumber Dana", value: proposal.sumberDana },
+              {
+                label: proposal.submittedAt ? "Tanggal Pengajuan" : "Sumber Dana",
+                value: proposal.submittedAt ? dateTimeLabel(proposal.submittedAt) : proposal.sumberDana,
+              },
             ]}
           />
 
@@ -630,6 +621,7 @@ export default function PlanningDetailModalButton({
                     value={proposal.revisionNote ?? proposal.catatan}
                   />
                 </FieldGrid>
+                {verificationAction}
               </div>
             </ContentPanel>
           ) : null}
@@ -640,6 +632,33 @@ export default function PlanningDetailModalButton({
             </ContentPanel>
           ) : null}
         </div>
+  );
+}
+
+export default function PlanningDetailModalButton({
+  proposal,
+}: PlanningDetailModalButtonProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50"
+      >
+        <FileSearch className="h-4 w-4" strokeWidth={2.4} />
+        Detail
+      </button>
+
+      <ModalShell
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        eyebrow="Perencanaan"
+        title={proposal.namaPaket}
+        maxWidthClassName="max-w-7xl"
+      >
+        <PlanningDetailContent proposal={proposal} />
       </ModalShell>
     </>
   );

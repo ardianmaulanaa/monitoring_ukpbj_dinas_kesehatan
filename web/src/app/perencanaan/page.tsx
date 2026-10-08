@@ -21,6 +21,7 @@ import DeleteRupButton from "@/components/button/sirup-rup/DeleteRupButton";
 import EditRupModalButton from "@/components/button/sirup-rup/EditRupModalButton";
 
 import PlanningDetailModalButton from "@/app/perencanaan/PlanningDetailModalButton";
+import ProcurementCompactCard from "@/components/procurement/ProcurementCompactCard";
 
 import { getCurrentUser } from "@/lib/auth";
 
@@ -122,21 +123,6 @@ async function getPlanningRows(where: Prisma.RencanaUmumPengadaanWhereInput) {
   }
 }
 
-async function getNextKodeUsulan(tahunAnggaran: number) {
-  const prefix = `USUL-${tahunAnggaran}-`;
-  const latest = await prisma.rencanaUmumPengadaan.findFirst({
-    where: { kodeRup: { startsWith: prefix } },
-    orderBy: { kodeRup: "desc" },
-    select: { kodeRup: true },
-  });
-  const latestNumber = latest?.kodeRup
-    ? Number(latest.kodeRup.slice(prefix.length))
-    : 0;
-  const nextNumber = Number.isFinite(latestNumber) ? latestNumber + 1 : 1;
-
-  return `${prefix}${String(nextNumber).padStart(3, "0")}`;
-}
-
 export default async function Page({ searchParams }: PageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
 
@@ -174,15 +160,12 @@ export default async function Page({ searchParams }: PageProps) {
     ...(statusUsulan ? { statusUsulan: statusUsulan as StatusUsulan } : {}),
   };
 
-  const currentYear = new Date().getFullYear();
-  const [rupData, sourceFunds, currentUser, defaultKodeUsulan] = await Promise.all([
+  const [rupData, sourceFunds, currentUser] = await Promise.all([
     getPlanningRows(where),
 
     getActiveSumberDanaOptions(),
 
     getCurrentUser(),
-
-    getNextKodeUsulan(currentYear),
   ]);
 
   const currentUserRoles = currentUser?.roles ?? [];
@@ -305,8 +288,6 @@ export default async function Page({ searchParams }: PageProps) {
               </div>
 
               <AddRupModalButton
-                defaultKodeUsulan={defaultKodeUsulan}
-                defaultUnitPengusul={currentUserProfile?.unitKerja}
                 sumberDanaOptions={sourceFunds}
                 label="Tambah Usulan"
                 mode="planning"
@@ -314,7 +295,185 @@ export default async function Page({ searchParams }: PageProps) {
             </div>
 
             <div className="bg-slate-50/50 p-4 sm:p-5">
-              <div className="mb-3 flex items-center justify-between gap-3 xl:hidden">
+              {rupData.length > 0 ? (
+                <div className="space-y-3 md:hidden">
+                  {rupData.map((item) => (
+                    <ProcurementCompactCard
+                      key={item.id}
+                      icon={FileSearch}
+                      title={item.namaPaket}
+                      codeLabel={item.kodeRup}
+                      sourceFund={
+                        item.prioritas ? humanize(item.prioritas) : "Prioritas"
+                      }
+                      sourceFundClassName={priorityClass(item.prioritas)}
+                      status={
+                        planningStatusLabels[item.statusUsulan] ??
+                        humanize(item.statusUsulan)
+                      }
+                      statusClassName={
+                        planningStatusStyles[item.statusUsulan] ??
+                        "bg-slate-100 text-slate-600"
+                      }
+                      rows={[
+                        {
+                          label: "Total Estimasi",
+                          value: formatCurrency(
+                            (item.totalEstimasi ?? item.pagu).toString(),
+                          ),
+                        },
+                        {
+                          label: "Unit",
+                          value: item.unitPengusul,
+                          hideWhenEmpty: true,
+                        },
+                        {
+                          label: "Tahun",
+                          value: item.tahunAnggaran,
+                        },
+                      ]}
+                      actions={
+                        <div className="grid grid-cols-2 gap-2">
+                          <PlanningDetailModalButton
+                            proposal={{
+                              createdAt: item.createdAt?.toISOString() ?? null,
+                              id: item.id,
+                              kodeRup: item.kodeRup,
+                              namaPaket: item.namaPaket,
+                              jenisBelanja: item.jenisBelanja,
+                              lokasiPaket: item.lokasiPaket,
+                              unitPengusul: item.unitPengusul,
+                              program: item.program,
+                              kegiatan: item.kegiatan,
+                              subKegiatan: item.subKegiatan,
+                              kodeRekening: item.kodeRekening,
+                              tahunAnggaran: item.tahunAnggaran,
+                              unitBidang: item.unitBidang,
+                              ppkPptk: item.ppkPptk,
+                              kontakPenanggungJawab: item.kontakPenanggungJawab,
+                              sumberDana: item.sumberDana,
+                              pagu: item.pagu.toString(),
+                              uraianBelanja: item.uraianBelanja,
+                              uraianKebutuhan: item.uraianKebutuhan,
+                              volumeKebutuhan: item.volumeKebutuhan,
+                              jumlahKebutuhan:
+                                item.jumlahKebutuhan?.toString() ?? null,
+                              satuanKebutuhan: item.satuanKebutuhan,
+                              spesifikasiAwal: item.spesifikasiAwal,
+                              estimasiHargaSatuan:
+                                item.estimasiHargaSatuan?.toString() ?? null,
+                              totalEstimasi: item.totalEstimasi?.toString() ?? null,
+                              outputDiharapkan: item.outputDiharapkan,
+                              prioritas: item.prioritas,
+                              waktuKebutuhan: item.waktuKebutuhan,
+                              caraPengadaan: item.caraPengadaan,
+                              justifikasi: item.justifikasi,
+                              metodePengadaan: item.metodePengadaan,
+                              jadwalPemilihan: item.jadwalPemilihan,
+                              jadwalMulaiRencana: item.jadwalMulaiRencana,
+                              jadwalSelesaiRencana: item.jadwalSelesaiRencana,
+                              idRupSirup: item.idRupSirup,
+                              tanggalInputSirup: item.tanggalInputSirup,
+                              tanggalTayangSirup: item.tanggalTayangSirup,
+                              linkSirup: item.linkSirup,
+                              picTindakLanjut: item.picTindakLanjut,
+                              kendala: item.kendala,
+                              tindakLanjut: item.tindakLanjut,
+                              statusKak: item.statusKak,
+                              statusHps: item.statusHps,
+                              statusRancanganKontrak:
+                                item.statusRancanganKontrak,
+                              statusDokumenPendukung:
+                                item.statusDokumenPendukung,
+                              kekuranganDokumen: item.kekuranganDokumen,
+                              revisionNote: item.revisionNote,
+                              revisionBy: item.revisionBy,
+                              revisionAt: item.revisionAt?.toISOString() ?? null,
+                              submittedAt:
+                                item.submittedAt?.toISOString() ?? null,
+                              verifiedBy: item.verifiedBy,
+                              verifiedAt: item.verifiedAt?.toISOString() ?? null,
+                              updatedAt: item.updatedAt?.toISOString() ?? null,
+                              catatan: item.catatan,
+                              statusSirup: item.statusSirup,
+                              statusUsulan: item.statusUsulan,
+                            }}
+                          />
+
+                          {canEditUsulan(currentUserRoles, item.statusUsulan) ? (
+                            <EditRupModalButton
+                              defaultUnitPengusul={currentUserProfile?.unitKerja}
+                              sumberDanaOptions={sourceFunds}
+                              label="Edit"
+                              mode="planning"
+                              initialData={{
+                                id: item.id,
+                                kodeRup: item.kodeRup,
+                                namaPaket: item.namaPaket,
+                                jenisBelanja: item.jenisBelanja,
+                                lokasiPaket: item.lokasiPaket,
+                                unitBidang: item.unitBidang,
+                                ppkPptk: item.ppkPptk,
+                                kontakPenanggungJawab:
+                                  item.kontakPenanggungJawab,
+                                program: item.program,
+                                kegiatan: item.kegiatan,
+                                subKegiatan: item.subKegiatan,
+                                kodeRekening: item.kodeRekening,
+                                uraianBelanja: item.uraianBelanja,
+                                unitPengusul: item.unitPengusul,
+                                sumberDana: item.sumberDana,
+                                pagu: item.pagu.toString(),
+                                uraianKebutuhan: item.uraianKebutuhan,
+                                volumeKebutuhan: item.volumeKebutuhan,
+                                jumlahKebutuhan:
+                                  item.jumlahKebutuhan?.toString() ?? null,
+                                satuanKebutuhan: item.satuanKebutuhan,
+                                spesifikasiAwal: item.spesifikasiAwal,
+                                estimasiHargaSatuan:
+                                  item.estimasiHargaSatuan?.toString() ?? null,
+                                totalEstimasi:
+                                  item.totalEstimasi?.toString() ?? null,
+                                justifikasi: item.justifikasi,
+                                outputDiharapkan: item.outputDiharapkan,
+                                prioritas: item.prioritas,
+                                waktuKebutuhan: item.waktuKebutuhan,
+                                caraPengadaan: item.caraPengadaan,
+                                metodePengadaan: item.metodePengadaan,
+                                jadwalPemilihan: item.jadwalPemilihan,
+                                jadwalMulaiRencana: item.jadwalMulaiRencana,
+                                jadwalSelesaiRencana:
+                                  item.jadwalSelesaiRencana,
+                                tahunAnggaran: item.tahunAnggaran,
+                                statusSirup: item.statusSirup,
+                                statusKak: item.statusKak,
+                                statusHps: item.statusHps,
+                                statusRancanganKontrak:
+                                  item.statusRancanganKontrak,
+                                statusDokumenPendukung:
+                                  item.statusDokumenPendukung,
+                                kekuranganDokumen: item.kekuranganDokumen,
+                                kendala: item.kendala,
+                                tindakLanjut: item.tindakLanjut,
+                                picTindakLanjut: item.picTindakLanjut,
+                                catatan: item.catatan,
+                              }}
+                            />
+                          ) : null}
+
+                          {canDeletePlanning ? (
+                            <div className="col-span-2">
+                              <DeleteRupButton id={item.id} namaPaket={item.namaPaket} />
+                            </div>
+                          ) : null}
+                        </div>
+                      }
+                    />
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="mb-3 hidden items-center justify-between gap-3 md:flex xl:hidden">
                 <p className="text-xs font-bold text-slate-500">
                   Geser ke kanan untuk melihat seluruh kolom dan tombol aksi.
                 </p>
@@ -324,7 +483,7 @@ export default async function Page({ searchParams }: PageProps) {
                 </span>
               </div>
 
-              <div className="-mx-1 max-w-full overflow-x-auto overflow-y-hidden px-1 pb-3 overscroll-x-contain [scrollbar-color:#94a3b8_transparent] [scrollbar-gutter:stable] [scrollbar-width:thin]">
+              <div className={`-mx-1 max-w-full overflow-x-auto overflow-y-hidden px-1 pb-3 overscroll-x-contain [scrollbar-color:#94a3b8_transparent] [scrollbar-gutter:stable] [scrollbar-width:thin] ${rupData.length > 0 ? "hidden md:block" : ""}`}>
                 <div className="min-w-full space-y-3">
                   {rupData.length > 0 ? (
                     rupData.map((item) => (

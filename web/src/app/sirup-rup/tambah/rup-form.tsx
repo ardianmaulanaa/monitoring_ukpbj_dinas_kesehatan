@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getPlanningCompleteness } from "@/lib/workflow-completeness";
+import { validatePlanningSubmission } from "@/lib/workflow-completeness";
 import {
   Building2,
   CalendarDays,
@@ -162,6 +162,7 @@ export default function RupForm({
   submitLabel,
 }: RupFormProps) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const isPlanning = mode === "planning";
   const isEditing = Boolean(initialData?.id);
   const [saving, setSaving] = useState(false);
@@ -170,6 +171,7 @@ export default function RupForm({
   const [submitIntent, setSubmitIntent] = useState<"draft" | "submit" | "save">(
     "save",
   );
+  const [formSnapshot, setFormSnapshot] = useState<Record<string, FormDataEntryValue>>({});
   const [pagu, setPagu] = useState(onlyDigits(String(initialData?.pagu ?? "")));
   const [jumlah, setJumlah] = useState(
     String(initialData?.jumlahKebutuhan ?? initialData?.volumeKebutuhan ?? ""),
@@ -178,10 +180,10 @@ export default function RupForm({
     onlyDigits(String(initialData?.estimasiHargaSatuan ?? "")),
   );
   const unitPengusulValue = String(
-    initialData?.unitPengusul ?? (isPlanning ? defaultUnitPengusul ?? "" : ""),
+    initialData?.unitPengusul ?? (isPlanning ? "" : defaultUnitPengusul ?? ""),
   );
   const kodeRupValue = String(
-    initialData?.kodeRup ?? (isPlanning ? defaultKodeUsulan ?? "" : ""),
+    initialData?.kodeRup ?? (isPlanning ? "" : defaultKodeUsulan ?? ""),
   );
 
   const totalEstimasi = useMemo(() => {
@@ -193,6 +195,52 @@ export default function RupForm({
 
     return parsedJumlah * parsedHarga;
   }, [hargaSatuan, jumlah]);
+
+  const planningValidation = useMemo(
+    () =>
+      validatePlanningSubmission({
+        ...initialData,
+        kodeRup: kodeRupValue,
+        unitPengusul: unitPengusulValue,
+        tahunAnggaran: Number(initialData?.tahunAnggaran ?? new Date().getFullYear()),
+        sumberDana: String(initialData?.sumberDana ?? sumberDanaOptions[0]?.kode ?? ""),
+        metodePengadaan: String(initialData?.metodePengadaan ?? "E_PURCHASING"),
+        prioritas: String(initialData?.prioritas ?? "SEDANG"),
+        statusKak: String(initialData?.statusKak ?? "BELUM_ADA"),
+        statusHps: String(initialData?.statusHps ?? "BELUM_ADA"),
+        statusDokumenPendukung: String(
+          initialData?.statusDokumenPendukung ?? "BELUM_ADA",
+        ),
+        ...formSnapshot,
+        jumlahKebutuhan: jumlah,
+        pagu: String(totalEstimasi),
+      }),
+    [
+      formSnapshot,
+      initialData,
+      jumlah,
+      kodeRupValue,
+      sumberDanaOptions,
+      totalEstimasi,
+      unitPengusulValue,
+    ],
+  );
+  const incompletePlanningSections = Object.values(planningValidation.sections)
+    .filter((section) => !section.complete)
+    .map((section) => section.label);
+
+  function refreshFormSnapshot(form: HTMLFormElement | null) {
+    if (!form) return;
+    setFormSnapshot(Object.fromEntries(new FormData(form).entries()));
+  }
+
+  function incompleteMessage() {
+    if (incompletePlanningSections.length === 0) {
+      return "Masih ada data wajib yang belum lengkap.";
+    }
+
+    return `Lengkapi bagian ${incompletePlanningSections.join(", ")} sebelum diajukan.`;
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -220,13 +268,18 @@ export default function RupForm({
     };
 
     if (isPlanning && clickedIntent === "submit") {
-      const completeness = getPlanningCompleteness(finalPayload);
+      const completeness = validatePlanningSubmission(finalPayload);
 
       if (!completeness.complete) {
         setSaving(false);
-        setError(
-          `Lengkapi ${completeness.missingFields.length} data sebelum usulan dapat diajukan: ${completeness.missingFields.join(", ")}.`,
-        );
+        setError(`Usulan belum lengkap. ${incompleteMessage()}`);
+        const firstIncompleteIndex = planningSteps.findIndex((step) => {
+          const section = completeness.sections[step.key as keyof typeof completeness.sections];
+          return section && !section.complete;
+        });
+        if (firstIncompleteIndex >= 0) {
+          setActivePlanningStep(firstIncompleteIndex);
+        }
         return;
       }
     }
@@ -274,7 +327,11 @@ export default function RupForm({
 
     return (
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
+        onChangeCapture={(event) =>
+          refreshFormSnapshot(event.currentTarget as HTMLFormElement)
+        }
         className={
           variant === "modal"
             ? "flex min-h-0 min-w-0 flex-col bg-white"
@@ -387,9 +444,6 @@ export default function RupForm({
                 className={inputClass}
                 defaultValue={kodeRupValue}
               />
-              <span className="text-xs font-bold text-slate-500">
-                Kode dibuat otomatis oleh sistem dan dapat disesuaikan bila diperlukan.
-              </span>
             </label>
 
             <label className="grid min-w-0 gap-2">
@@ -413,11 +467,6 @@ export default function RupForm({
                 className={inputClass}
                 defaultValue={unitPengusulValue}
               />
-              {defaultUnitPengusul ? (
-                <span className="text-xs font-bold text-slate-500">
-                  Terisi otomatis dari unit kerja akun login dan dapat disesuaikan bila diperlukan.
-                </span>
-              ) : null}
             </label>
 
             <label className="grid min-w-0 gap-2">
@@ -542,6 +591,16 @@ export default function RupForm({
                 className={inputClass}
                 defaultValue={String(initialData?.namaPaket ?? "")}
                 placeholder="Masukkan nama barang, alat, bahan, atau jasa"
+              />
+            </label>
+
+            <label className="grid min-w-0 gap-2 md:col-span-2">
+              <span className={labelClass}>Uraian Kebutuhan</span>
+              <textarea
+                name="uraianKebutuhan"
+                className={textareaClass}
+                defaultValue={String(initialData?.uraianKebutuhan ?? "")}
+                placeholder="Jelaskan kebutuhan yang diajukan secara ringkas."
               />
             </label>
 
@@ -838,14 +897,25 @@ export default function RupForm({
               />
             </label>
 
-            <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 md:col-span-2">
-              <p className="text-sm font-black text-[#08783f]">
-                Siap diajukan untuk verifikasi Kepala Unit
-              </p>
-              <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
-                Tombol Ajukan Usulan akan mengirim status ke DIAJUKAN. Gunakan Simpan Draft bila data belum lengkap.
-              </p>
-            </div>
+            {planningValidation.complete ? (
+              <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 md:col-span-2">
+                <p className="text-sm font-black text-[#08783f]">
+                  Siap diajukan untuk verifikasi Kepala Unit
+                </p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+                  Seluruh data wajib usulan telah lengkap.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 md:col-span-2">
+                <p className="text-sm font-black text-amber-700">
+                  Usulan belum lengkap
+                </p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+                  {incompleteMessage()}
+                </p>
+              </div>
+            )}
           </section>
         </div>
 
@@ -902,7 +972,7 @@ export default function RupForm({
                 type="submit"
                 name="submitIntentButton"
                 value="submit"
-                disabled={saving}
+                disabled={saving || !planningValidation.complete}
                 onClick={() => setSubmitIntent("submit")}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:opacity-60"
               >
@@ -979,11 +1049,6 @@ export default function RupForm({
             className={inputClass}
             defaultValue={kodeRupValue}
           />
-          {isPlanning ? (
-            <span className="text-xs font-bold text-slate-500">
-              Kode dibuat otomatis oleh sistem dan dapat disesuaikan bila diperlukan.
-            </span>
-          ) : null}
         </label>
 
         <label className="grid min-w-0 gap-2">
@@ -1008,11 +1073,6 @@ export default function RupForm({
             className={inputClass}
             defaultValue={unitPengusulValue}
           />
-          {isPlanning && defaultUnitPengusul ? (
-            <span className="text-xs font-bold text-slate-500">
-              Terisi otomatis dari unit kerja akun login dan dapat disesuaikan bila diperlukan.
-            </span>
-          ) : null}
         </label>
 
         {isPlanning ? (

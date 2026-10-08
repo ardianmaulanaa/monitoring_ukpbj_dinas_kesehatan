@@ -8,7 +8,10 @@ import {
 } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/response";
-import { getPlanningCompleteness } from "@/lib/workflow-completeness";
+import {
+  getPlanningCompleteness,
+  planningFieldLabels,
+} from "@/lib/workflow-completeness";
 
 const verificationSchema = z.discriminatedUnion("action", [
   z.object({
@@ -206,7 +209,7 @@ export async function PATCH(
         400,
         completeness.missingFields.map((field) => ({
           field,
-          message: `${field} belum lengkap.`,
+          message: `${planningFieldLabels[field] ?? field} belum lengkap.`,
         })),
       );
     }

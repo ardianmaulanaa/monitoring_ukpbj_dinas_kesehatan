@@ -11,6 +11,7 @@ import {
   DataCardTextShort,
 } from "@/components/data-card/DataCardList";
 import VerificationDetailModalButton from "@/app/verifikasi/VerificationDetailModalButton";
+import ProcurementCompactCard from "@/components/procurement/ProcurementCompactCard";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
@@ -241,7 +242,44 @@ export default async function Page({ searchParams }: PageProps) {
           <div className="bg-slate-50/50 p-4 sm:p-5">
             {rows.length > 0 ? (
               <>
-                <div className="-mx-1 max-w-full overflow-x-auto px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin]">
+                <div className="space-y-3 md:hidden">
+                  {rows.map((item) => (
+                    <ProcurementCompactCard
+                      key={item.id}
+                      icon={ClipboardCheck}
+                      title={item.namaPaket}
+                      codeLabel={item.kodeRup}
+                      sourceFund={item.prioritas ?? "Prioritas"}
+                      sourceFundClassName={priorityClass(item.prioritas)}
+                      status={
+                        planningStatusLabels[item.statusUsulan] ??
+                        item.statusUsulan
+                      }
+                      statusClassName={
+                        planningStatusStyles[item.statusUsulan] ??
+                        "bg-slate-100 text-slate-600"
+                      }
+                      rows={[
+                        {
+                          label: "Estimasi",
+                          value: formatCurrency(
+                            (item.totalEstimasi ?? item.pagu).toString(),
+                          ),
+                        },
+                        {
+                          label: "Unit",
+                          value: item.unitPengusul,
+                          hideWhenEmpty: true,
+                        },
+                      ]}
+                      actions={
+                        <VerificationDetailModalButton proposalId={item.id} />
+                      }
+                    />
+                  ))}
+                </div>
+
+                <div className="-mx-1 hidden max-w-full overflow-x-auto px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin] md:block">
                   <div className="space-y-3">
                     {rows.map((item) => (
                       <DataCardRow
@@ -304,7 +342,7 @@ export default async function Page({ searchParams }: PageProps) {
                     ))}
                   </div>
                 </div>
-                <div className="mt-1 flex items-center justify-end gap-2 text-xs font-bold text-slate-400 2xl:hidden">
+                <div className="mt-1 hidden items-center justify-end gap-2 text-xs font-bold text-slate-400 md:flex 2xl:hidden">
                   <span>Geser horizontal untuk melihat seluruh data dan aksi</span>
                   <span aria-hidden="true">→</span>
                 </div>
