@@ -5,9 +5,13 @@ import { FileSearch } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
 
 import {
+  DataCardBadge,
+  DataCardCurrency,
   DataCardEmpty,
   DataCardField,
   DataCardRow,
+  DataCardTextLong,
+  DataCardTextShort,
 } from "@/components/data-card/DataCardList";
 
 import AddRupModalButton from "@/components/button/sirup-rup/AddRupModalButton";
@@ -118,6 +122,21 @@ async function getPlanningRows(where: Prisma.RencanaUmumPengadaanWhereInput) {
   }
 }
 
+async function getNextKodeUsulan(tahunAnggaran: number) {
+  const prefix = `USUL-${tahunAnggaran}-`;
+  const latest = await prisma.rencanaUmumPengadaan.findFirst({
+    where: { kodeRup: { startsWith: prefix } },
+    orderBy: { kodeRup: "desc" },
+    select: { kodeRup: true },
+  });
+  const latestNumber = latest?.kodeRup
+    ? Number(latest.kodeRup.slice(prefix.length))
+    : 0;
+  const nextNumber = Number.isFinite(latestNumber) ? latestNumber + 1 : 1;
+
+  return `${prefix}${String(nextNumber).padStart(3, "0")}`;
+}
+
 export default async function Page({ searchParams }: PageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
 
@@ -155,12 +174,15 @@ export default async function Page({ searchParams }: PageProps) {
     ...(statusUsulan ? { statusUsulan: statusUsulan as StatusUsulan } : {}),
   };
 
-  const [rupData, sourceFunds, currentUser] = await Promise.all([
+  const currentYear = new Date().getFullYear();
+  const [rupData, sourceFunds, currentUser, defaultKodeUsulan] = await Promise.all([
     getPlanningRows(where),
 
     getActiveSumberDanaOptions(),
 
     getCurrentUser(),
+
+    getNextKodeUsulan(currentYear),
   ]);
 
   const currentUserRoles = currentUser?.roles ?? [];
@@ -283,6 +305,7 @@ export default async function Page({ searchParams }: PageProps) {
               </div>
 
               <AddRupModalButton
+                defaultKodeUsulan={defaultKodeUsulan}
                 defaultUnitPengusul={currentUserProfile?.unitKerja}
                 sumberDanaOptions={sourceFunds}
                 label="Tambah Usulan"
@@ -302,26 +325,33 @@ export default async function Page({ searchParams }: PageProps) {
               </div>
 
               <div className="-mx-1 max-w-full overflow-x-auto overflow-y-hidden px-1 pb-3 overscroll-x-contain [scrollbar-color:#94a3b8_transparent] [scrollbar-gutter:stable] [scrollbar-width:thin]">
-                <div className="w-max min-w-full space-y-3">
+                <div className="min-w-full space-y-3">
                   {rupData.length > 0 ? (
                     rupData.map((item) => (
                       <DataCardRow
                         key={item.id}
-                        minWidth="2550px"
-                        className="xl:min-w-[2550px]"
+                        minWidth="2780px"
+                        className="xl:min-w-[2780px]"
                         icon={
                           <FileSearch className="h-5 w-5" strokeWidth={2.4} />
                         }
-                        columns="56px 140px minmax(300px,1fr) 140px 100px 220px 140px 140px 180px 130px 160px 150px 360px"
+                        columns="56px 150px minmax(300px,1.45fr) minmax(230px,1.15fr) 96px minmax(250px,1.25fr) 150px 140px 190px 140px 160px 160px minmax(360px,auto)"
                         actions={
                           <div className="flex min-w-max flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                             <PlanningDetailModalButton
                               proposal={{
+                                createdAt:
+                                  item.createdAt?.toISOString() ?? null,
+
                                 id: item.id,
 
                                 kodeRup: item.kodeRup,
 
                                 namaPaket: item.namaPaket,
+
+                                jenisBelanja: item.jenisBelanja,
+
+                                lokasiPaket: item.lokasiPaket,
 
                                 unitPengusul: item.unitPengusul,
 
@@ -346,6 +376,12 @@ export default async function Page({ searchParams }: PageProps) {
 
                                 pagu: item.pagu.toString(),
 
+                                uraianBelanja: item.uraianBelanja,
+
+                                uraianKebutuhan: item.uraianKebutuhan,
+
+                                volumeKebutuhan: item.volumeKebutuhan,
+
                                 jumlahKebutuhan:
                                   item.jumlahKebutuhan?.toString() ?? null,
 
@@ -359,7 +395,13 @@ export default async function Page({ searchParams }: PageProps) {
                                 totalEstimasi:
                                   item.totalEstimasi?.toString() ?? null,
 
+                                outputDiharapkan: item.outputDiharapkan,
+
                                 prioritas: item.prioritas,
+
+                                waktuKebutuhan: item.waktuKebutuhan,
+
+                                caraPengadaan: item.caraPengadaan,
 
                                 justifikasi: item.justifikasi,
 
@@ -367,7 +409,22 @@ export default async function Page({ searchParams }: PageProps) {
 
                                 jadwalPemilihan: item.jadwalPemilihan,
 
+                                jadwalMulaiRencana: item.jadwalMulaiRencana,
+
+                                jadwalSelesaiRencana:
+                                  item.jadwalSelesaiRencana,
+
+                                idRupSirup: item.idRupSirup,
+
+                                tanggalInputSirup: item.tanggalInputSirup,
+
+                                tanggalTayangSirup: item.tanggalTayangSirup,
+
+                                linkSirup: item.linkSirup,
+
                                 picTindakLanjut: item.picTindakLanjut,
+
+                                kendala: item.kendala,
 
                                 tindakLanjut: item.tindakLanjut,
 
@@ -381,6 +438,8 @@ export default async function Page({ searchParams }: PageProps) {
                                 statusDokumenPendukung:
                                   item.statusDokumenPendukung,
 
+                                kekuranganDokumen: item.kekuranganDokumen,
+
                                 revisionNote: item.revisionNote,
 
                                 revisionBy: item.revisionBy,
@@ -388,10 +447,16 @@ export default async function Page({ searchParams }: PageProps) {
                                 revisionAt:
                                   item.revisionAt?.toISOString() ?? null,
 
+                                submittedAt:
+                                  item.submittedAt?.toISOString() ?? null,
+
                                 verifiedBy: item.verifiedBy,
 
                                 verifiedAt:
                                   item.verifiedAt?.toISOString() ?? null,
+
+                                updatedAt:
+                                  item.updatedAt?.toISOString() ?? null,
 
                                 catatan: item.catatan,
 
@@ -524,25 +589,24 @@ export default async function Page({ searchParams }: PageProps) {
                           label="Kode Usulan"
                           valueClassName="font-mono text-xs font-black text-slate-600"
                         >
-                          <span className="truncate" title={item.kodeRup}>
+                          <DataCardTextShort title={item.kodeRup}>
                             {item.kodeRup}
-                          </span>
+                          </DataCardTextShort>
                         </DataCardField>
 
                         <DataCardField
                           label="Uraian Kebutuhan"
                           valueClassName="font-black text-[#16227c]"
                         >
-                          <p
-                            className="line-clamp-2 leading-5"
-                            title={item.namaPaket}
-                          >
+                          <DataCardTextLong title={item.namaPaket}>
                             {item.namaPaket}
-                          </p>
+                          </DataCardTextLong>
                         </DataCardField>
 
                         <DataCardField label="Unit">
-                          <span className="truncate">{item.unitPengusul}</span>
+                          <DataCardTextLong title={item.unitPengusul}>
+                            {item.unitPengusul}
+                          </DataCardTextLong>
                         </DataCardField>
 
                         <DataCardField label="Tahun">
@@ -550,58 +614,72 @@ export default async function Page({ searchParams }: PageProps) {
                         </DataCardField>
 
                         <DataCardField label="Program / Kegiatan">
-                          <p className="truncate font-bold text-slate-700">
+                          <DataCardTextLong
+                            className="font-bold text-slate-700"
+                            title={item.program || "-"}
+                          >
                             {item.program || "-"}
-                          </p>
+                          </DataCardTextLong>
 
-                          <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                          <DataCardTextShort
+                            className="mt-1 text-xs font-semibold text-slate-500"
+                            title={item.kegiatan || item.subKegiatan || "-"}
+                          >
                             {item.kegiatan || item.subKegiatan || "-"}
-                          </p>
+                          </DataCardTextShort>
                         </DataCardField>
 
                         <DataCardField label="Rekening">
-                          <span className="truncate">
+                          <DataCardTextShort title={item.kodeRekening || "-"}>
                             {item.kodeRekening || "-"}
-                          </span>
+                          </DataCardTextShort>
                         </DataCardField>
 
                         <DataCardField label="Jumlah">
-                          <span className="truncate">
+                          <DataCardTextShort
+                            title={`${item.jumlahKebutuhan?.toString() ?? item.volumeKebutuhan ?? "-"} ${item.satuanKebutuhan ?? ""}`}
+                          >
                             {item.jumlahKebutuhan?.toString() ??
                               item.volumeKebutuhan ??
                               "-"}{" "}
                             {item.satuanKebutuhan ?? ""}
-                          </span>
+                          </DataCardTextShort>
                         </DataCardField>
 
                         <DataCardField
                           label="Total Estimasi"
                           valueClassName="whitespace-nowrap font-black text-slate-800"
                         >
-                          {formatCurrency(
-                            (item.totalEstimasi ?? item.pagu).toString(),
-                          )}
+                          <DataCardCurrency>
+                            {formatCurrency(
+                              (item.totalEstimasi ?? item.pagu).toString(),
+                            )}
+                          </DataCardCurrency>
                         </DataCardField>
 
                         <DataCardField label="Prioritas">
-                          <span
-                            className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${priorityClass(item.prioritas)}`}
+                          <DataCardBadge
+                            className={priorityClass(item.prioritas)}
+                            title={item.prioritas ? humanize(item.prioritas) : "-"}
                           >
-                            <span className="truncate">
-                              {item.prioritas ? humanize(item.prioritas) : "-"}
-                            </span>
-                          </span>
+                            {item.prioritas ? humanize(item.prioritas) : "-"}
+                          </DataCardBadge>
                         </DataCardField>
 
                         <DataCardField label="Status">
-                          <span
-                            className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[item.statusUsulan] ?? "bg-slate-100 text-slate-600"}`}
+                          <DataCardBadge
+                            className={
+                              planningStatusStyles[item.statusUsulan] ??
+                              "bg-slate-100 text-slate-600"
+                            }
+                            title={
+                              planningStatusLabels[item.statusUsulan] ??
+                              humanize(item.statusUsulan)
+                            }
                           >
-                            <span className="truncate">
-                              {planningStatusLabels[item.statusUsulan] ??
-                                humanize(item.statusUsulan)}
-                            </span>
-                          </span>
+                            {planningStatusLabels[item.statusUsulan] ??
+                              humanize(item.statusUsulan)}
+                          </DataCardBadge>
                         </DataCardField>
 
                         <DataCardField label="Tanggal Pengajuan">

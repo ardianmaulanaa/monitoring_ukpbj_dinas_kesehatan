@@ -1,17 +1,23 @@
 import { unstable_cache } from "next/cache";
+import type { PaketMetodePengadaan, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
+export type DashboardFilters = {
+  tahunAnggaran?: number;
+  unit?: string;
+  sumberDana?: string;
+  metodePengadaan?: string;
+  statusPaket?: string;
+};
+
 export type DashboardStage = {
+  key: string;
   label: string;
   count: number;
   percent: number;
   color: string;
-};
-
-export type DashboardCategory = {
-  label: string;
-  value: number;
-  amount: number;
+  tone: "done" | "active" | "warning" | "danger" | "pending";
+  dominant: boolean;
 };
 
 export type DashboardBreakdown = {
@@ -21,12 +27,24 @@ export type DashboardBreakdown = {
   percent: number;
 };
 
-export type DashboardPriority = {
-  title: string;
-  unit: string;
-  status: string;
-  due: string;
-  tone: "amber" | "green" | "red";
+export type DashboardAttention = {
+  label: string;
+  count: number;
+  href?: string;
+  tone: "amber" | "green" | "red" | "blue";
+};
+
+export type DashboardMonthlyFinancial = {
+  month: string;
+  pagu: number;
+  kontrak: number;
+  realisasi: number;
+};
+
+export type DashboardMonthlyRealization = {
+  month: string;
+  pagu: number;
+  realisasi: number;
 };
 
 export type DashboardRecentPackage = {
@@ -37,12 +55,6 @@ export type DashboardRecentPackage = {
   budget: number;
   absorptionPercent: number | null;
   status: string;
-};
-
-export type DashboardMonthlyRealization = {
-  month: string;
-  pagu: number;
-  realisasi: number;
 };
 
 export type DashboardTimelineItem = {
@@ -62,108 +74,93 @@ export type DashboardAuditReadiness = {
   }[];
 };
 
+export type DashboardDeadline = {
+  dateLabel: string;
+  title: string;
+  helper: string;
+  daysLeft: number;
+  href?: string;
+};
+
+export type DashboardActivity = {
+  time: string;
+  title: string;
+  description: string;
+  href?: string;
+};
+
+export type DashboardActivityActor = {
+  label: string;
+  count: number;
+  percent: number;
+};
+
+export type DashboardFilterOption = {
+  value: string;
+  label: string;
+};
+
 export type DashboardData = {
+  filters: Required<Pick<DashboardFilters, "tahunAnggaran">> & DashboardFilters;
+  filterOptions: {
+    years: number[];
+    units: DashboardFilterOption[];
+    sources: DashboardFilterOption[];
+    methods: DashboardFilterOption[];
+    statuses: DashboardFilterOption[];
+  };
   summary: {
     totalPaket: number;
     totalPaketBarangKesehatan: number;
     totalPagu: number;
     totalHps: number;
     totalNilaiKontrak: number;
+    totalRealisasi: number;
     totalBarang: number;
     totalPdn: number;
     paketTerlambat: number;
     deadlineDekat: number;
+    paketBerjalan: number;
+    paketSelesai: number;
     paketBermasalah: number;
     paketEKatalogV6: number;
     paketTenderNonTender: number;
+    realisasiPercent: number;
     realisasiKontrakPercent: number;
+    selesaiPercent: number;
     tahunAnggaran: number;
   };
   stages: DashboardStage[];
-  categories: DashboardCategory[];
+  attentionItems: DashboardAttention[];
+  monthlyFinancials: DashboardMonthlyFinancial[];
+  unitBreakdown: DashboardBreakdown[];
   sourceFunds: DashboardBreakdown[];
   methods: DashboardBreakdown[];
-  priorities: DashboardPriority[];
+  statuses: DashboardBreakdown[];
+  efficiency: {
+    eligibleCount: number;
+    totalPagu: number;
+    totalFinal: number;
+    totalSaving: number;
+    savingRate: number;
+  };
+  deadlines: DashboardDeadline[];
+  activities: DashboardActivity[];
+  activityActors: DashboardActivityActor[];
+  categories: DashboardBreakdown[];
+  priorities: {
+    title: string;
+    unit: string;
+    status: string;
+    due: string;
+    tone: "amber" | "green" | "red";
+  }[];
   recentPackages: DashboardRecentPackage[];
   monthlyRealization: DashboardMonthlyRealization[];
   timeline: DashboardTimelineItem[];
   auditReadiness: DashboardAuditReadiness;
 };
 
-const packageTables = [
-  "paket_pengadaan",
-  "rencana_umum_pengadaan",
-  "paket",
-  "packages",
-] as const;
-const goodsTables = ["data_barang", "barang_kesehatan", "barang"] as const;
-const contractTables = ["kontrak", "contracts"] as const;
-
-const codeColumns = ["kode_paket", "kode_rup", "kode", "code"] as const;
-const nameColumns = ["nama_paket", "nama", "name", "title"] as const;
-const unitColumns = [
-  "satuan_kerja",
-  "unit_pengusul",
-  "unit_bidang",
-  "unit",
-  "opd",
-  "instansi",
-  "satker",
-] as const;
-const methodColumns = [
-  "metode_pemilihan",
-  "metode",
-  "method",
-  "jenis_pengadaan",
-] as const;
-const statusColumns = ["status_paket", "status_sirup", "status", "tahap"] as const;
-const categoryColumns = ["kategori", "kategori_barang", "jenis_barang"] as const;
-const budgetColumns = ["pagu", "nilai_pagu", "hps", "nilai_hps", "budget"] as const;
-const contractValueColumns = [
-  "nilai_kontrak",
-  "total_nilai_kontrak",
-  "contract_value",
-  "amount",
-] as const;
-const hpsColumns = [
-  "hps",
-  "nilai_hps",
-  "total_harga_katalog",
-  "harga_negosiasi_katalog",
-] as const;
-const amountColumns = [
-  "total_harga",
-  "estimasi_total",
-  "nilai_total",
-  "total",
-  "subtotal",
-  "pagu",
-] as const;
-const createdColumns = [
-  "created_at",
-  "updated_at",
-  "tanggal_dibuat",
-  "tanggal_paket",
-] as const;
-const delayedWords = ["terlambat", "lewat", "overdue", "delay", "delayed"];
-const problemWords = [
-  "terlambat",
-  "gagal",
-  "batal",
-  "bermasalah",
-  "revisi",
-  "ditolak",
-];
-const eCatalogWords = [
-  "E_PURCHASING",
-  "E-PURCHASING",
-  "E PURCHASING",
-  "EKATALOG",
-  "E-KATALOG",
-  "KATALOG",
-  "V6",
-];
-const tenderNonTenderWords = ["TENDER", "NON_TENDER", "NON-TENDER", "NON TENDER"];
 const monthLabels = [
   "Jan",
   "Feb",
@@ -179,57 +176,23 @@ const monthLabels = [
   "Des",
 ];
 
-type CountRow = { count: bigint | number | string | null };
-type SumRow = { total: bigint | number | string | null };
-type ValueRow = { value: unknown };
-type CategoryRow = {
-  label: string | null;
-  value: bigint | number | string | null;
-  amount: bigint | number | string | null;
-};
-type BreakdownRow = {
-  label: string | null;
-  count: bigint | number | string | null;
-  amount: bigint | number | string | null;
-};
-type SourceFundMasterRow = {
-  kode: string | null;
-  nama: string | null;
-};
-type SchemaColumnRow = {
-  tableName: string;
-  columnName: string;
-};
-type RecentPackageRow = {
-  code: string | null;
-  name: string | null;
-  unit: string | null;
-  method: string | null;
-  budget: bigint | number | string | null;
-  status: string | null;
-};
+const procurementStages = [
+  { key: "planning", label: "Perencanaan", tone: "pending", color: "bg-slate-400" },
+  { key: "verification", label: "Verifikasi", tone: "active", color: "bg-sky-500" },
+  { key: "rup", label: "RUP", tone: "active", color: "bg-[#08783f]" },
+  { key: "selection", label: "Pemilihan Penyedia", tone: "warning", color: "bg-amber-500" },
+  { key: "contract", label: "Kontrak / SP", tone: "active", color: "bg-emerald-600" },
+  { key: "delivery", label: "Pengiriman", tone: "warning", color: "bg-orange-500" },
+  { key: "bast", label: "Pemeriksaan / BAST", tone: "active", color: "bg-teal-500" },
+  { key: "payment", label: "Pembayaran", tone: "active", color: "bg-blue-500" },
+  { key: "done", label: "Selesai", tone: "done", color: "bg-slate-700" },
+] as const;
 
-type SchemaCatalog = Map<string, Set<string>>;
-
-const schemaCatalogTtlMs = 5 * 60 * 1000;
-let schemaCatalogPromise: Promise<SchemaCatalog> | null = null;
-let schemaCatalogExpiresAt = 0;
-
-function quoteIdentifier(identifier: string) {
-  return `"${identifier.replaceAll('"', '""')}"`;
-}
-
-function parameterPlaceholder(index: number) {
-  return `$${index}`;
-}
-
-function textExpression(column: string) {
-  return `${quoteIdentifier(column)}::text`;
-}
+type RupRow = Prisma.RencanaUmumPengadaanGetPayload<Record<string, never>>;
 
 function toNumber(value: unknown) {
-  if (typeof value === "bigint") return Number(value);
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value === "bigint") return Number(value);
   if (typeof value === "string") {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
@@ -247,581 +210,545 @@ function toNumber(value: unknown) {
   return 0;
 }
 
-function buildLikeWhere(column: string, words: readonly string[], startIndex = 1) {
-  const columnExpression = textExpression(column);
-  const conditions = words.map(
-    (_, index) => `LOWER(${columnExpression}) LIKE ${parameterPlaceholder(startIndex + index)}`,
+function normalizeText(value?: string | null) {
+  return value?.trim().toUpperCase() ?? "";
+}
+
+function humanize(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function isFilled(value?: string | null) {
+  const normalized = value?.trim();
+  return Boolean(normalized && normalized !== "-");
+}
+
+function textIncludes(value: string | null | undefined, words: string[]) {
+  const normalized = normalizeText(value);
+  return words.some((word) => normalized.includes(word));
+}
+
+function validAmount(value: unknown) {
+  const amount = toNumber(value);
+  return amount > 0 ? amount : null;
+}
+
+function getFinalValue(row: RupRow) {
+  return (
+    validAmount(row.hargaNegosiasiKatalog) ??
+    validAmount(row.hargaPenawaranKatalog) ??
+    validAmount(row.nilaiPembayaran) ??
+    null
   );
+}
+
+function parseLooseDate(value?: string | Date | null) {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+
+  const normalized = value.trim();
+  if (!normalized) return null;
+
+  const iso = normalized.match(/\d{4}-\d{2}-\d{2}/)?.[0];
+  if (iso) {
+    const date = new Date(`${iso}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function daysBetween(start: Date, end: Date) {
+  const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+  return Math.ceil((endDate.getTime() - startDate.getTime()) / 86_400_000);
+}
+
+function formatTime(value: Date) {
+  return new Intl.DateTimeFormat("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(value);
+}
+
+function formatDateLabel(value: Date) {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+  }).format(value);
+}
+
+function getProcurementStage(row: RupRow): (typeof procurementStages)[number]["key"] {
+  if (
+    textIncludes(row.statusTransaksiKatalog, ["SELESAI"]) ||
+    textIncludes(row.statusPembayaranEp, ["LUNAS", "SELESAI"]) ||
+    isFilled(row.tanggalPembayaranEp)
+  ) {
+    return "done";
+  }
+
+  if (
+    validAmount(row.nilaiPembayaran) ||
+    isFilled(row.nomorInvoice) ||
+    isFilled(row.nomorFaktur) ||
+    isFilled(row.statusDokumenPembayaran) ||
+    isFilled(row.statusPembayaranEp)
+  ) {
+    return "payment";
+  }
+
+  if (
+    isFilled(row.nomorBast) ||
+    isFilled(row.tanggalBast) ||
+    isFilled(row.statusPemeriksaanEp) ||
+    isFilled(row.hasilPemeriksaan)
+  ) {
+    return "bast";
+  }
+
+  if (
+    isFilled(row.statusPengirimanEp) ||
+    isFilled(row.tanggalAktualKirim) ||
+    isFilled(row.nomorSuratJalan)
+  ) {
+    return "delivery";
+  }
+
+  if (
+    isFilled(row.nomorSpkKontrak) ||
+    isFilled(row.tanggalKontrakEp) ||
+    isFilled(row.nomorSuratPesanan) ||
+    isFilled(row.statusSuratPesanan)
+  ) {
+    return "contract";
+  }
+
+  if (
+    isFilled(row.statusNegosiasiKatalog) ||
+    validAmount(row.hargaNegosiasiKatalog) ||
+    isFilled(row.nomorSppbj) ||
+    row.statusSirup === "SUDAH_TAYANG"
+  ) {
+    return "selection";
+  }
+
+  if (row.statusUsulan === "RUP_TAYANG" || row.statusSirup === "SIAP_RUP") {
+    return "rup";
+  }
+
+  if (
+    ["DIAJUKAN", "PERLU_REVISI", "SIAP_RUP"].includes(row.statusUsulan) ||
+    ["PROSES_VERIFIKASI", "MENUNGGU_PPTK", "MENUNGGU_PPK", "MENUNGGU_KPA_PA"].includes(
+      row.statusSirup,
+    )
+  ) {
+    return "verification";
+  }
+
+  return "planning";
+}
+
+function buildRupWhere(filters: Required<Pick<DashboardFilters, "tahunAnggaran">> & DashboardFilters) {
+  const where: Prisma.RencanaUmumPengadaanWhereInput = {
+    tahunAnggaran: filters.tahunAnggaran,
+  };
+
+  if (filters.unit) {
+    where.OR = [
+      { unitPengusul: { contains: filters.unit, mode: "insensitive" } },
+      { unitBidang: { contains: filters.unit, mode: "insensitive" } },
+    ];
+  }
+
+  if (filters.sumberDana) where.sumberDana = filters.sumberDana;
+  if (filters.metodePengadaan) {
+    where.metodePengadaan = filters.metodePengadaan as PaketMetodePengadaan;
+  }
+  if (filters.statusPaket) {
+    where.OR = [
+      ...(Array.isArray(where.OR) ? where.OR : []),
+      { statusUsulan: filters.statusPaket as Prisma.EnumStatusUsulanFilter },
+      { statusSirup: filters.statusPaket as Prisma.EnumRupStatusFilter },
+      { statusTransaksiKatalog: { contains: filters.statusPaket, mode: "insensitive" } },
+    ];
+  }
+
+  return where;
+}
+
+function buildHistoryProposalWhere(
+  filters: Required<Pick<DashboardFilters, "tahunAnggaran">> & DashboardFilters,
+) {
+  const where: Prisma.RencanaUmumPengadaanWhereInput = {
+    tahunAnggaran: filters.tahunAnggaran,
+  };
+
+  if (filters.unit) {
+    where.unitPengusul = { contains: filters.unit, mode: "insensitive" };
+  }
+  if (filters.sumberDana) where.sumberDana = filters.sumberDana;
+  if (filters.metodePengadaan) {
+    where.metodePengadaan = filters.metodePengadaan as PaketMetodePengadaan;
+  }
+  if (filters.statusPaket) {
+    where.OR = [
+      { statusUsulan: filters.statusPaket as Prisma.EnumStatusUsulanFilter },
+      { statusSirup: filters.statusPaket as Prisma.EnumRupStatusFilter },
+      { statusTransaksiKatalog: { contains: filters.statusPaket, mode: "insensitive" } },
+    ];
+  }
+
+  return where;
+}
+
+async function resolveDefaultYear() {
+  const latestRup = await prisma.rencanaUmumPengadaan.findFirst({
+    orderBy: { tahunAnggaran: "desc" },
+    select: { tahunAnggaran: true },
+  });
+
+  return latestRup?.tahunAnggaran ?? new Date().getFullYear();
+}
+
+async function getFilterOptions() {
+  const [yearRows, unitRows, sourceRows, methodRows, statusUsulanRows, statusSirupRows] =
+    await Promise.all([
+      prisma.rencanaUmumPengadaan.groupBy({
+        by: ["tahunAnggaran"],
+        orderBy: { tahunAnggaran: "desc" },
+      }),
+      prisma.rencanaUmumPengadaan.findMany({
+        distinct: ["unitPengusul"],
+        orderBy: { unitPengusul: "asc" },
+        select: { unitPengusul: true },
+      }),
+      prisma.rencanaUmumPengadaan.findMany({
+        distinct: ["sumberDana"],
+        orderBy: { sumberDana: "asc" },
+        select: { sumberDana: true },
+      }),
+      prisma.rencanaUmumPengadaan.groupBy({
+        by: ["metodePengadaan"],
+        orderBy: { metodePengadaan: "asc" },
+      }),
+      prisma.rencanaUmumPengadaan.groupBy({
+        by: ["statusUsulan"],
+        orderBy: { statusUsulan: "asc" },
+      }),
+      prisma.rencanaUmumPengadaan.groupBy({
+        by: ["statusSirup"],
+        orderBy: { statusSirup: "asc" },
+      }),
+    ]);
+
+  const statuses = Array.from(
+    new Set([
+      ...statusUsulanRows.map((row) => row.statusUsulan),
+      ...statusSirupRows.map((row) => row.statusSirup),
+    ]),
+  ).sort();
 
   return {
-    sql: conditions.join(" OR "),
-    params: words.map((word) => `%${word.toLowerCase()}%`),
+    years: yearRows.map((row) => row.tahunAnggaran),
+    units: unitRows
+      .filter((row) => isFilled(row.unitPengusul))
+      .map((row) => ({ value: row.unitPengusul, label: row.unitPengusul })),
+    sources: sourceRows
+      .filter((row) => isFilled(row.sumberDana))
+      .map((row) => ({ value: row.sumberDana, label: row.sumberDana })),
+    methods: methodRows.map((row) => ({
+      value: row.metodePengadaan,
+      label:
+        row.metodePengadaan === "E_PURCHASING"
+          ? "E-Purchasing"
+          : humanize(row.metodePengadaan),
+    })),
+    statuses: statuses.map((status) => ({ value: status, label: humanize(status) })),
   };
 }
 
-function buildExactOrLikeWhere(column: string, values: readonly string[], startIndex = 1) {
-  const columnExpression = textExpression(column);
-  const conditions = values.map(
-    (_, index) => `LOWER(${columnExpression}) = LOWER(${parameterPlaceholder(startIndex + index)})`,
-  );
+function buildStages(rows: RupRow[]) {
+  const counts = new Map(procurementStages.map((stage) => [stage.key, 0]));
 
-  return {
-    sql: conditions.join(" OR "),
-    params: [...values],
-  };
-}
-
-function getSchemaCatalog() {
-  const now = Date.now();
-
-  if (!schemaCatalogPromise || now >= schemaCatalogExpiresAt) {
-    schemaCatalogExpiresAt = now + schemaCatalogTtlMs;
-    schemaCatalogPromise = prisma
-      .$queryRawUnsafe<SchemaColumnRow[]>(
-        `SELECT table_name AS "tableName", column_name AS "columnName"
-         FROM information_schema.columns
-         WHERE table_schema = current_schema()`,
-      )
-      .then((rows) => {
-        const catalog: SchemaCatalog = new Map();
-
-        for (const row of rows) {
-          const columns = catalog.get(row.tableName) ?? new Set<string>();
-          columns.add(row.columnName);
-          catalog.set(row.tableName, columns);
-        }
-
-        return catalog;
-      })
-      .catch((error) => {
-        schemaCatalogPromise = null;
-        schemaCatalogExpiresAt = 0;
-        throw error;
-      });
+  for (const row of rows) {
+    const stage = getProcurementStage(row);
+    counts.set(stage, (counts.get(stage) ?? 0) + 1);
   }
 
-  return schemaCatalogPromise;
+  const maxCount = Math.max(...Array.from(counts.values()), 0);
+
+  return procurementStages.map((stage) => {
+    const count = counts.get(stage.key) ?? 0;
+
+    return {
+      key: stage.key,
+      label: stage.label,
+      count,
+      percent: rows.length > 0 ? Math.round((count / rows.length) * 100) : 0,
+      color: stage.color,
+      tone: stage.tone,
+      dominant: count > 0 && count === maxCount,
+    };
+  });
 }
 
-async function tableExists(tableName: string) {
-  const catalog = await getSchemaCatalog();
-  return catalog.has(tableName);
-}
+function buildBreakdown(
+  rows: RupRow[],
+  getLabel: (row: RupRow) => string,
+  totalAmount: number,
+) {
+  const breakdown = new Map<string, { count: number; amount: number }>();
 
-async function findTable(candidates: readonly string[]) {
-  const catalog = await getSchemaCatalog();
-  return candidates.find((table) => catalog.has(table)) ?? null;
-}
-
-async function findDashboardPackageTable(candidates: readonly string[]) {
-  const catalog = await getSchemaCatalog();
-  const existingTables = candidates.filter((table) => catalog.has(table));
-
-  for (const table of existingTables) {
-    if ((await countRows(table)) > 0) {
-      return table;
-    }
+  for (const row of rows) {
+    const label = getLabel(row) || "-";
+    const current = breakdown.get(label) ?? { count: 0, amount: 0 };
+    current.count += 1;
+    current.amount += toNumber(row.pagu);
+    breakdown.set(label, current);
   }
 
-  return existingTables[0] ?? null;
+  return Array.from(breakdown, ([label, item]) => ({
+    label,
+    count: item.count,
+    amount: item.amount,
+    percent: totalAmount > 0 ? Math.round((item.amount / totalAmount) * 100) : 0,
+  })).sort((a, b) => b.amount - a.amount || b.count - a.count);
 }
 
-async function findColumn(tableName: string | null, candidates: readonly string[]) {
-  if (!tableName) return null;
+function buildStatusBreakdown(rows: RupRow[]) {
+  const total = rows.length;
+  const breakdown = new Map<string, { count: number; amount: number }>();
 
-  const catalog = await getSchemaCatalog();
-  const columns = catalog.get(tableName);
+  for (const row of rows) {
+    const stage = procurementStages.find((item) => item.key === getProcurementStage(row));
+    const label = stage?.label ?? "Perencanaan";
+    const current = breakdown.get(label) ?? { count: 0, amount: 0 };
+    current.count += 1;
+    current.amount += toNumber(row.pagu);
+    breakdown.set(label, current);
+  }
 
-  return candidates.find((column) => columns?.has(column)) ?? null;
+  return Array.from(breakdown, ([label, item]) => ({
+    label,
+    count: item.count,
+    amount: item.amount,
+    percent: total > 0 ? Math.round((item.count / total) * 100) : 0,
+  })).sort((a, b) => b.count - a.count || b.amount - a.amount);
 }
 
-async function countRows(tableName: string | null) {
-  if (!tableName) return 0;
-
-  const rows = await prisma.$queryRawUnsafe<CountRow[]>(
-    `SELECT COUNT(*) AS count FROM ${quoteIdentifier(tableName)}`,
-  );
-
-  return toNumber(rows[0]?.count);
+function buildUnitBreakdown(rows: RupRow[], totalAmount: number) {
+  return buildBreakdown(
+    rows,
+    (row) => row.unitPengusul || row.unitBidang || "Unit belum diisi",
+    totalAmount,
+  ).slice(0, 6);
 }
 
-async function countMatching(
-  tableName: string | null,
-  columnName: string | null,
-  words: readonly string[],
-) {
-  if (!tableName || !columnName) return 0;
-
-  const where = buildLikeWhere(columnName, words);
-  const rows = await prisma.$queryRawUnsafe<CountRow[]>(
-    `SELECT COUNT(*) AS count FROM ${quoteIdentifier(tableName)} WHERE ${where.sql}`,
-    ...where.params,
-  );
-
-  return toNumber(rows[0]?.count);
+function countRows(rows: RupRow[], predicate: (row: RupRow) => boolean) {
+  return rows.filter(predicate).length;
 }
 
-async function countExactOrLike(
-  tableName: string | null,
-  columnName: string | null,
-  values: readonly string[],
-) {
-  if (!tableName || !columnName) return 0;
-
-  const where = buildExactOrLikeWhere(columnName, values);
-  const rows = await prisma.$queryRawUnsafe<CountRow[]>(
-    `SELECT COUNT(*) AS count FROM ${quoteIdentifier(tableName)} WHERE ${where.sql}`,
-    ...where.params,
-  );
-
-  return toNumber(rows[0]?.count);
-}
-
-async function sumColumn(tableName: string | null, columnName: string | null) {
-  if (!tableName || !columnName) return 0;
-
-  const rows = await prisma.$queryRawUnsafe<SumRow[]>(
-    `SELECT COALESCE(SUM(${quoteIdentifier(columnName)}), 0) AS total FROM ${quoteIdentifier(tableName)}`,
-  );
-
-  return toNumber(rows[0]?.total);
-}
-
-async function countBooleanTrue(
-  tableName: string | null,
-  columnName: string | null,
-) {
-  if (!tableName || !columnName) return 0;
-
-  const rows = await prisma.$queryRawUnsafe<CountRow[]>(
-    `SELECT COUNT(*) AS count FROM ${quoteIdentifier(tableName)} WHERE ${quoteIdentifier(columnName)} = true`,
-  );
-
-  return toNumber(rows[0]?.count);
-}
-
-async function countNearDeadline(tableName: string | null) {
-  if (!tableName) return 0;
-
-  const [dueColumn, statusColumn] = await Promise.all([
-    findColumn(tableName, ["rencana_selesai", "tanggal_selesai", "due_date"]),
-    findColumn(tableName, statusColumns),
-  ]);
-
-  if (!dueColumn) return 0;
-
-  const statusFilter = statusColumn
-    ? ` AND UPPER(${textExpression(statusColumn)}) NOT IN ('SELESAI', 'GAGAL', 'BATAL')`
-    : "";
-
-  const rows = await prisma.$queryRawUnsafe<CountRow[]>(
-    `SELECT COUNT(*) AS count
-     FROM ${quoteIdentifier(tableName)}
-     WHERE ${quoteIdentifier(dueColumn)} BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
-     ${statusFilter}`,
-  );
-
-  return toNumber(rows[0]?.count);
-}
-
-async function latestYear(tableName: string | null) {
-  const yearColumn = await findColumn(tableName, [
-    "tahun_anggaran",
-    "tahun",
-    "year",
-  ]);
-
-  if (!tableName || !yearColumn) return new Date().getFullYear();
-
-  const rows = await prisma.$queryRawUnsafe<ValueRow[]>(
-    `SELECT MAX(${quoteIdentifier(yearColumn)}) AS value FROM ${quoteIdentifier(tableName)}`,
-  );
-
-  return toNumber(rows[0]?.value) || new Date().getFullYear();
-}
-
-async function getStages(tableName: string | null, totalPaket: number) {
-  const statusColumn = await findColumn(tableName, statusColumns);
-
-  if (!tableName || !statusColumn || totalPaket === 0) return [];
-
-  const stageConfig = [
+function buildAttentionItems(rows: RupRow[]) {
+  const today = new Date();
+  const items: DashboardAttention[] = [
     {
-      label: "Perencanaan",
-      color: "bg-sky-500",
-      words: [
-        "perencanaan",
-        "rencana",
-        "draft",
-        "belum",
-        "proses_verifikasi",
-        "menunggu",
-        "sudah_tayang",
-        "revisi",
-        "ditarik",
-      ],
+      label: "Usulan menunggu verifikasi",
+      count: countRows(rows, (row) => row.statusUsulan === "DIAJUKAN"),
+      href: "/verifikasi?status=DIAJUKAN",
+      tone: "blue",
     },
     {
-      label: "Pemilihan",
-      color: "bg-amber-500",
-      words: ["pemilihan", "tender", "evaluasi", "pengumuman"],
+      label: "Usulan perlu revisi",
+      count: countRows(rows, (row) => row.statusUsulan === "PERLU_REVISI"),
+      href: "/verifikasi?status=PERLU_REVISI",
+      tone: "amber",
     },
     {
-      label: "Kontrak",
-      color: "bg-emerald-600",
-      words: ["kontrak", "berjalan"],
+      label: "Paket siap RUP",
+      count: countRows(rows, (row) => row.statusUsulan === "SIAP_RUP"),
+      href: "/sirup-rup?status=SIAP_RUP",
+      tone: "green",
     },
     {
-      label: "Selesai",
-      color: "bg-slate-700",
-      words: ["selesai", "serah terima", "dibayar", "complete"],
+      label: "Negosiasi belum selesai",
+      count: countRows(
+        rows,
+        (row) =>
+          row.metodePengadaan === "E_PURCHASING" &&
+          getProcurementStage(row) === "selection" &&
+          !validAmount(row.hargaNegosiasiKatalog),
+      ),
+      href: "/e-purchasing?status=NEGOSIASI",
+      tone: "amber",
+    },
+    {
+      label: "Kontrak / SP belum lengkap",
+      count: countRows(
+        rows,
+        (row) =>
+          getProcurementStage(row) === "contract" &&
+          (!isFilled(row.nomorSpkKontrak) || !isFilled(row.nomorSuratPesanan)),
+      ),
+      href: "/kontrak-sp",
+      tone: "amber",
+    },
+    {
+      label: "Pengiriman terlambat",
+      count: countRows(rows, (row) => {
+        const due = parseLooseDate(row.tanggalRencanaKirim);
+        return Boolean(due && due < today && !isFilled(row.tanggalAktualKirim));
+      }),
+      href: "/e-purchasing?status=PENGIRIMAN",
+      tone: "red",
+    },
+    {
+      label: "BAST belum dibuat",
+      count: countRows(
+        rows,
+        (row) =>
+          getProcurementStage(row) === "delivery" &&
+          isFilled(row.tanggalAktualKirim) &&
+          !isFilled(row.nomorBast),
+      ),
+      href: "/serah-terima",
+      tone: "amber",
+    },
+    {
+      label: "Dokumen pembayaran belum lengkap",
+      count: countRows(
+        rows,
+        (row) =>
+          ["bast", "payment"].includes(getProcurementStage(row)) &&
+          !textIncludes(row.statusDokumenPembayaran, ["LENGKAP", "SELESAI"]),
+      ),
+      href: "/realisasi-belanja",
+      tone: "amber",
     },
   ];
 
-  const stages = await Promise.all(
-    stageConfig.map(async (stage) => {
-      const count = await countMatching(tableName, statusColumn, stage.words);
-
-      return {
-        label: stage.label,
-        count,
-        percent: Math.round((count / totalPaket) * 100),
-        color: stage.color,
-      };
-    }),
-  );
-
-  return stages.filter((stage) => stage.count > 0);
+  return items.filter((item) => item.count > 0).slice(0, 6);
 }
 
-async function getCategories(packageTable: string | null, goodsTable: string | null) {
-  const tableName = goodsTable ?? packageTable;
-  const [categoryColumn, amountColumn] = await Promise.all([
-    findColumn(tableName, categoryColumns),
-    findColumn(tableName, amountColumns),
-  ]);
-
-  if (!tableName || !categoryColumn) return [];
-
-  const amountSql = amountColumn
-    ? `COALESCE(SUM(${quoteIdentifier(amountColumn)}), 0)`
-    : "0";
-  const categoryExpression = textExpression(categoryColumn);
-
-  const rows = await prisma.$queryRawUnsafe<CategoryRow[]>(
-    `SELECT ${categoryExpression} AS label, COUNT(*) AS value, ${amountSql} AS amount
-     FROM ${quoteIdentifier(tableName)}
-     WHERE ${quoteIdentifier(categoryColumn)} IS NOT NULL AND ${categoryExpression} <> ''
-     GROUP BY ${categoryExpression}
-     ORDER BY value DESC
-     LIMIT 5`,
-  );
-
-  return rows.map((row) => ({
-    label: row.label ?? "-",
-    value: toNumber(row.value),
-    amount: toNumber(row.amount),
-  }));
-}
-
-async function getBreakdown(
-  tableName: string | null,
-  labelColumnName: string | null,
-  amountColumnName: string | null,
-  totalCount: number,
-) {
-  if (!tableName || !labelColumnName) return [];
-
-  const amountSql = amountColumnName
-    ? `COALESCE(SUM(${quoteIdentifier(amountColumnName)}), 0)`
-    : "0";
-  const labelExpression = textExpression(labelColumnName);
-
-  const rows = await prisma.$queryRawUnsafe<BreakdownRow[]>(
-    `SELECT ${labelExpression} AS label, COUNT(*) AS count, ${amountSql} AS amount
-     FROM ${quoteIdentifier(tableName)}
-     WHERE ${quoteIdentifier(labelColumnName)} IS NOT NULL AND ${labelExpression} <> ''
-     GROUP BY ${labelExpression}
-     ORDER BY count DESC`,
-  );
-
-  return rows.map((row) => {
-    const count = toNumber(row.count);
-
-    return {
-      label: row.label ?? "-",
-      count,
-      amount: toNumber(row.amount),
-      percent: totalCount > 0 ? Math.round((count / totalCount) * 100) : 0,
-    };
-  });
-}
-
-async function getSourceFundBreakdown(
-  tableName: string | null,
-  labelColumnName: string | null,
-  amountColumnName: string | null,
-  totalCount: number,
-) {
-  const breakdown = await getBreakdown(
-    tableName,
-    labelColumnName,
-    amountColumnName,
-    totalCount,
-  );
-
-  if (!(await tableExists("sumber_dana"))) return breakdown;
-
-  const masterRows = await prisma.$queryRaw<SourceFundMasterRow[]>`
-    SELECT kode, nama
-    FROM sumber_dana
-    WHERE aktif = true
-    ORDER BY created_at ASC, nama ASC
-  `;
-
-  if (masterRows.length === 0) return breakdown;
-
-  const normalizedBreakdown = new Map(
-    breakdown.map((item) => [item.label.toUpperCase(), item]),
-  );
-  const usedLabels = new Set<string>();
-
-  const masterBreakdown = masterRows.map((row) => {
-    const code = row.kode ?? row.nama ?? "-";
-    const name = row.nama ?? code;
-    const matched =
-      normalizedBreakdown.get(code.toUpperCase()) ??
-      normalizedBreakdown.get(name.toUpperCase());
-
-    usedLabels.add(code.toUpperCase());
-    usedLabels.add(name.toUpperCase());
-
-    return {
-      label: code,
-      count: matched?.count ?? 0,
-      amount: matched?.amount ?? 0,
-      percent:
-        totalCount > 0
-          ? Math.round(((matched?.count ?? 0) / totalCount) * 100)
-          : 0,
-    };
-  });
-
-  const extraBreakdown = breakdown.filter(
-    (item) => !usedLabels.has(item.label.toUpperCase()),
-  );
-
-  return [...masterBreakdown, ...extraBreakdown];
-}
-
-async function getRecentPackages(tableName: string | null) {
-  if (!tableName) return [];
-
-  const [
-    codeColumn,
-    nameColumn,
-    unitColumn,
-    methodColumn,
-    budgetColumn,
-    statusColumn,
-    createdColumn,
-  ] = await Promise.all([
-    findColumn(tableName, codeColumns),
-    findColumn(tableName, nameColumns),
-    findColumn(tableName, unitColumns),
-    findColumn(tableName, methodColumns),
-    findColumn(tableName, budgetColumns),
-    findColumn(tableName, statusColumns),
-    findColumn(tableName, createdColumns),
-  ]);
-
-  if (!nameColumn) return [];
-
-  const orderSql = createdColumn
-    ? `ORDER BY ${quoteIdentifier(createdColumn)} DESC`
-    : "";
-
-  const rows = await prisma.$queryRawUnsafe<RecentPackageRow[]>(
-    `SELECT
-       ${codeColumn ? quoteIdentifier(codeColumn) : "NULL"} AS code,
-       ${quoteIdentifier(nameColumn)} AS name,
-       ${unitColumn ? quoteIdentifier(unitColumn) : "NULL"} AS unit,
-       ${methodColumn ? quoteIdentifier(methodColumn) : "NULL"} AS method,
-       ${budgetColumn ? quoteIdentifier(budgetColumn) : "0"} AS budget,
-       ${statusColumn ? quoteIdentifier(statusColumn) : "NULL"} AS status
-     FROM ${quoteIdentifier(tableName)}
-     ${orderSql}
-     LIMIT 5`,
-  );
-
-  return rows.map((row, index) => ({
-    code: row.code ?? `PKT-${index + 1}`,
-    name: row.name ?? "-",
-    unit: row.unit ?? "-",
-    method: row.method ?? "-",
-    budget: toNumber(row.budget),
-    absorptionPercent: null,
-    status: row.status ?? "-",
-  }));
-}
-
-async function getPriorities(tableName: string | null) {
-  if (!tableName) return [];
-
-  const [codeColumn, nameColumn, unitColumn, statusColumn, dueColumn] =
-    await Promise.all([
-      findColumn(tableName, codeColumns),
-      findColumn(tableName, nameColumns),
-      findColumn(tableName, unitColumns),
-      findColumn(tableName, statusColumns),
-      findColumn(tableName, ["rencana_selesai", "tanggal_selesai", "due_date"]),
-    ]);
-
-  if (!nameColumn || !statusColumn) return [];
-
-  const where = buildLikeWhere(statusColumn, problemWords);
-  const problemRows = await prisma.$queryRawUnsafe<RecentPackageRow[]>(
-    `SELECT
-       ${codeColumn ? quoteIdentifier(codeColumn) : "NULL"} AS code,
-       ${quoteIdentifier(nameColumn)} AS name,
-       ${unitColumn ? quoteIdentifier(unitColumn) : "NULL"} AS unit,
-       NULL AS method,
-       0 AS budget,
-       ${quoteIdentifier(statusColumn)} AS status
-     FROM ${quoteIdentifier(tableName)}
-     WHERE ${where.sql}
-     LIMIT 3`,
-    ...where.params,
-  );
-
-  const priorities: DashboardPriority[] = problemRows.map((row) => ({
-    title: row.name ?? "-",
-    unit: row.unit ?? "-",
-    status: row.status ?? "Perlu dipantau",
-    due: "Perlu tindak lanjut",
-    tone: "red" as const,
+function buildMonthlyFinancials(rows: RupRow[]) {
+  const values = monthLabels.map((month) => ({
+    month,
+    pagu: 0,
+    kontrak: 0,
+    realisasi: 0,
   }));
 
-  if (priorities.length >= 3 || !dueColumn) return priorities;
-
-  const dueRows = await prisma.$queryRawUnsafe<RecentPackageRow[]>(
-    `SELECT
-       ${codeColumn ? quoteIdentifier(codeColumn) : "NULL"} AS code,
-       ${quoteIdentifier(nameColumn)} AS name,
-       ${unitColumn ? quoteIdentifier(unitColumn) : "NULL"} AS unit,
-       NULL AS method,
-       0 AS budget,
-       ${quoteIdentifier(statusColumn)} AS status
-     FROM ${quoteIdentifier(tableName)}
-     WHERE ${quoteIdentifier(dueColumn)} BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
-       AND UPPER(${textExpression(statusColumn)}) NOT IN ('SELESAI', 'GAGAL', 'BATAL')
-     LIMIT ${parameterPlaceholder(1)}`,
-    3 - priorities.length,
-  );
-
-  return priorities.concat(
-    dueRows.map((row) => ({
-      title: row.name ?? "-",
-      unit: row.unit ?? "-",
-      status: row.status ?? "Deadline dekat",
-      due: "Deadline kurang dari 7 hari",
-      tone: "amber" as const,
-    })),
-  );
-}
-
-async function getMonthlyRealization(
-  tableName: string | null,
-  budgetColumnName: string | null,
-  hpsColumnName: string | null,
-  year: number,
-) {
-  if (!tableName || !budgetColumnName) {
-    return monthLabels.map((month) => ({ month, pagu: 0, realisasi: 0 }));
+  for (const row of rows) {
+    const monthIndex = (row.createdAt ?? row.updatedAt).getMonth();
+    values[monthIndex].pagu += toNumber(row.pagu);
+    values[monthIndex].kontrak += getFinalValue(row) ?? 0;
+    values[monthIndex].realisasi += toNumber(row.nilaiPembayaran);
   }
 
-  const dateColumn = await findColumn(tableName, [
-    "rencana_mulai",
-    "created_at",
-    "updated_at",
-    "tanggal_paket",
-  ]);
-  const amountSql = hpsColumnName
-    ? `COALESCE(SUM(${quoteIdentifier(hpsColumnName)}), 0)`
-    : "0";
+  return values;
+}
 
-  if (!dateColumn) {
-    const [totalPagu, totalRealisasi] = await Promise.all([
-      sumColumn(tableName, budgetColumnName),
-      hpsColumnName ? sumColumn(tableName, hpsColumnName) : Promise.resolve(0),
-    ]);
+function buildEfficiency(rows: RupRow[]) {
+  const eligibleRows = rows
+    .map((row) => ({
+      pagu: toNumber(row.pagu),
+      finalValue: getFinalValue(row),
+    }))
+    .filter((row): row is { pagu: number; finalValue: number } =>
+      Boolean(row.pagu > 0 && row.finalValue && row.finalValue > 0),
+    );
 
-    return monthLabels.map((month, index) => ({
-      month,
-      pagu: index === 0 ? totalPagu : 0,
-      realisasi: index === 0 ? totalRealisasi : 0,
-    }));
-  }
+  const totalPagu = eligibleRows.reduce((sum, row) => sum + row.pagu, 0);
+  const totalFinal = eligibleRows.reduce((sum, row) => sum + row.finalValue, 0);
+  const totalSaving = Math.max(totalPagu - totalFinal, 0);
 
-  const rows = await prisma.$queryRawUnsafe<
-    { monthIndex: bigint | number | string | null; pagu: unknown; realisasi: unknown }[]
-  >(
-    `SELECT
-       EXTRACT(MONTH FROM ${quoteIdentifier(dateColumn)}) AS "monthIndex",
-       COALESCE(SUM(${quoteIdentifier(budgetColumnName)}), 0) AS pagu,
-       ${amountSql} AS realisasi
-     FROM ${quoteIdentifier(tableName)}
-     WHERE EXTRACT(YEAR FROM ${quoteIdentifier(dateColumn)}) = ${parameterPlaceholder(1)}
-     GROUP BY EXTRACT(MONTH FROM ${quoteIdentifier(dateColumn)})`,
-    year,
-  );
+  return {
+    eligibleCount: eligibleRows.length,
+    totalPagu,
+    totalFinal,
+    totalSaving,
+    savingRate:
+      totalPagu > 0 ? Number(((totalSaving / totalPagu) * 100).toFixed(2)) : 0,
+  };
+}
 
-  const byMonth = new Map(
-    rows.map((row) => [
-      toNumber(row.monthIndex),
-      { pagu: toNumber(row.pagu), realisasi: toNumber(row.realisasi) },
-    ]),
-  );
+function buildCategories(rows: RupRow[], totalAmount: number) {
+  return buildBreakdown(
+    rows,
+    (row) => row.kategoriProdukKatalog || row.jenisBelanja || "Lainnya",
+    totalAmount,
+  ).slice(0, 5);
+}
 
-  return monthLabels.map((month, index) => {
-    const values = byMonth.get(index + 1);
+function buildRecentPackages(rows: RupRow[]): DashboardRecentPackage[] {
+  return rows.slice(0, 5).map((row, index) => ({
+    code: row.kodeRup || `RUP-${index + 1}`,
+    name: row.namaPaket,
+    unit: row.unitPengusul,
+    method:
+      row.metodePengadaan === "E_PURCHASING"
+        ? "E-Purchasing"
+        : humanize(row.metodePengadaan),
+    budget: toNumber(row.pagu),
+    absorptionPercent:
+      toNumber(row.pagu) > 0
+        ? Number(((toNumber(row.nilaiPembayaran) / toNumber(row.pagu)) * 100).toFixed(1))
+        : null,
+    status:
+      procurementStages.find((item) => item.key === getProcurementStage(row))?.label ??
+      humanize(row.statusUsulan),
+  }));
+}
 
-    return {
-      month,
-      pagu: values?.pagu ?? 0,
-      realisasi: values?.realisasi ?? 0,
-    };
-  });
+function buildMonthlyRealization(
+  monthlyFinancials: DashboardMonthlyFinancial[],
+): DashboardMonthlyRealization[] {
+  return monthlyFinancials.map((item) => ({
+    month: item.month,
+    pagu: item.pagu,
+    realisasi: item.realisasi,
+  }));
 }
 
 function buildTimeline(stages: DashboardStage[], totalPaket: number): DashboardTimelineItem[] {
-  const countByStage = new Map(stages.map((stage) => [stage.label, stage.count]));
+  const countByStage = new Map(stages.map((stage) => [stage.key, stage.count]));
 
   return [
     {
       label: "Perencanaan & RUP",
-      period: "Input kebutuhan, pagu, HPS",
-      count: countByStage.get("Perencanaan") ?? 0,
-      status: (countByStage.get("Perencanaan") ?? 0) > 0 ? "active" : "pending",
+      period: "Input kebutuhan, verifikasi, dan tayang RUP",
+      count:
+        (countByStage.get("planning") ?? 0) +
+        (countByStage.get("verification") ?? 0) +
+        (countByStage.get("rup") ?? 0),
+      status: "active",
     },
     {
       label: "Pemilihan Penyedia",
-      period: "Tender, non tender, e-katalog",
-      count: countByStage.get("Pemilihan") ?? 0,
-      status: (countByStage.get("Pemilihan") ?? 0) > 0 ? "warning" : "pending",
+      period: "Tender, non tender, dan E-Purchasing",
+      count: countByStage.get("selection") ?? 0,
+      status: (countByStage.get("selection") ?? 0) > 0 ? "warning" : "pending",
     },
     {
       label: "Kontrak & Pelaksanaan",
-      period: "SP/SPK, pengiriman, progres",
-      count: countByStage.get("Kontrak") ?? 0,
-      status: (countByStage.get("Kontrak") ?? 0) > 0 ? "active" : "pending",
+      period: "SP/SPK, pengiriman, dan pemeriksaan",
+      count:
+        (countByStage.get("contract") ?? 0) +
+        (countByStage.get("delivery") ?? 0) +
+        (countByStage.get("bast") ?? 0),
+      status: "active",
     },
     {
       label: "Serah Terima & Realisasi",
-      period: "BAST, pembayaran, penutupan",
-      count: countByStage.get("Selesai") ?? 0,
+      period: "Pembayaran dan penyelesaian paket",
+      count: (countByStage.get("payment") ?? 0) + (countByStage.get("done") ?? 0),
       status:
-        totalPaket > 0 && (countByStage.get("Selesai") ?? 0) === totalPaket
+        totalPaket > 0 && (countByStage.get("done") ?? 0) === totalPaket
           ? "done"
           : "pending",
     },
@@ -830,16 +757,20 @@ function buildTimeline(stages: DashboardStage[], totalPaket: number): DashboardT
 
 function buildAuditReadiness(
   totalPaket: number,
-  selesaiCount: number,
-  kontrakCount: number,
+  stages: DashboardStage[],
   bermasalahCount: number,
 ): DashboardAuditReadiness {
-  const hpsReady = totalPaket;
-  const pemilihanReady = Math.min(totalPaket, selesaiCount + kontrakCount);
-  const bastReady = selesaiCount;
-  const paymentReady = selesaiCount;
+  const stageCount = (key: string) => stages.find((stage) => stage.key === key)?.count ?? 0;
+  const contractReady =
+    stageCount("contract") +
+    stageCount("delivery") +
+    stageCount("bast") +
+    stageCount("payment") +
+    stageCount("done");
+  const bastReady = stageCount("bast") + stageCount("payment") + stageCount("done");
+  const paymentReady = stageCount("payment") + stageCount("done");
   const riskReady = Math.max(totalPaket - bermasalahCount, 0);
-  const complete = hpsReady + pemilihanReady + bastReady + paymentReady + riskReady;
+  const complete = totalPaket + contractReady + bastReady + paymentReady + riskReady;
   const total = totalPaket * 5;
   const percent = total > 0 ? Math.round((complete / total) * 100) : 0;
 
@@ -854,15 +785,15 @@ function buildAuditReadiness(
     items: [
       {
         label: "KAK / HPS",
-        complete: hpsReady,
+        complete: totalPaket,
         total: totalPaket,
-        tone: toneFor(hpsReady, totalPaket),
+        tone: toneFor(totalPaket, totalPaket),
       },
       {
         label: "Dokumen pemilihan",
-        complete: pemilihanReady,
+        complete: contractReady,
         total: totalPaket,
-        tone: toneFor(pemilihanReady, totalPaket),
+        tone: toneFor(contractReady, totalPaket),
       },
       {
         label: "BAST / BAPB",
@@ -886,141 +817,301 @@ function buildAuditReadiness(
   };
 }
 
-async function computeDashboardData(): Promise<DashboardData> {
-  const [packageTable, goodsTable, contractTable] = await Promise.all([
-    findDashboardPackageTable(packageTables),
-    findTable(goodsTables),
-    findTable(contractTables),
+function buildPriorities(items: DashboardAttention[]) {
+  return items.slice(0, 3).map((item) => ({
+    title: item.label,
+    unit: `${item.count.toLocaleString("id-ID")} paket`,
+    status: item.tone === "red" ? "Bermasalah" : "Perlu Tindak Lanjut",
+    due: item.href ? "Buka daftar terkait" : "Perlu dipantau",
+    tone: item.tone === "red" ? ("red" as const) : ("amber" as const),
+  }));
+}
+
+function buildDeadlines(rows: RupRow[]) {
+  const today = new Date();
+  const deadlines: DashboardDeadline[] = [];
+
+  for (const row of rows) {
+    const candidates = [
+      {
+        date: parseLooseDate(row.tanggalRencanaKirim),
+        title: row.namaPaket,
+        helper: "Target pengiriman",
+        href: "/e-purchasing",
+      },
+      {
+        date: parseLooseDate(row.jadwalSelesaiRencana),
+        title: row.namaPaket,
+        helper: "Jadwal selesai rencana",
+        href: "/sirup-rup",
+      },
+      {
+        date: parseLooseDate(row.tanggalKontrakEp),
+        title: row.namaPaket,
+        helper: "Tanggal kontrak / SP",
+        href: "/kontrak-sp",
+      },
+      {
+        date: parseLooseDate(row.tanggalBast),
+        title: row.namaPaket,
+        helper: "Target BAST",
+        href: "/serah-terima",
+      },
+    ];
+
+    for (const candidate of candidates) {
+      if (!candidate.date) continue;
+      const daysLeft = daysBetween(today, candidate.date);
+      if (daysLeft < 0 || daysLeft > 14) continue;
+
+      deadlines.push({
+        dateLabel: formatDateLabel(candidate.date),
+        title: candidate.title,
+        helper:
+          daysLeft === 0
+            ? `${candidate.helper} hari ini`
+            : `${candidate.helper}, ${daysLeft} hari lagi`,
+        daysLeft,
+        href: candidate.href,
+      });
+    }
+  }
+
+  return deadlines.sort((a, b) => a.daysLeft - b.daysLeft).slice(0, 5);
+}
+
+async function buildActivities(filters: Required<Pick<DashboardFilters, "tahunAnggaran">> & DashboardFilters) {
+  const activities: DashboardActivity[] = [];
+  const proposalWhere = buildHistoryProposalWhere(filters);
+
+  const [verificationRows, timelineRows, auditRows] = await Promise.all([
+    prisma.usulanVerificationHistory.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        action: true,
+        newStatus: true,
+        createdAt: true,
+        proposal: { select: { namaPaket: true, tahunAnggaran: true, unitPengusul: true } },
+      },
+      where: {
+        proposal: proposalWhere,
+      },
+    }),
+    prisma.timelineEvent.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      select: { judul: true, tahap: true, status: true, updatedAt: true },
+    }),
+    prisma.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      where: { entity: { in: ["RUP", "PAKET", "KONTRAK", "REALISASI"] } },
+      select: { entity: true, action: true, createdAt: true },
+    }),
   ]);
 
-  const [
-    budgetColumn,
-    hpsColumn,
-    contractValueColumn,
-    packageCategoryColumn,
-    sourceFundColumn,
-    methodColumn,
-    pdnColumn,
-    statusColumn,
-  ] = await Promise.all([
-    findColumn(packageTable, budgetColumns),
-    findColumn(packageTable, hpsColumns),
-    findColumn(contractTable, contractValueColumns),
-    findColumn(packageTable, categoryColumns),
-    findColumn(packageTable, ["sumber_dana", "source_fund", "funding_source"]),
-    findColumn(packageTable, methodColumns),
-    findColumn(goodsTable, ["is_pdn", "pdn"]),
-    findColumn(packageTable, statusColumns),
+  for (const row of verificationRows) {
+    activities.push({
+      time: formatTime(row.createdAt),
+      title: row.proposal.namaPaket,
+      description: row.newStatus
+        ? `${humanize(row.action)} ke ${humanize(row.newStatus)}`
+        : humanize(row.action),
+      href: "/verifikasi",
+    });
+  }
+
+  for (const row of timelineRows) {
+    activities.push({
+      time: formatTime(row.updatedAt),
+      title: row.judul,
+      description: `${humanize(row.tahap)} - ${humanize(row.status)}`,
+      href: "/timeline",
+    });
+  }
+
+  for (const row of auditRows) {
+    activities.push({
+      time: formatTime(row.createdAt),
+      title: humanize(row.entity),
+      description: humanize(row.action),
+      href: "/admin/audit-log",
+    });
+  }
+
+  return activities
+    .sort((a, b) => b.time.localeCompare(a.time))
+    .slice(0, 6);
+}
+
+async function buildActivityActors(
+  filters: Required<Pick<DashboardFilters, "tahunAnggaran">> & DashboardFilters,
+) {
+  const proposalWhere = buildHistoryProposalWhere(filters);
+  const verificationRows = await prisma.usulanVerificationHistory.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    select: {
+      actorName: true,
+      proposal: { select: { tahunAnggaran: true, unitPengusul: true } },
+    },
+    where: {
+      proposal: proposalWhere,
+    },
+  });
+
+  const counts = new Map<string, number>();
+  for (const row of verificationRows) {
+    const label = row.actorName?.trim() || "User tidak diketahui";
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+
+  const maxCount = Math.max(...counts.values(), 0);
+
+  return Array.from(counts, ([label, count]) => ({
+    label,
+    count,
+    percent: maxCount > 0 ? Math.round((count / maxCount) * 100) : 0,
+  }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, 5);
+}
+
+async function computeDashboardData(filters: DashboardFilters = {}): Promise<DashboardData> {
+  const tahunAnggaran = filters.tahunAnggaran ?? (await resolveDefaultYear());
+  const activeFilters = { ...filters, tahunAnggaran };
+  const where = buildRupWhere(activeFilters);
+  const [filterOptions, rows] = await Promise.all([
+    getFilterOptions(),
+    prisma.rencanaUmumPengadaan.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
 
-  const [
-    totalPaket,
-    totalPagu,
-    totalHps,
-    totalNilaiKontrak,
-    totalBarangKesehatan,
-    totalPdn,
-    deadlineDekat,
-    tahunAnggaran,
-  ] = await Promise.all([
-    countRows(packageTable),
-    sumColumn(packageTable, budgetColumn),
-    sumColumn(packageTable, hpsColumn),
-    sumColumn(contractTable, contractValueColumn),
-    countRows(goodsTable),
-    countBooleanTrue(goodsTable, pdnColumn),
-    countNearDeadline(packageTable),
-    latestYear(packageTable),
-  ]);
-
-  const [
-    totalPaketBarangKesehatan,
-    selesaiCount,
-    kontrakCount,
-    paketTerlambat,
-    paketBermasalah,
-    paketEKatalogV6,
-    paketTenderNonTender,
-    stages,
-    categories,
-    sourceFunds,
-    methods,
-    priorities,
-    recentPackages,
-    monthlyRealization,
-  ] = await Promise.all([
-    packageCategoryColumn
-      ? countMatching(packageTable, packageCategoryColumn, [
-          "kesehatan",
-          "alkes",
-          "obat",
-          "bmhp",
-          "reagen",
-          "laboratorium",
-        ])
-      : Promise.resolve(totalBarangKesehatan),
-    countExactOrLike(packageTable, statusColumn, ["SELESAI"]),
-    countExactOrLike(packageTable, statusColumn, ["KONTRAK"]),
-    countMatching(packageTable, statusColumn, delayedWords),
-    countMatching(packageTable, statusColumn, problemWords),
-    countExactOrLike(packageTable, methodColumn, eCatalogWords),
-    countExactOrLike(packageTable, methodColumn, tenderNonTenderWords),
-    getStages(packageTable, totalPaket),
-    getCategories(packageTable, goodsTable),
-    getSourceFundBreakdown(
-      packageTable,
-      sourceFundColumn,
-      budgetColumn,
-      totalPaket,
-    ),
-    getBreakdown(packageTable, methodColumn, budgetColumn, totalPaket),
-    getPriorities(packageTable),
-    getRecentPackages(packageTable),
-    getMonthlyRealization(packageTable, budgetColumn, hpsColumn, tahunAnggaran),
-  ]);
-  const realisasiKontrakPercent =
-    totalPagu > 0 ? Number(((totalNilaiKontrak / totalPagu) * 100).toFixed(1)) : 0;
-  const timeline = buildTimeline(stages, totalPaket);
-  const auditReadiness = buildAuditReadiness(
-    totalPaket,
-    selesaiCount,
-    kontrakCount,
-    paketBermasalah,
+  const totalPagu = rows.reduce((sum, row) => sum + toNumber(row.pagu), 0);
+  const totalHps = rows.reduce(
+    (sum, row) => sum + (validAmount(row.totalEstimasi) ?? validAmount(row.totalHargaKatalog) ?? 0),
+    0,
   );
+  const totalNilaiKontrak = rows.reduce(
+    (sum, row) => sum + (getFinalValue(row) ?? 0),
+    0,
+  );
+  const totalRealisasi = rows.reduce(
+    (sum, row) => sum + toNumber(row.nilaiPembayaran),
+    0,
+  );
+  const stages = buildStages(rows);
+  const paketSelesai = stages.find((stage) => stage.key === "done")?.count ?? 0;
+  const paketBermasalah = countRows(
+    rows,
+    (row) =>
+      row.statusUsulan === "PERLU_REVISI" ||
+      textIncludes(row.kendala, ["TERLAMBAT", "GAGAL", "BATAL", "KENDALA"]) ||
+      textIncludes(row.statusTransaksiKatalog, ["GAGAL", "BATAL"]),
+  );
+  const monthlyFinancials = buildMonthlyFinancials(rows);
+  const attentionItems = buildAttentionItems(rows);
+  const deadlines = buildDeadlines(rows);
+  const categories = buildCategories(rows, totalPagu);
+  const timeline = buildTimeline(stages, rows.length);
+  const auditReadiness = buildAuditReadiness(rows.length, stages, paketBermasalah);
+  const [activities, activityActors] = await Promise.all([
+    buildActivities(activeFilters),
+    buildActivityActors(activeFilters),
+  ]);
+  const paketEKatalogV6 = countRows(
+    rows,
+    (row) => row.metodePengadaan === "E_PURCHASING",
+  );
+  const paketTenderNonTender = countRows(rows, (row) =>
+    ["TENDER", "NON_TENDER"].includes(row.metodePengadaan),
+  );
+  const paketTerlambat = countRows(rows, (row) => {
+    const due = parseLooseDate(row.tanggalRencanaKirim);
+    return Boolean(due && due < new Date() && !isFilled(row.tanggalAktualKirim));
+  });
 
   return {
+    filters: activeFilters,
+    filterOptions,
     summary: {
-      totalPaket,
-      totalPaketBarangKesehatan,
+      totalPaket: rows.length,
+      totalPaketBarangKesehatan: countRows(rows, (row) =>
+        textIncludes(row.kategoriProdukKatalog || row.jenisBelanja, [
+          "KESEHATAN",
+          "ALKES",
+          "OBAT",
+          "BMHP",
+          "REAGEN",
+          "LABORATORIUM",
+        ]),
+      ),
       totalPagu,
       totalHps,
       totalNilaiKontrak,
-      totalBarang: totalBarangKesehatan,
-      totalPdn,
+      totalRealisasi,
+      totalBarang: rows.length,
+      totalPdn: 0,
       paketTerlambat,
-      deadlineDekat,
+      deadlineDekat: deadlines.length,
+      paketBerjalan: Math.max(rows.length - paketSelesai, 0),
+      paketSelesai,
       paketBermasalah,
       paketEKatalogV6,
       paketTenderNonTender,
-      realisasiKontrakPercent,
+      realisasiPercent:
+        totalPagu > 0 ? Number(((totalRealisasi / totalPagu) * 100).toFixed(1)) : 0,
+      realisasiKontrakPercent:
+        totalPagu > 0
+          ? Number(((totalNilaiKontrak / totalPagu) * 100).toFixed(1))
+          : 0,
+      selesaiPercent:
+        rows.length > 0 ? Number(((paketSelesai / rows.length) * 100).toFixed(1)) : 0,
       tahunAnggaran,
     },
     stages,
+    attentionItems,
+    monthlyFinancials,
+    unitBreakdown: buildUnitBreakdown(rows, totalPagu),
+    sourceFunds: buildBreakdown(rows, (row) => row.sumberDana, totalPagu),
+    methods: buildBreakdown(
+      rows,
+      (row) =>
+        row.metodePengadaan === "E_PURCHASING"
+          ? "E-Purchasing"
+          : humanize(row.metodePengadaan),
+      totalPagu,
+    ),
+    statuses: buildStatusBreakdown(rows),
+    efficiency: buildEfficiency(rows),
+    deadlines,
+    activities,
+    activityActors,
     categories,
-    sourceFunds,
-    methods,
-    priorities,
-    recentPackages,
-    monthlyRealization,
+    priorities: buildPriorities(attentionItems),
+    recentPackages: buildRecentPackages(rows),
+    monthlyRealization: buildMonthlyRealization(monthlyFinancials),
     timeline,
     auditReadiness,
   };
 }
 
-export const getDashboardData = unstable_cache(
-  computeDashboardData,
-  ["dashboard-data"],
-  {
-    revalidate: 300,
-  },
-);
+export async function getDashboardData(filters: DashboardFilters = {}) {
+  const tahunAnggaran = filters.tahunAnggaran ?? (await resolveDefaultYear());
+  const cacheKey = JSON.stringify({
+    tahunAnggaran,
+    unit: filters.unit ?? "",
+    sumberDana: filters.sumberDana ?? "",
+    metodePengadaan: filters.metodePengadaan ?? "",
+    statusPaket: filters.statusPaket ?? "",
+  });
+
+  return unstable_cache(
+    () => computeDashboardData({ ...filters, tahunAnggaran }),
+    ["dashboard-data", cacheKey],
+    { revalidate: 300 },
+  )();
+}

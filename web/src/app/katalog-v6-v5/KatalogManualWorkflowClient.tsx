@@ -14,10 +14,14 @@ import {
 } from "lucide-react";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { updateKatalogWorkflowAction } from "@/app/katalog-v6-v5/actions";
+import { DetailField } from "@/components/detail/DetailHorizontalSection";
+import { getEPurchasingCompleteness } from "@/lib/workflow-completeness";
 
 type RupSummary = {
   id: string;
   kodeRup: string;
+  idRupSirup?: string | null;
+  linkSirup?: string | null;
   lokasiPaket?: string | null;
   namaPaket: string;
   unitPengusul: string;
@@ -29,6 +33,8 @@ type RupSummary = {
   subKegiatan?: string | null;
   ppkPptk?: string | null;
   metodePengadaan: string;
+  statusSirup?: string | null;
+  tanggalTayangSirup?: string | null;
 };
 
 export type EPurchasingDraft = {
@@ -93,6 +99,17 @@ type TabKey =
   | "payment"
   | "documents";
 
+const orderedStageKeys = [
+  "rup",
+  "product",
+  "provider",
+  "negotiation",
+  "contract",
+  "delivery",
+  "inspection",
+  "payment",
+] as const;
+
 const inputClass =
   "h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100";
 const labelClass = "text-xs font-black uppercase tracking-wide text-slate-500";
@@ -115,14 +132,7 @@ function numberValue(value: string | null | undefined) {
 }
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <p className={labelClass}>{label}</p>
-      <p className="mt-2 break-words text-sm font-black text-slate-800">
-        {value || "-"}
-      </p>
-    </div>
-  );
+  return <DetailField label={label} value={value} />;
 }
 
 function SubmitButton({
@@ -162,19 +172,38 @@ export default function KatalogManualWorkflowClient({
   const totalHargaTayang = jumlah * hargaTayang;
   const hargaFinal = numberValue(initialDraft.hargaNegosiasiKatalog);
   const selisihPagu = Math.max(rup.pagu - hargaFinal, 0);
+  const completeness = useMemo(
+    () =>
+      getEPurchasingCompleteness({
+        ...initialDraft,
+        idRupSirup: rup.idRupSirup,
+        linkSirup: rup.linkSirup,
+        metodePengadaan: rup.metodePengadaan,
+        namaPaket: rup.namaPaket,
+        pagu: rup.pagu,
+        statusSirup: rup.statusSirup,
+        sumberDana: rup.sumberDana,
+        tanggalTayangSirup: rup.tanggalTayangSirup,
+        tahunAnggaran: rup.tahunAnggaran,
+        unitPengusul: rup.unitPengusul,
+      }),
+    [initialDraft, rup],
+  );
+  const currentStage =
+    orderedStageKeys.find((key) => !completeness.sections[key].complete) ??
+    "documents";
+  const missingByStage = Object.values(completeness.sections)
+    .flatMap((item) => item.missingFields.map((field) => `${item.label}: ${field}`))
+    .slice(0, 8);
 
   const progress = useMemo(
-    () => [
-      { label: "RUP", done: true },
-      { label: "Produk", done: Boolean(initialDraft.namaProdukKatalog) },
-      { label: "Penyedia", done: Boolean(initialDraft.namaPenyediaKatalog) },
-      { label: "Negosiasi", done: Boolean(initialDraft.hargaNegosiasiKatalog) },
-      { label: "Kontrak", done: Boolean(initialDraft.nomorSuratPesanan || initialDraft.nomorSpkKontrak) },
-      { label: "Pengiriman", done: Boolean(initialDraft.statusPengirimanEp) },
-      { label: "Pemeriksaan", done: Boolean(initialDraft.nomorBaPemeriksaan || initialDraft.nomorBast) },
-      { label: "Pembayaran", done: initialDraft.statusPembayaranEp === "DIBAYAR" },
-    ],
-    [initialDraft],
+    () =>
+      orderedStageKeys.map((key) => ({
+        active: key === currentStage,
+        done: completeness.sections[key].complete,
+        label: completeness.sections[key].label,
+      })),
+    [completeness, currentStage],
   );
 
   const tabs: { key: TabKey; label: string; icon: typeof ClipboardList }[] = [
@@ -269,8 +298,9 @@ export default function KatalogManualWorkflowClient({
             <ReadOnlyField label="Lokasi" value={rup.lokasiPaket ?? "-"} />
             <ReadOnlyField
               label="Tahap Saat Ini"
-              value={initialDraft.statusTransaksiKatalog ?? "PERSIAPAN"}
+              value={completeness.complete ? "SELESAI" : completeness.sections[currentStage].label}
             />
+            <ReadOnlyField label="Kelengkapan" value={`${completeness.percentage}%`} />
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-4">
@@ -284,17 +314,32 @@ export default function KatalogManualWorkflowClient({
                   className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-black ${
                     item.done
                       ? "border-emerald-200 bg-emerald-50 text-[#08783f]"
+                      : item.active
+                        ? "border-blue-200 bg-blue-50 text-blue-700"
                       : "border-slate-200 bg-slate-50 text-slate-400"
                   }`}
                 >
                   <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs">
-                    {item.done ? "✓" : "○"}
+                    {item.done ? "✓" : item.active ? "●" : "○"}
                   </span>
                   {item.label}
                 </div>
               ))}
             </div>
           </div>
+
+          {!completeness.complete ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs font-black uppercase tracking-wide text-amber-700">
+                Proses belum dapat dilanjutkan
+              </p>
+              <ul className="mt-3 grid gap-2 text-sm font-semibold text-amber-800">
+                {missingByStage.map((item) => (
+                  <li key={item}>- {item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
       ) : null}
 

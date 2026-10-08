@@ -8,6 +8,7 @@ import {
 } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/response";
+import { getPlanningCompleteness } from "@/lib/workflow-completeness";
 
 const verificationSchema = z.discriminatedUnion("action", [
   z.object({
@@ -148,6 +149,29 @@ export async function PATCH(
       statusUsulan: true,
       unitBidang: true,
       unitPengusul: true,
+      caraPengadaan: true,
+      jadwalMulaiRencana: true,
+      jadwalPemilihan: true,
+      jadwalSelesaiRencana: true,
+      jumlahKebutuhan: true,
+      justifikasi: true,
+      kegiatan: true,
+      kodeRekening: true,
+      kontakPenanggungJawab: true,
+      metodePengadaan: true,
+      pagu: true,
+      ppkPptk: true,
+      prioritas: true,
+      program: true,
+      satuanKebutuhan: true,
+      spesifikasiAwal: true,
+      statusDokumenPendukung: true,
+      statusHps: true,
+      statusKak: true,
+      subKegiatan: true,
+      sumberDana: true,
+      tahunAnggaran: true,
+      uraianKebutuhan: true,
     },
   });
 
@@ -172,6 +196,21 @@ export async function PATCH(
 
   const nextStatus: StatusUsulan =
     parsed.data.action === "approve" ? "SIAP_RUP" : "PERLU_REVISI";
+
+  if (parsed.data.action === "approve") {
+    const completeness = getPlanningCompleteness(proposal);
+
+    if (!completeness.complete) {
+      return apiError(
+        "Usulan belum memenuhi kelengkapan minimum.",
+        400,
+        completeness.missingFields.map((field) => ({
+          field,
+          message: `${field} belum lengkap.`,
+        })),
+      );
+    }
+  }
 
   if (!canVerificationTransition(proposal.statusUsulan, nextStatus)) {
     return apiError("Transisi status usulan tidak valid.", 422);

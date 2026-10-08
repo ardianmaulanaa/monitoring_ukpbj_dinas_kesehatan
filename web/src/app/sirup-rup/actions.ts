@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { canProcessRup } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
+import { getRupCompleteness } from "@/lib/workflow-completeness";
 
 export type RupRevisionState = {
   message: string;
@@ -21,11 +22,6 @@ function normalizeUnit(value?: string | null) {
 
 function optionalText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
-  return text.length > 0 ? text : null;
-}
-
-function optionalDecimal(value: FormDataEntryValue | null) {
-  const text = String(value ?? "").replace(/\D/g, "");
   return text.length > 0 ? text : null;
 }
 
@@ -162,11 +158,36 @@ export async function updateSirupPublicationAction(
 
   const existing = await prisma.rencanaUmumPengadaan.findUnique({
     where: { id },
-    select: { id: true },
+    select: {
+      id: true,
+      namaPaket: true,
+      sumberDana: true,
+      tahunAnggaran: true,
+      unitPengusul: true,
+    },
   });
 
   if (!existing) {
     return { ok: false, message: "Data perencanaan tidak ditemukan." };
+  }
+
+  if (statusSirup === "SUDAH_TAYANG") {
+    const completeness = getRupCompleteness({
+      ...existing,
+      idRupSirup: optionalText(formData.get("idRupSirup")),
+      linkSirup: optionalText(formData.get("linkSirup")),
+      metodePengadaan,
+      pagu,
+      statusSirup,
+      tanggalTayangSirup: optionalText(formData.get("tanggalTayangSirup")),
+    });
+
+    if (!completeness.complete) {
+      return {
+        ok: false,
+        message: `RUP belum lengkap dan belum dapat ditayangkan: ${completeness.missingFields.join(", ")}.`,
+      };
+    }
   }
 
   await prisma.rencanaUmumPengadaan.update({
@@ -195,70 +216,6 @@ export async function updateSirupPublicationAction(
             statusUsulan: "RUP_TAYANG" as const,
           }
         : {}),
-      jenisKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("jenisKatalog"))
-          : null,
-      etalaseKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("etalaseKatalog"))
-          : null,
-      namaProdukKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("namaProdukKatalog"))
-          : null,
-      spesifikasiProdukKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("spesifikasiProdukKatalog"))
-          : null,
-      merekTipeKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("merekTipeKatalog"))
-          : null,
-      jumlahProdukKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("jumlahProdukKatalog"))
-          : null,
-      satuanProdukKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("satuanProdukKatalog"))
-          : null,
-      hargaSatuanKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalDecimal(formData.get("hargaSatuanKatalog"))
-          : null,
-      totalHargaKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalDecimal(formData.get("totalHargaKatalog"))
-          : null,
-      namaPenyediaKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("namaPenyediaKatalog"))
-          : null,
-      statusNegosiasiKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("statusNegosiasiKatalog"))
-          : null,
-      hargaNegosiasiKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalDecimal(formData.get("hargaNegosiasiKatalog"))
-          : null,
-      nomorSuratPesanan:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("nomorSuratPesanan"))
-          : null,
-      tanggalSuratPesanan:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("tanggalSuratPesanan"))
-          : null,
-      statusTransaksiKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("statusTransaksiKatalog"))
-          : null,
-      catatanKatalog:
-        metodePengadaan === "E_PURCHASING"
-          ? optionalText(formData.get("catatanKatalog"))
-          : null,
       catatan: optionalText(formData.get("catatan")),
     },
   });

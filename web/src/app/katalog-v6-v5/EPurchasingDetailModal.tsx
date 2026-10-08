@@ -2,16 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import ModalShell from "@/components/modal/ModalShell";
+import {
+  DetailModalHeader,
+  DetailStatusBadge,
+} from "@/components/detail/DetailHorizontalSection";
 import KatalogManualWorkflowClient, {
   type EPurchasingDraft,
 } from "@/app/katalog-v6-v5/KatalogManualWorkflowClient";
+import { formatCurrency } from "@/lib/currency";
 
 type EPurchasingDetailModalProps = {
   basePath?: string;
   draft: EPurchasingDraft;
   rup: {
     id: string;
+    idRupSirup?: string | null;
     kodeRup: string;
+    linkSirup?: string | null;
     lokasiPaket?: string | null;
     namaPaket: string;
     unitPengusul: string;
@@ -23,6 +30,8 @@ type EPurchasingDetailModalProps = {
     subKegiatan?: string | null;
     ppkPptk?: string | null;
     metodePengadaan: string;
+    statusSirup?: string | null;
+    tanggalTayangSirup?: string | null;
   };
   stageLabel: string;
 };
@@ -47,21 +56,23 @@ export default function EPurchasingDetailModal({
       title={rup.namaPaket}
       maxWidthClassName="max-w-7xl"
     >
-      <div className="mb-5 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <p className="font-mono text-xs font-black uppercase tracking-wide text-slate-400">
-            {rup.kodeRup}
-          </p>
-          <h3 className="mt-1 truncate text-lg font-black text-[#16227c]">
-            {rup.namaPaket}
-          </h3>
-          <p className="mt-1 text-sm font-semibold text-slate-500">
-            {rup.unitPengusul} · {rup.sumberDana}
-          </p>
-        </div>
-        <span className="inline-flex w-fit shrink-0 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-black text-[#08783f]">
-          {stageLabel}
-        </span>
+      <div className="mb-5">
+        <DetailModalHeader
+          code={rup.kodeRup}
+          title={rup.namaPaket}
+          badge={
+            <DetailStatusBadge className="bg-emerald-100 text-[#08783f] ring-emerald-200">
+              {stageLabel}
+            </DetailStatusBadge>
+          }
+          items={[
+            { label: "Unit Pengusul", value: rup.unitPengusul },
+            { label: "Tahun Anggaran", value: `TA ${rup.tahunAnggaran}` },
+            { label: "Pagu", value: formatCurrency(rup.pagu) },
+            { label: "Metode", value: rup.metodePengadaan.replaceAll("_", " ") },
+            { label: "Sumber Dana", value: rup.sumberDana },
+          ]}
+        />
       </div>
 
       <KatalogManualWorkflowClient initialDraft={draft} rup={rup} />

@@ -21,9 +21,13 @@ import {
 } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
 import {
+  DataCardBadge,
+  DataCardCurrency,
   DataCardEmpty,
   DataCardField,
   DataCardRow,
+  DataCardTextLong,
+  DataCardTextShort,
 } from "@/components/data-card/DataCardList";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
@@ -1421,8 +1425,8 @@ export default async function Page({ searchParams }: PageProps) {
                         <DataCardRow
                           key={item.id}
                           icon={<FileCheck2 className="h-5 w-5" strokeWidth={2.4} />}
-                          minWidth="2200px"
-                          columns="56px minmax(118px,0.75fr) minmax(240px,1.45fr) minmax(116px,0.72fr) minmax(112px,0.7fr) minmax(112px,0.7fr) minmax(116px,0.72fr) minmax(116px,0.72fr) minmax(160px,0.95fr) minmax(126px,0.78fr) minmax(118px,0.74fr) minmax(142px,0.86fr) minmax(176px,auto)"
+                          minWidth="2440px"
+                          columns="56px 130px minmax(290px,1.45fr) minmax(220px,1.05fr) 140px 130px 150px 150px minmax(170px,0.95fr) 150px 150px 160px minmax(190px,auto)"
                           actions={
                             <div className="flex w-full min-w-max flex-nowrap justify-start whitespace-nowrap sm:w-auto xl:justify-end">
                               {canExecute && item.source === "rup" ? (
@@ -1512,40 +1516,61 @@ export default async function Page({ searchParams }: PageProps) {
                           }
                         >
                         <DataCardField label="Kode Paket" valueClassName="font-black text-slate-800">
-                          <span className="truncate">{item.kodePaket}</span>
+                          <DataCardTextShort title={item.kodePaket}>
+                            {item.kodePaket}
+                          </DataCardTextShort>
                         </DataCardField>
                         <DataCardField label="Nama Paket" valueClassName="font-black text-[#16227c]">
-                          <p className="line-clamp-2 leading-5">{item.namaPaket}</p>
-                          <p className="mt-1 truncate text-xs font-bold text-slate-500">
+                          <DataCardTextLong title={item.namaPaket}>
+                            {item.namaPaket}
+                          </DataCardTextLong>
+                          <DataCardTextShort
+                            className="mt-1 text-xs font-bold text-slate-500"
+                            title={item.unitPemohon}
+                          >
                             Unit: {item.unitPemohon}
-                          </p>
+                          </DataCardTextShort>
                         </DataCardField>
                         <DataCardField label="Unit">
-                          <span className="truncate">{item.unitPemohon}</span>
+                          <DataCardTextLong title={item.unitPemohon}>
+                            {item.unitPemohon}
+                          </DataCardTextLong>
                         </DataCardField>
                         <DataCardField label="Sumber Dana">
-                          <span className="truncate">{item.sumberDana}</span>
+                          <DataCardTextShort title={item.sumberDana}>
+                            {item.sumberDana}
+                          </DataCardTextShort>
                         </DataCardField>
                         <DataCardField label="Metode">
-                          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-[#16227c]">
+                          <DataCardBadge
+                            className="bg-blue-50 text-[#16227c]"
+                            title={methodLabel(item.metodePengadaan)}
+                          >
                             {methodLabel(item.metodePengadaan)}
-                          </span>
+                          </DataCardBadge>
                         </DataCardField>
                         <DataCardField label="Akses">
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
+                          <DataCardBadge
+                            className="bg-slate-100 text-slate-700"
+                            title="Tidak ada akses"
+                          >
                             Tidak ada akses
-                          </span>
+                          </DataCardBadge>
                         </DataCardField>
                         <DataCardField label="Pagu" valueClassName="font-black text-slate-800">
-                          {formatCompactCurrency(decimalNumber(item.pagu))}
+                          <DataCardCurrency>
+                            {formatCompactCurrency(decimalNumber(item.pagu))}
+                          </DataCardCurrency>
                         </DataCardField>
                         <DataCardField label="HPS" valueClassName="font-black text-slate-800">
-                          {formatCompactCurrency(decimalNumber(item.hps))}
+                          <DataCardCurrency>
+                            {formatCompactCurrency(decimalNumber(item.hps))}
+                          </DataCardCurrency>
                         </DataCardField>
                         <DataCardField label="Dokumen">
                           {item.paketId ? (
                             <div className="space-y-1">
-                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">
+                              <span className="inline-flex max-w-full shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">
                                 {countCompletePreparationDocuments(
                                   item.preparationDocuments,
                                   item.metodePengadaan,
@@ -1582,14 +1607,17 @@ export default async function Page({ searchParams }: PageProps) {
                           )}
                         </DataCardField>
                         <DataCardField label="Status">
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-black ${item.statusClassName}`}
+                          <DataCardBadge
+                            className={item.statusClassName}
+                            title={item.statusLabel}
                           >
                             {item.statusLabel}
-                          </span>
+                          </DataCardBadge>
                         </DataCardField>
                         <DataCardField label="Berikutnya">
-                          <span className="truncate">{item.nextLabel}</span>
+                          <DataCardTextShort title={item.nextLabel}>
+                            {item.nextLabel}
+                          </DataCardTextShort>
                         </DataCardField>
                         <DataCardField label="Detail Dokumen">
                           {item.paketId ? (

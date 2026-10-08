@@ -12,6 +12,7 @@ type SumberDanaOption = {
 };
 
 type AddRupModalButtonProps = {
+  defaultKodeUsulan?: string | null;
   defaultUnitPengusul?: string | null;
   sumberDanaOptions: SumberDanaOption[];
   label?: string;
@@ -19,6 +20,7 @@ type AddRupModalButtonProps = {
 };
 
 export default function AddRupModalButton({
+  defaultKodeUsulan,
   defaultUnitPengusul,
   sumberDanaOptions,
   label = "Tambah RUP",
@@ -49,8 +51,10 @@ export default function AddRupModalButton({
         onClose={close}
         eyebrow={mode === "planning" ? "Perencanaan" : "SIRUP / RUP"}
         title={label}
+        maxWidthClassName={mode === "planning" ? "max-w-6xl" : undefined}
       >
         <RupForm
+          defaultKodeUsulan={defaultKodeUsulan}
           defaultUnitPengusul={defaultUnitPengusul}
           sumberDanaOptions={sumberDanaOptions}
           mode={mode}

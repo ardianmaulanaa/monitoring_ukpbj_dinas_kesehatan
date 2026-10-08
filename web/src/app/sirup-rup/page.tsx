@@ -3,9 +3,13 @@ import { BarChart3, ClipboardList, Landmark, PieChart } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
 
 import {
+  DataCardBadge,
+  DataCardCurrency,
   DataCardEmpty,
   DataCardField,
   DataCardRow,
+  DataCardTextLong,
+  DataCardTextShort,
 } from "@/components/data-card/DataCardList";
 
 import { getCurrentUser } from "@/lib/auth";
@@ -601,19 +605,19 @@ export default async function Page({ searchParams }: RupPageProps) {
               {rupData.length > 0 ? (
                 <>
                   <div className="-mx-1 max-w-full overflow-x-auto overflow-y-hidden px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin]">
-                    <div className="w-max min-w-full space-y-3">
+                    <div className="min-w-full space-y-3">
                       {rupData.map((item) => (
                         <DataCardRow
                           key={item.id}
-                          minWidth="2600px"
-                          className="xl:min-w-[2600px]"
+                          minWidth="2780px"
+                          className="xl:min-w-[2780px]"
                           icon={
                             <ClipboardList
                               className="h-5 w-5"
                               strokeWidth={2.4}
                             />
                           }
-                          columns="56px 132px 124px minmax(300px,1fr) 150px 138px 165px 145px 190px 170px 155px 165px 420px"
+                          columns="56px 140px 130px minmax(300px,1.45fr) minmax(220px,1fr) 150px minmax(170px,0.9fr) 150px 190px 170px 160px 170px minmax(420px,auto)"
                           actions={
                             <div className="flex min-w-max flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                               <RupDetailModalButton
@@ -811,97 +815,103 @@ export default async function Page({ searchParams }: RupPageProps) {
                             label="Kode Usulan"
                             valueClassName="font-mono text-xs font-black text-slate-600"
                           >
-                            <span className="truncate">{item.kodeRup}</span>
+                            <DataCardTextShort title={item.kodeRup}>
+                              {item.kodeRup}
+                            </DataCardTextShort>
                           </DataCardField>
 
                           <DataCardField
                             label="ID RUP SIRUP"
                             valueClassName="font-mono text-xs font-black text-slate-600"
                           >
-                            <span className="truncate">
+                            <DataCardTextShort title={item.idRupSirup || "-"}>
                               {item.idRupSirup || "-"}
-                            </span>
+                            </DataCardTextShort>
                           </DataCardField>
 
                           <DataCardField
                             label="Nama Paket"
                             valueClassName="font-black text-[#16227c]"
                           >
-                            <p className="line-clamp-2 leading-5">
+                            <DataCardTextLong title={item.namaPaket}>
                               {item.namaPaket}
-                            </p>
+                            </DataCardTextLong>
 
-                            <p className="mt-1 truncate text-xs font-bold text-slate-500">
+                            <DataCardTextShort
+                              className="mt-1 text-xs font-bold text-slate-500"
+                              title={item.unitPengusul}
+                            >
                               Unit: {item.unitPengusul}
-                            </p>
+                            </DataCardTextShort>
                           </DataCardField>
 
                           <DataCardField label="Unit Pengusul">
-                            <span className="truncate">
+                            <DataCardTextLong title={item.unitPengusul}>
                               {item.unitPengusul}
-                            </span>
+                            </DataCardTextLong>
                           </DataCardField>
 
                           <DataCardField label="Jenis Belanja">
-                            <span className="inline-flex max-w-full rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-                              <span className="truncate">
-                                {item.jenisBelanja || "-"}
-                              </span>
-                            </span>
+                            <DataCardBadge
+                              className="bg-slate-100 text-slate-600"
+                              title={item.jenisBelanja || "-"}
+                            >
+                              {item.jenisBelanja || "-"}
+                            </DataCardBadge>
                           </DataCardField>
 
                           <DataCardField label="Lokasi Paket">
-                            <span className="truncate">
+                            <DataCardTextLong title={item.lokasiPaket || "-"}>
                               {item.lokasiPaket || "-"}
-                            </span>
+                            </DataCardTextLong>
                           </DataCardField>
 
                           <DataCardField label="Sumber Dana">
-                            <span
-                              className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${sourceFundClass(item.sumberDana)}`}
+                            <DataCardBadge
+                              className={sourceFundClass(item.sumberDana)}
+                              title={normalizeFundingSource(item.sumberDana)}
                             >
-                              <span className="truncate">
-                                {normalizeFundingSource(item.sumberDana)}
-                              </span>
-                            </span>
+                              {normalizeFundingSource(item.sumberDana)}
+                            </DataCardBadge>
                           </DataCardField>
 
                           <DataCardField
                             label="Pagu"
                             valueClassName="whitespace-nowrap font-black text-slate-800"
                           >
-                            {formatCurrency(item.pagu.toString())}
+                            <DataCardCurrency>
+                              {formatCurrency(item.pagu.toString())}
+                            </DataCardCurrency>
                           </DataCardField>
 
                           <DataCardField
                             label="Metode Final"
                             valueClassName="whitespace-nowrap"
                           >
-                            <span className="truncate">
+                            <DataCardTextShort title={methodLabel(item.metodePengadaan)}>
                               {methodLabel(item.metodePengadaan)}
-                            </span>
+                            </DataCardTextShort>
                           </DataCardField>
 
                           <DataCardField
                             label="Tanggal Tayang"
                             valueClassName="whitespace-nowrap"
                           >
-                            <span className="truncate">
+                            <DataCardTextShort title={item.tanggalTayangSirup || "-"}>
                               {item.tanggalTayangSirup || "-"}
-                            </span>
+                            </DataCardTextShort>
                           </DataCardField>
 
                           <DataCardField
                             label="Status SIRUP"
                             valueClassName="whitespace-nowrap"
                           >
-                            <span
-                              className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${statusStyles[item.statusSirup]}`}
+                            <DataCardBadge
+                              className={statusStyles[item.statusSirup]}
+                              title={labelize(item.statusSirup)}
                             >
-                              <span className="truncate">
-                                {labelize(item.statusSirup)}
-                              </span>
-                            </span>
+                              {labelize(item.statusSirup)}
+                            </DataCardBadge>
                           </DataCardField>
                         </DataCardRow>
                       ))}

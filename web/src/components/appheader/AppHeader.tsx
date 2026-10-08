@@ -2,7 +2,8 @@
 
 import type { RoleCode } from "@prisma/client";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import GlobalFilterPanel from "./GlobalFilterPanel";
 import NavBar from "./NavBar";
 import Sidebar from "./Sidebar";
@@ -19,6 +20,8 @@ export default function AppHeader(props: AppHeaderProps) {
   const { title, rightLabel, filterPanel } = props;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roles, setRoles] = useState<RoleCode[]>([]);
+  const pathname = usePathname();
+  const previousPathnameRef = useRef(pathname);
 
   // Ambil role user dari API auth supaya menu mobile bisa disaring sesuai hak akses.
   useEffect(() => {
@@ -42,31 +45,15 @@ export default function AppHeader(props: AppHeaderProps) {
     };
   }, []);
 
-  // Saat sidebar mobile terbuka, body dikunci supaya halaman belakang tidak ikut scroll.
+  // Tutup drawer mobile setiap route berganti supaya backdrop dan scroll-lock selalu bersih.
   useEffect(() => {
-    if (!sidebarOpen) {
+    if (previousPathnameRef.current === pathname) {
       return;
     }
 
-    const scrollY = window.scrollY;
-    const previousBodyPosition = document.body.style.position;
-    const previousBodyTop = document.body.style.top;
-    const previousBodyWidth = document.body.style.width;
-    const previousBodyOverflow = document.body.style.overflow;
-
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.position = previousBodyPosition;
-      document.body.style.top = previousBodyTop;
-      document.body.style.width = previousBodyWidth;
-      document.body.style.overflow = previousBodyOverflow;
-      window.scrollTo(0, scrollY);
-    };
-  }, [sidebarOpen]);
+    previousPathnameRef.current = pathname;
+    setSidebarOpen(false);
+  }, [pathname]);
 
   // Sidebar mode mobile ada di appheader, karena tombol ☰ mode mobile dia ada di appheader
   return (

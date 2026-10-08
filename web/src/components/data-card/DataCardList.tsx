@@ -30,6 +30,12 @@ type DataCardFieldProps = {
   valueClassName?: string;
 };
 
+type DataCardTextProps = {
+  children: ReactNode;
+  className?: string;
+  title?: string | null;
+};
+
 const defaultColumns =
   "56px minmax(104px,0.72fr) minmax(220px,1.55fr) repeat(5,minmax(104px,0.72fr)) minmax(136px,auto)";
 
@@ -65,7 +71,7 @@ export function DataCardList({
       </div>
 
       {/* Hanya area data yang digeser. Header/judul tetap diam. */}
-      <div className="max-w-full overflow-x-auto overflow-y-hidden [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin]">
+      <div className="w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-color:#94a3b8_transparent] [scrollbar-gutter:stable] [scrollbar-width:thin]">
         <div className="min-w-full space-y-3 bg-slate-50/50 p-4 sm:p-5">
           {children}
         </div>
@@ -140,16 +146,76 @@ export function DataCardField({
   valueClassName = "",
 }: DataCardFieldProps) {
   return (
-    <div className={`min-w-0 ${className}`}>
-      <p className="whitespace-nowrap text-[11px] font-black uppercase tracking-wide text-slate-400">
+    <div className={`min-w-0 overflow-hidden ${className}`}>
+      <p className="min-w-0 whitespace-nowrap text-[11px] font-black uppercase tracking-wide text-slate-400">
         {label}
       </p>
       <div
-        className={`mt-1 min-w-0 text-sm font-bold text-slate-600 ${valueClassName}`}
+        className={`mt-1 min-w-0 overflow-hidden text-sm font-bold text-slate-600 ${valueClassName}`}
       >
         {children}
       </div>
     </div>
+  );
+}
+
+export function DataCardTextLong({
+  children,
+  className = "",
+  title,
+}: DataCardTextProps) {
+  return (
+    <span
+      className={`block min-w-0 break-words leading-5 line-clamp-2 ${className}`}
+      title={title ?? undefined}
+    >
+      {children}
+    </span>
+  );
+}
+
+export function DataCardTextShort({
+  children,
+  className = "",
+  title,
+}: DataCardTextProps) {
+  return (
+    <span
+      className={`block min-w-0 truncate whitespace-nowrap ${className}`}
+      title={title ?? undefined}
+    >
+      {children}
+    </span>
+  );
+}
+
+export function DataCardCurrency({
+  children,
+  className = "",
+  title,
+}: DataCardTextProps) {
+  return (
+    <span
+      className={`block min-w-0 whitespace-nowrap tabular-nums ${className}`}
+      title={title ?? undefined}
+    >
+      {children}
+    </span>
+  );
+}
+
+export function DataCardBadge({
+  children,
+  className = "",
+  title,
+}: DataCardTextProps) {
+  return (
+    <span
+      className={`inline-flex max-w-full shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ${className}`}
+      title={title ?? undefined}
+    >
+      <span className="min-w-0 truncate">{children}</span>
+    </span>
   );
 }
 

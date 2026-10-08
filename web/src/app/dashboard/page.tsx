@@ -1,52 +1,22 @@
+import Link from "next/link";
 import {
-  AlertTriangle,
-  CalendarClock,
-  CheckCircle2,
+  CircleDollarSign,
   ClipboardList,
-  FileCheck2,
   Landmark,
-  LineChart,
   PackageCheck,
-  PieChart,
+  RotateCcw,
+  Send,
   ShieldCheck,
-  ShoppingCart,
+  WalletCards,
 } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
 import { formatCurrency } from "@/lib/currency";
 import { getDashboardData } from "@/lib/dashboard-data";
+import type { DashboardBreakdown, DashboardFilters } from "@/lib/dashboard-data";
 
-const priorityToneStyles = {
-  amber: "bg-amber-100 text-amber-700",
-  green: "bg-emerald-100 text-emerald-700",
-  red: "bg-red-100 text-red-700",
-};
-
-const timelineToneStyles = {
-  done: "bg-emerald-500 ring-emerald-100",
-  active: "bg-emerald-500 ring-emerald-100",
-  warning: "bg-amber-500 ring-amber-100",
-  danger: "bg-red-500 ring-red-100",
-  pending: "bg-slate-300 ring-slate-100",
-};
-
-const auditToneStyles = {
-  green: "bg-emerald-100 text-emerald-700",
-  amber: "bg-amber-100 text-amber-700",
-  red: "bg-red-100 text-red-700",
-};
-
-const dashboardCardToneStyles = {
-  blue: "border-l-sky-600",
-  green: "border-l-emerald-600",
-  orange: "border-l-orange-500",
-  red: "border-l-red-500",
-  teal: "border-l-teal-600",
-  violet: "border-l-violet-700",
-  slate: "border-l-slate-400",
-};
+const chartPalette = ["#08783f", "#0ea5e9", "#f59e0b", "#64748b", "#10b981", "#94a3b8"];
 
 function formatCompactCurrency(value: number) {
-  // Format angka rupiah besar supaya muat di kartu dashboard.
   if (value >= 1_000_000_000) {
     return `Rp ${(value / 1_000_000_000).toLocaleString("id-ID", {
       maximumFractionDigits: 1,
@@ -62,609 +32,634 @@ function formatCompactCurrency(value: number) {
   return formatCurrency(value);
 }
 
-function humanize(value: string) {
-  // Ubah teks database seperti SEDANG_PROSES menjadi Sedang Proses.
-  return value
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+function numberLabel(value: number) {
+  return value.toLocaleString("id-ID");
 }
 
-function statusClass(status: string) {
-  // Warna badge status ditentukan dari teks status paket.
-  const normalized = status.toUpperCase();
+function selectValue(value?: string | number) {
+  return value === undefined || value === null ? "" : String(value);
+}
 
-  if (normalized.includes("SELESAI")) return "bg-emerald-100 text-emerald-700";
-  if (normalized.includes("KONTRAK")) return "bg-emerald-100 text-[#08783f]";
-  if (normalized.includes("PEMILIHAN") || normalized.includes("PEMENANG")) {
-    return "bg-amber-100 text-amber-700";
-  }
-  if (normalized.includes("TERLAMBAT") || normalized.includes("GAGAL")) {
-    return "bg-red-100 text-red-700";
-  }
+function parseFilters(searchParams: Record<string, string | string[] | undefined>) {
+  const pick = (key: string) => {
+    const value = searchParams[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
+  const tahun = Number(pick("tahunAnggaran"));
 
-  return "bg-slate-100 text-slate-600";
+  return {
+    ...(Number.isFinite(tahun) && tahun > 0 ? { tahunAnggaran: tahun } : {}),
+    ...(pick("unit") ? { unit: pick("unit") } : {}),
+    ...(pick("sumberDana") ? { sumberDana: pick("sumberDana") } : {}),
+    ...(pick("metodePengadaan")
+      ? { metodePengadaan: pick("metodePengadaan") }
+      : {}),
+    ...(pick("statusPaket") ? { statusPaket: pick("statusPaket") } : {}),
+  } satisfies DashboardFilters;
 }
 
 function EmptyState({ message }: { message: string }) {
   return (
-    // Empty state lokal untuk panel dashboard ketika data database masih kosong.
     <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-500">
       {message}
     </div>
   );
 }
 
-export default async function Page() {
-  // Semua angka dashboard diambil dari lib/dashboard-data.ts, yang membaca database lewat Prisma.
-  const dashboard = await getDashboardData();
-  const { summary } = dashboard;
+function Panel({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`rounded-lg border border-slate-200 bg-white shadow-sm ${className}`}>
+      {children}
+    </section>
+  );
+}
 
-  // Hitung paket aktif dari total paket dikurangi paket selesai.
-  const selesaiCount =
-    dashboard.stages.find((item) => item.label === "Selesai")?.count ?? 0;
-  const tahapAktif = Math.max(summary.totalPaket - selesaiCount, 0);
-  const maxMonthlyAmount = Math.max(
-    ...dashboard.monthlyRealization.map((item) =>
-      Math.max(item.pagu, item.realisasi),
+function PanelHeader({
+  eyebrow,
+  title,
+  value,
+}: {
+  eyebrow: string;
+  title: string;
+  value?: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+      <div>
+        <p className="text-[11px] font-black uppercase text-[#08783f]">{eyebrow}</p>
+        <h2 className="mt-1 text-lg font-black text-slate-950">{title}</h2>
+      </div>
+      {value ? <p className="text-sm font-black text-slate-500">{value}</p> : null}
+    </div>
+  );
+}
+
+function VerticalBar({
+  value,
+  max,
+  color = "#08783f",
+  title,
+}: {
+  value: number;
+  max: number;
+  color?: string;
+  title: string;
+}) {
+  const height = max > 0 ? Math.max((value / max) * 100, value > 0 ? 8 : 0) : 0;
+
+  return (
+    <div
+      className="w-full rounded-t-md"
+      style={{ height: `${height}%`, backgroundColor: color }}
+      title={title}
+    />
+  );
+}
+
+function HorizontalBars({
+  items,
+  max,
+  valueLabel,
+}: {
+  items: DashboardBreakdown[];
+  max: number;
+  valueLabel: (item: DashboardBreakdown) => string;
+}) {
+  return (
+    <div className="space-y-4">
+      {items.map((item, index) => (
+        <div key={item.label}>
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-slate-800">{item.label}</p>
+              <p className="mt-1 text-xs font-semibold text-slate-500">
+                {numberLabel(item.count)} paket
+              </p>
+            </div>
+            <p className="shrink-0 text-sm font-black text-slate-950">
+              {valueLabel(item)}
+            </p>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${max > 0 ? Math.max((item.amount / max) * 100, item.amount > 0 ? 6 : 0) : 0}%`,
+                backgroundColor: chartPalette[index % chartPalette.length],
+              }}
+              title={`${item.label}: ${formatCurrency(item.amount)} - ${numberLabel(item.count)} paket`}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function donutGradient(items: DashboardBreakdown[]) {
+  let cursor = 0;
+  const totalPercent = items.reduce((sum, item) => sum + item.percent, 0);
+  if (items.length === 0 || totalPercent === 0) return "#e2e8f0 0 100%";
+
+  return items
+    .map((item, index) => {
+      const start = cursor;
+      const size = item.percent || 0;
+      cursor += size;
+      return `${chartPalette[index % chartPalette.length]} ${start}% ${cursor}%`;
+    })
+    .join(", ");
+}
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const dashboard = await getDashboardData(parseFilters(params));
+  const { summary } = dashboard;
+  const maxFinancial = Math.max(
+    ...dashboard.monthlyFinancials.map((item) =>
+      Math.max(item.pagu, item.kontrak, item.realisasi),
     ),
     1,
   );
+  const maxSourceAmount = Math.max(
+    ...dashboard.sourceFunds.map((item) => item.amount),
+    1,
+  );
+  const maxUnitAmount = Math.max(
+    ...dashboard.unitBreakdown.map((item) => item.amount),
+    1,
+  );
+  const totalMethods = dashboard.methods.reduce((sum, item) => sum + item.count, 0);
+  const stageCount = (key: string) =>
+    dashboard.stages.find((item) => item.key === key)?.count ?? 0;
 
-  // Kartu ringkasan atas: total paket, pagu, realisasi, dan sumber dana terbesar.
-  const summaryCards = [
+  const statusCards = [
     {
-      label: "Total Paket",
-      value: summary.totalPaket.toLocaleString("id-ID"),
-      helper: `TA ${summary.tahunAnggaran}`,
-      icon: ClipboardList,
-      tone: "blue",
+      label: "Verifikasi",
+      value: stageCount("verification"),
+      helper: "Menunggu telaah",
+      href: "/verifikasi",
+      icon: ShieldCheck,
+      color: "text-[#08783f]",
     },
+    {
+      label: "Siap RUP",
+      value: stageCount("rup"),
+      helper: "Siap tayang",
+      href: "/sirup-rup",
+      icon: ClipboardList,
+      color: "text-sky-600",
+    },
+    {
+      label: "Negosiasi",
+      value: stageCount("selection"),
+      helper: "Pemilihan penyedia",
+      href: "/e-purchasing",
+      icon: Send,
+      color: "text-amber-600",
+    },
+    {
+      label: "Pembayaran",
+      value: stageCount("payment"),
+      helper: "Dokumen realisasi",
+      href: "/realisasi-belanja",
+      icon: WalletCards,
+      color: "text-emerald-600",
+    },
+  ];
+
+  const headlineMetrics = [
     {
       label: "Total Pagu",
       value: formatCompactCurrency(summary.totalPagu),
-      helper: "Anggaran berjalan",
+      helper: `${numberLabel(summary.totalPaket)} paket TA ${summary.tahunAnggaran}`,
       icon: Landmark,
-      tone: "blue",
+    },
+    {
+      label: "Nilai Kontrak",
+      value: formatCompactCurrency(summary.totalNilaiKontrak),
+      helper: `${summary.realisasiKontrakPercent.toLocaleString("id-ID")}% dari pagu`,
+      icon: PackageCheck,
     },
     {
       label: "Realisasi",
-      value: formatCompactCurrency(summary.totalNilaiKontrak),
-      helper: `Serapan ${summary.realisasiKontrakPercent.toLocaleString("id-ID")}%`,
-      icon: CheckCircle2,
-      tone: "green",
-    },
-    ...dashboard.sourceFunds.slice(0, 3).map((item, index) => ({
-      label: `Paket ${item.label}`,
-      value: item.count.toLocaleString("id-ID"),
-      helper: "Sumber dana",
-      icon: index === 0 ? Landmark : index === 1 ? PackageCheck : PieChart,
-      tone: index === 0 ? "orange" : index === 1 ? "teal" : "violet",
-    })),
-  ];
-
-  // Kartu proses pengadaan: selesai, berjalan, bermasalah, deadline, katalog, tender.
-  const methodCards = [
-    {
-      label: "Paket Selesai",
-      value: selesaiCount.toLocaleString("id-ID"),
-      helper: "Selesai diproses",
-      icon: CheckCircle2,
-      tone: "green",
-    },
-    {
-      label: "Paket Berjalan",
-      value: tahapAktif.toLocaleString("id-ID"),
-      helper: "Dalam proses",
-      icon: PackageCheck,
-      tone: "orange",
-    },
-    {
-      label: "Bermasalah",
-      value: summary.paketBermasalah.toLocaleString("id-ID"),
-      helper: "Perlu perhatian",
-      icon: AlertTriangle,
-      tone: "red",
-    },
-    {
-      label: "Deadline <7 Hari",
-      value: summary.deadlineDekat.toLocaleString("id-ID"),
-      helper: "Segera tindak lanjut",
-      icon: CalendarClock,
-      tone: "orange",
-    },
-    {
-      label: "e-Katalog V6/V5",
-      value: summary.paketEKatalogV6.toLocaleString("id-ID"),
-      helper: "Paket",
-      icon: ShoppingCart,
-      tone: "blue",
-    },
-    {
-      label: "Tender / Non Tender",
-      value: summary.paketTenderNonTender.toLocaleString("id-ID"),
-      helper: "Paket",
-      icon: ShieldCheck,
-      tone: "slate",
+      value: formatCompactCurrency(summary.totalRealisasi),
+      helper: `Serapan ${summary.realisasiPercent.toLocaleString("id-ID")}%`,
+      icon: CircleDollarSign,
     },
   ];
-
-  const dashboardKpiCards = [...summaryCards, ...methodCards];
 
   return (
     <>
-      {/* Header atas dashboard. Komponennya ada di components/appheader/AppHeader.tsx. */}
       <AppHeader title="Dashboard Utama" />
 
       <main className="bg-[#f4f7f5]">
         <div className="px-4 py-5 sm:px-6 lg:px-8">
-          {/* Kartu KPI utama. Datanya dari summaryCards + methodCards. */}
-          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {dashboardKpiCards.map((card) => {
+          <form className="mb-5 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm xl:flex-row xl:items-center">
+            <div className="flex min-w-0 flex-1 flex-col gap-3 md:grid md:grid-cols-5">
+              <select
+                name="tahunAnggaran"
+                defaultValue={selectValue(dashboard.filters.tahunAnggaran)}
+                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
+              >
+                {dashboard.filterOptions.years.map((year) => (
+                  <option key={year} value={year}>
+                    Tahun {year}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="unit"
+                defaultValue={selectValue(dashboard.filters.unit)}
+                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
+              >
+                <option value="">Semua Unit</option>
+                {dashboard.filterOptions.units.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="sumberDana"
+                defaultValue={selectValue(dashboard.filters.sumberDana)}
+                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
+              >
+                <option value="">Semua Sumber Dana</option>
+                {dashboard.filterOptions.sources.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="metodePengadaan"
+                defaultValue={selectValue(dashboard.filters.metodePengadaan)}
+                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
+              >
+                <option value="">Semua Metode</option>
+                {dashboard.filterOptions.methods.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="statusPaket"
+                defaultValue={selectValue(dashboard.filters.statusPaket)}
+                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
+              >
+                <option value="">Semua Status</option>
+                {dashboard.filterOptions.statuses.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2 xl:ml-auto">
+              <button
+                type="submit"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-[#08783f] px-4 text-sm font-black text-white shadow-sm xl:flex-none"
+              >
+                Filter
+              </button>
+              <Link
+                href="/dashboard"
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-slate-500 shadow-sm"
+                aria-label="Reset filter"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Link>
+            </div>
+          </form>
+
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {statusCards.map((card) => {
               const Icon = card.icon;
 
               return (
-                <div
+                <Link
                   key={card.label}
-                  className={`relative overflow-hidden rounded-lg border border-slate-100 border-l-4 bg-white px-4 py-4 shadow-sm ${dashboardCardToneStyles[card.tone as keyof typeof dashboardCardToneStyles]}`}
+                  href={card.href}
+                  className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-[#08783f]/40 hover:shadow-md"
                 >
-                  <div className="grid grid-cols-[minmax(0,1fr)_34px] items-start gap-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-slate-100 bg-slate-50">
+                      <span className={`text-2xl font-black ${card.color}`}>
+                        {numberLabel(card.value)}
+                      </span>
+                    </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase text-slate-400">
+                      <p className="truncate text-base font-black text-slate-900">
                         {card.label}
                       </p>
-                      <p className="mt-1 truncate text-2xl font-black leading-tight text-slate-950">
-                        {card.value}
-                      </p>
-                      <p className="mt-2 truncate text-xs font-semibold text-slate-400">
+                      <p className="mt-1 truncate text-xs font-semibold text-slate-500">
                         {card.helper}
                       </p>
                     </div>
-                    <div className="mt-10 flex h-8 w-8 shrink-0 items-center justify-center text-slate-300">
-                      <Icon className="h-6 w-6" strokeWidth={2} />
-                    </div>
+                    <Icon className="ml-auto h-5 w-5 shrink-0 text-slate-300" />
                   </div>
-                </div>
+                </Link>
               );
             })}
           </section>
 
-          {/* Panel tahapan pengadaan dan panel notifikasi risiko. */}
-          <section className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-[11px] font-black uppercase text-[#08783f]">
-                    Tahapan Pengadaan
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-slate-950">
-                    Posisi paket tahun berjalan
-                  </h2>
+          <section className="mt-5 grid gap-5 xl:grid-cols-[2fr_1fr]">
+            <Panel>
+              <PanelHeader
+                eyebrow="Ringkasan Nilai"
+                title="Pagu, Kontrak, dan Realisasi"
+                value={`TA ${summary.tahunAnggaran}`}
+              />
+              <div className="p-5">
+                <div className="grid gap-3 lg:grid-cols-3">
+                  {headlineMetrics.map((item) => {
+                    const Icon = item.icon;
+
+                    return (
+                      <div key={item.label} className="rounded-lg bg-slate-50 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="text-xs font-black uppercase text-slate-400">
+                            {item.label}
+                          </p>
+                          <Icon className="h-5 w-5 text-[#08783f]" />
+                        </div>
+                        <p className="mt-2 text-2xl font-black text-slate-950">
+                          {item.value}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          {item.helper}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
-                  <ShieldCheck className="h-4 w-4" />
-                  {`${summary.realisasiKontrakPercent.toLocaleString("id-ID")}% sudah berkontrak`}
+
+                <div className="mt-5 grid h-72 grid-cols-12 items-end gap-2 rounded-lg bg-slate-50 px-3 pb-4 pt-6">
+                  {dashboard.monthlyFinancials.map((item) => (
+                    <div key={item.month} className="flex h-full flex-col justify-end gap-1">
+                      <div className="flex min-h-0 flex-1 items-end gap-1">
+                        <VerticalBar
+                          value={item.pagu}
+                          max={maxFinancial}
+                          color="#08783f"
+                          title={`Pagu ${item.month}: ${formatCurrency(item.pagu)}`}
+                        />
+                        <VerticalBar
+                          value={item.kontrak}
+                          max={maxFinancial}
+                          color="#0ea5e9"
+                          title={`Nilai kontrak ${item.month}: ${formatCurrency(item.kontrak)}`}
+                        />
+                        <VerticalBar
+                          value={item.realisasi}
+                          max={maxFinancial}
+                          color="#10b981"
+                          title={`Realisasi ${item.month}: ${formatCurrency(item.realisasi)}`}
+                        />
+                      </div>
+                      <span className="text-center text-[10px] font-bold text-slate-500">
+                        {item.month}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-4 text-xs font-bold text-slate-600">
+                  <span><span className="text-[#08783f]">■</span> Pagu</span>
+                  <span><span className="text-sky-500">■</span> Nilai Kontrak</span>
+                  <span><span className="text-emerald-500">■</span> Realisasi</span>
                 </div>
               </div>
+            </Panel>
 
-              <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_0.9fr]">
-                {/* Progress tahapan paket dari dashboard.stages. */}
-                <div className="space-y-5">
-                  {dashboard.stages.length > 0 ? (
-                    dashboard.stages.map((item) => (
-                      <div key={item.label}>
-                        <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                          <span className="font-bold text-slate-700">
-                            {item.label}
-                          </span>
-                          <span className="font-black text-slate-950">
-                            {item.count.toLocaleString("id-ID")} paket
-                          </span>
-                        </div>
-                        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className={`h-full rounded-full ${item.color}`}
-                            style={{ width: `${item.percent}%` }}
-                          />
-                        </div>
+            <Panel>
+              <PanelHeader
+                eyebrow="Sumber Dana"
+                title="Distribusi Pagu"
+                value={formatCompactCurrency(summary.totalPagu)}
+              />
+              <div className="p-5">
+                {dashboard.sourceFunds.length > 0 ? (
+                  <HorizontalBars
+                    items={dashboard.sourceFunds.slice(0, 6)}
+                    max={maxSourceAmount}
+                    valueLabel={(item) => formatCompactCurrency(item.amount)}
+                  />
+                ) : (
+                  <EmptyState message="Belum ada data sumber dana." />
+                )}
+              </div>
+            </Panel>
+          </section>
+
+          <section className="mt-5 grid gap-5 xl:grid-cols-3">
+            <Panel>
+              <PanelHeader eyebrow="Per Unit" title="Sebaran Nilai Pagu" />
+              <div className="p-5">
+                {dashboard.unitBreakdown.length > 0 ? (
+                  <HorizontalBars
+                    items={dashboard.unitBreakdown}
+                    max={maxUnitAmount}
+                    valueLabel={(item) => `${item.percent}%`}
+                  />
+                ) : (
+                  <EmptyState message="Belum ada data unit." />
+                )}
+              </div>
+            </Panel>
+
+            <Panel>
+              <PanelHeader
+                eyebrow="Metode Pengadaan"
+                title="Komposisi Metode"
+                value={`${numberLabel(totalMethods)} paket`}
+              />
+              <div className="p-5">
+                {dashboard.methods.length > 0 ? (
+                  <>
+                    <div className="mx-auto flex h-52 w-52 items-center justify-center rounded-full" style={{ background: `conic-gradient(${donutGradient(dashboard.methods)})` }}>
+                      <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white text-center shadow-inner">
+                        <p className="text-2xl font-black text-slate-950">
+                          {numberLabel(totalMethods)}
+                        </p>
+                        <p className="mt-1 text-xs font-black uppercase text-slate-400">
+                          Paket
+                        </p>
                       </div>
-                    ))
-                  ) : (
-                    <EmptyState message="Belum ada data tahapan paket di database." />
-                  )}
-                </div>
-
-                {/* Timeline pengadaan dari dashboard.timeline. */}
-                <div className="border-t border-slate-100 pt-5 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
-                  <p className="text-sm font-black text-slate-900">
-                    Timeline pengadaan
-                  </p>
-                  <div className="mt-4 space-y-4">
-                    {dashboard.timeline.map((item) => (
-                      <div key={item.label} className="relative pl-7">
-                        <div
-                          className={`absolute left-0 top-1.5 h-3 w-3 rounded-full ring-4 ${
-                            timelineToneStyles[item.status]
-                          }`}
-                        />
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-black text-slate-900">
-                              {item.label}
+                    </div>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                      {dashboard.methods.slice(0, 6).map((item, index) => (
+                        <div key={item.label} className="flex items-start gap-3">
+                          <span
+                            className="mt-1 h-3 w-3 shrink-0 rounded-full"
+                            style={{ backgroundColor: chartPalette[index % chartPalette.length] }}
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-black text-slate-800">
+                              {item.percent}% - {item.label}
                             </p>
                             <p className="mt-1 text-xs font-semibold text-slate-500">
-                              {item.period}
+                              {numberLabel(item.count)} paket · {formatCompactCurrency(item.amount)}
                             </p>
                           </div>
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
-                            {item.count}
-                          </span>
                         </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <EmptyState message="Belum ada data metode pengadaan." />
+                )}
+              </div>
+            </Panel>
+
+            <Panel>
+              <PanelHeader eyebrow="Aktivitas / User" title="Transaksi Pengguna" />
+              <div className="p-5">
+                {dashboard.activityActors.length > 0 ? (
+                  <div className="space-y-5">
+                    {dashboard.activityActors.map((item, index) => (
+                      <div key={item.label} className="grid grid-cols-[minmax(0,96px)_1fr_42px] items-center gap-3">
+                        <p className="truncate text-sm font-black text-slate-700">{item.label}</p>
+                        <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${item.percent}%`,
+                              backgroundColor: chartPalette[index % chartPalette.length],
+                            }}
+                            title={`${item.label}: ${numberLabel(item.count)} aktivitas`}
+                          />
+                        </div>
+                        <p className="text-right text-sm font-black text-slate-900">
+                          {numberLabel(item.count)}
+                        </p>
                       </div>
                     ))}
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-black uppercase text-[#08783f]">
-                    Notifikasi & Risiko
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-slate-950">
-                    Perlu perhatian
-                  </h2>
-                </div>
-                <AlertTriangle className="h-6 w-6 shrink-0 text-red-600" />
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {/* Daftar paket prioritas/risiko dari dashboard.priorities. */}
-                {dashboard.priorities.length > 0 ? (
-                  dashboard.priorities.map((item) => (
-                    <article
-                      key={item.title}
-                      className="rounded-lg border border-slate-200 p-4"
-                    >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
-                          <h3 className="font-black text-slate-900">
-                            {item.title}
-                          </h3>
-                          <p className="mt-1 text-sm font-semibold text-slate-500">
-                            {item.unit}
-                          </p>
-                        </div>
-                        <span
-                          className={`w-fit rounded-full px-3 py-1 text-xs font-black ${priorityToneStyles[item.tone as keyof typeof priorityToneStyles]}`}
-                        >
-                          {humanize(item.status)}
-                        </span>
-                      </div>
-                      <p className="mt-4 text-sm font-bold text-slate-600">
-                        {item.due}
-                      </p>
-                    </article>
-                  ))
                 ) : (
-                  <EmptyState message="Belum ada paket terlambat atau bermasalah dari database." />
+                  <EmptyState message="Belum ada aktivitas pengguna yang dapat ditampilkan." />
                 )}
               </div>
-            </div>
+            </Panel>
           </section>
 
-          {/* Grafik bulanan dan snapshot audit readiness. */}
-          <section className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-black uppercase text-[#08783f]">
-                    Grafik Realisasi
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-slate-950">
-                    Pagu vs HPS per bulan
-                  </h2>
-                </div>
-                <LineChart className="h-6 w-6 text-[#08783f]" />
-              </div>
-
-              <div className="mt-6 grid h-64 grid-cols-12 items-end gap-2 rounded-lg bg-slate-50 px-3 pb-4 pt-6">
-                {/* Bar chart sederhana dari dashboard.monthlyRealization. */}
-                {dashboard.monthlyRealization.map((item) => (
-                  <div
-                    key={item.month}
-                    className="flex h-full flex-col justify-end gap-1"
-                  >
-                    <div className="flex min-h-0 flex-1 items-end gap-1">
-                      <div
-                        className="w-full rounded-t bg-[#08783f]"
-                        style={{
-                          height: `${Math.max((item.pagu / maxMonthlyAmount) * 100, item.pagu > 0 ? 8 : 0)}%`,
-                        }}
-                        title={`Pagu ${item.month}: ${formatCurrency(item.pagu)}`}
-                      />
-                      <div
-                        className="w-full rounded-t bg-emerald-500"
-                        style={{
-                          height: `${Math.max((item.realisasi / maxMonthlyAmount) * 100, item.realisasi > 0 ? 8 : 0)}%`,
-                        }}
-                        title={`HPS ${item.month}: ${formatCurrency(item.realisasi)}`}
-                      />
-                    </div>
-                    <span className="text-center text-[10px] font-bold text-slate-500">
-                      {item.month}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-4 text-xs font-bold text-slate-600">
-                <span>
-                  <span className="text-[#08783f]">■</span> Pagu
-                </span>
-                <span>
-                  <span className="text-emerald-500">■</span> HPS / estimasi
-                  realisasi
-                </span>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-black uppercase text-[#08783f]">
-                    Audit Readiness
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-slate-950">
-                    Snapshot kelengkapan
-                  </h2>
-                </div>
-                <FileCheck2 className="h-6 w-6 text-[#08783f]" />
-              </div>
-
-              <div className="mt-5 rounded-lg bg-emerald-50 p-5 text-center">
-                <p className="text-4xl font-black text-emerald-700">
-                  {dashboard.auditReadiness.percent}%
-                </p>
-                <p className="mt-1 text-xs font-bold text-emerald-700">
-                  kesiapan audit berdasarkan status paket
-                </p>
-                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white">
-                  <div
-                    className="h-full rounded-full bg-emerald-500"
-                    style={{ width: `${dashboard.auditReadiness.percent}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {/* Detail kelengkapan audit dari dashboard.auditReadiness.items. */}
-                {dashboard.auditReadiness.items.map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0"
-                  >
-                    <span className="text-sm font-bold text-slate-700">
-                      {item.label}
-                    </span>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-black ${
-                        auditToneStyles[item.tone]
-                      }`}
-                    >
-                      {item.complete}/{item.total}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Distribusi sumber dana dan metode pengadaan. */}
-          <section className="mt-6 grid gap-6 xl:grid-cols-2">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-black uppercase text-[#08783f]">
-                    Sumber Dana
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-slate-950">
-                    Distribusi sumber dana dari database
-                  </h2>
-                </div>
-                <PieChart className="h-6 w-6 text-[#08783f]" />
-              </div>
-
-              <div className="mt-5 space-y-4">
-                {/* Data sumber dana dari dashboard.sourceFunds. */}
-                {dashboard.sourceFunds.length > 0 ? (
-                  dashboard.sourceFunds.map((item) => (
-                    <div
-                      key={item.label}
-                      className="rounded-lg bg-slate-50 p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-black text-slate-900">
-                            {humanize(item.label)}
+          <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr_1fr]">
+            <Panel>
+              <PanelHeader eyebrow="Perlu Tindakan" title="Tindak Lanjut Prioritas" />
+              <div className="space-y-3 p-5">
+                {dashboard.attentionItems.length > 0 ? (
+                  dashboard.attentionItems.slice(0, 4).map((item) => {
+                    const content = (
+                      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-black text-slate-800">
+                            {item.label}
                           </p>
                           <p className="mt-1 text-xs font-semibold text-slate-500">
-                            {item.count.toLocaleString("id-ID")} paket
+                            Perlu diproses
                           </p>
                         </div>
-                        <p className="text-sm font-black text-slate-900">
-                          {formatCompactCurrency(item.amount)}
+                        <p className="text-xl font-black text-[#08783f]">
+                          {numberLabel(item.count)}
                         </p>
                       </div>
-                      <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white">
-                        <div
-                          className="h-full rounded-full bg-[#08783f]"
-                          style={{ width: `${item.percent}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <EmptyState message="Belum ada data sumber dana dari paket pengadaan." />
-                )}
-              </div>
-            </div>
+                    );
 
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-black uppercase text-[#08783f]">
-                    Metode Pengadaan
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-slate-950">
-                    Katalog, tender, dan pengadaan langsung
-                  </h2>
-                </div>
-                <ShoppingCart className="h-6 w-6 text-[#08783f]" />
-              </div>
-
-              <div className="mt-5 space-y-4">
-                {/* Data metode pengadaan dari dashboard.methods. */}
-                {dashboard.methods.length > 0 ? (
-                  dashboard.methods.map((item) => (
-                    <div key={item.label}>
-                      <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                        <span className="font-bold text-slate-700">
-                          {humanize(item.label)}
-                        </span>
-                        <span className="font-black text-slate-950">
-                          {item.count.toLocaleString("id-ID")} paket
-                        </span>
-                      </div>
-                      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-emerald-500"
-                          style={{ width: `${item.percent}%` }}
-                        />
-                      </div>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">
-                        {formatCompactCurrency(item.amount)}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <EmptyState message="Belum ada data metode pengadaan dari paket." />
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* Kategori barang dan tabel paket terkini. */}
-          <section className="mt-6 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-[11px] font-black uppercase text-[#08783f]">
-                Kategori Barang
-              </p>
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                Distribusi barang kesehatan
-              </h2>
-
-              <div className="mt-5 space-y-4">
-                {/* Data kategori barang dari dashboard.categories. */}
-                {dashboard.categories.length > 0 ? (
-                  dashboard.categories.map((item) => (
-                    <div key={item.label} className="grid gap-2">
-                      <div className="flex items-center justify-between gap-3 text-sm">
-                        <span className="font-bold text-slate-700">
-                          {humanize(item.label)}
-                        </span>
-                        <span className="font-black text-slate-950">
-                          {item.value.toLocaleString("id-ID")} item
-                        </span>
-                      </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-[#08783f]"
-                          style={{
-                            width: `${Math.min(item.value * 8, 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="text-xs font-semibold text-slate-500">
-                        {formatCompactCurrency(item.amount)}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <EmptyState message="Belum ada kategori barang dari database." />
-                )}
-              </div>
-            </div>
-
-            <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[11px] font-black uppercase text-[#08783f]">
-                    Paket Terkini
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-slate-950">
-                    Monitoring paket pengadaan barang
-                  </h2>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-[760px] w-full border-collapse text-left text-sm">
-                  <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
-                    <tr>
-                      <th className="px-5 py-3">Kode</th>
-                      <th className="px-5 py-3">Nama Paket</th>
-                      <th className="px-5 py-3">Unit</th>
-                      <th className="px-5 py-3">Metode</th>
-                      <th className="px-5 py-3">Pagu</th>
-                      <th className="px-5 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {/* Paket terbaru dari dashboard.recentPackages. */}
-                    {dashboard.recentPackages.length > 0 ? (
-                      dashboard.recentPackages.map((item) => (
-                        <tr key={item.code} className="hover:bg-slate-50">
-                          <td className="px-5 py-4 font-black text-slate-800">
-                            {item.code}
-                          </td>
-                          <td className="px-5 py-4 font-bold text-slate-900">
-                            {item.name}
-                          </td>
-                          <td className="px-5 py-4 text-slate-600">
-                            {item.unit}
-                          </td>
-                          <td className="px-5 py-4 text-slate-600">
-                            {humanize(item.method)}
-                          </td>
-                          <td className="px-5 py-4 font-bold text-slate-800">
-                            {formatCompactCurrency(item.budget)}
-                          </td>
-                          <td className="px-5 py-4">
-                            <span
-                              className={`rounded-full px-3 py-1 text-xs font-black ${statusClass(item.status)}`}
-                            >
-                              {humanize(item.status)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
+                    return item.href ? (
+                      <Link key={item.label} href={item.href}>
+                        {content}
+                      </Link>
                     ) : (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="px-5 py-8 text-center text-sm font-semibold text-slate-500"
-                        >
-                          Belum ada paket pengadaan dari database.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      <div key={item.label}>{content}</div>
+                    );
+                  })
+                ) : (
+                  <EmptyState message="Tidak ada paket yang memerlukan perhatian saat ini." />
+                )}
               </div>
-            </section>
+            </Panel>
+
+            <Panel>
+              <PanelHeader eyebrow="Efisiensi" title="Pagu vs Nilai Final" />
+              <div className="p-5">
+                {dashboard.efficiency.eligibleCount > 0 ? (
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                    <div className="rounded-lg bg-slate-50 p-4">
+                      <p className="text-xs font-black uppercase text-slate-400">Pagu</p>
+                      <p className="mt-2 text-xl font-black text-slate-950">
+                        {formatCompactCurrency(dashboard.efficiency.totalPagu)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 p-4">
+                      <p className="text-xs font-black uppercase text-slate-400">Nilai Final</p>
+                      <p className="mt-2 text-xl font-black text-slate-950">
+                        {formatCompactCurrency(dashboard.efficiency.totalFinal)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 p-4">
+                      <p className="text-xs font-black uppercase text-emerald-700">Efisiensi</p>
+                      <p className="mt-2 text-xl font-black text-emerald-700">
+                        {formatCompactCurrency(dashboard.efficiency.totalSaving)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 p-4">
+                      <p className="text-xs font-black uppercase text-emerald-700">Saving Rate</p>
+                      <p className="mt-2 text-xl font-black text-emerald-700">
+                        {dashboard.efficiency.savingRate.toLocaleString("id-ID")}%
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyState message="Belum ada harga final valid untuk menghitung efisiensi." />
+                )}
+              </div>
+            </Panel>
+
+            <Panel>
+              <PanelHeader eyebrow="Aktivitas Terbaru" title="Pergerakan Terakhir" />
+              <div className="divide-y divide-slate-100 px-5 py-2">
+                {dashboard.activities.length > 0 ? (
+                  dashboard.activities.slice(0, 5).map((item, index) => {
+                    const content = (
+                      <div className="grid grid-cols-[48px_minmax(0,1fr)] gap-3 py-3">
+                        <p className="text-sm font-black text-slate-500">{item.time}</p>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-black text-slate-900">
+                            {item.title}
+                          </p>
+                          <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+
+                    return item.href ? (
+                      <Link key={`${item.time}-${item.title}-${index}`} href={item.href}>
+                        {content}
+                      </Link>
+                    ) : (
+                      <div key={`${item.time}-${item.title}-${index}`}>{content}</div>
+                    );
+                  })
+                ) : (
+                  <div className="py-5">
+                    <EmptyState message="Belum ada aktivitas terbaru yang dapat ditampilkan." />
+                  </div>
+                )}
+              </div>
+            </Panel>
           </section>
         </div>
       </main>

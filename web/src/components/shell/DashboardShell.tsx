@@ -1,7 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import type { RoleCode } from "@prisma/client";
+import { usePathname } from "next/navigation";
 import Sidebar from "@/components/appheader/Sidebar";
 import { SidebarStateProvider, useSidebarState } from "@/components/appheader/SidebarState";
 import { PageTransition } from "@/components/ui";
@@ -17,6 +19,17 @@ function DashboardContent({ children, roles }: DashboardShellProps) {
   // State collapsed sidebar desktop dipakai sebagai drawer terbuka/tertutup.
   const { desktopCollapsed, toggleDesktopSidebar, closeDesktopSidebar } =
     useSidebarState();
+  const pathname = usePathname();
+  const previousPathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    if (previousPathnameRef.current === pathname) {
+      return;
+    }
+
+    previousPathnameRef.current = pathname;
+    closeDesktopSidebar();
+  }, [closeDesktopSidebar, pathname]);
 
   return (
     <div className="min-h-dvh bg-[#f4f7f5] text-slate-900">
@@ -25,13 +38,14 @@ function DashboardContent({ children, roles }: DashboardShellProps) {
         mode="desktop"
         collapsed={desktopCollapsed}
         onToggleDesktop={toggleDesktopSidebar}
+        onCloseDesktop={closeDesktopSidebar}
         roles={roles}
       />
       {!desktopCollapsed ? (
         <button
           type="button"
           aria-label="Tutup sidebar"
-          className="fixed inset-0 z-40 hidden cursor-default bg-slate-950/20 backdrop-blur-[1px] lg:block"
+          className="fixed inset-0 z-[60] hidden cursor-default bg-slate-950/20 transition-opacity duration-200 lg:block"
           onClick={closeDesktopSidebar}
         />
       ) : null}

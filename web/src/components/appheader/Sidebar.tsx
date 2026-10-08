@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { RoleCode } from "@prisma/client";
 import {
   AlertTriangle,
@@ -39,6 +39,7 @@ type SidebarProps = {
   // collapsed/onToggleDesktop dipakai untuk buka-tutup sidebar desktop.
   collapsed?: boolean;
   onToggleDesktop?: () => void;
+  onCloseDesktop?: () => void;
   // roles berasal dari ProtectedDashboardLayout/AppHeader untuk filter menu.
   roles?: RoleCode[];
 };
@@ -129,6 +130,7 @@ export default function Sidebar({
   mode = "mobile",
   collapsed = false,
   onToggleDesktop,
+  onCloseDesktop,
   roles = [],
 }: SidebarProps) {
   const pathname = usePathname();
@@ -144,15 +146,62 @@ export default function Sidebar({
     }))
     .filter((section) => section.items.length > 0);
 
+  const closeDrawer = useCallback(() => {
+    if (isDesktop) {
+      if (onCloseDesktop) {
+        onCloseDesktop();
+        return;
+      }
+
+      onToggleDesktop?.();
+      return;
+    }
+
+    onClose?.();
+  }, [isDesktop, onClose, onCloseDesktop, onToggleDesktop]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => setMounted(true), 0);
 
     return () => window.clearTimeout(timer);
   }, []);
 
+  // Satu pemilik scroll-lock untuk drawer sidebar. Cleanup selalu mengembalikan
+  // nilai overflow sebelumnya agar tidak menabrak mekanisme modal.
+  useEffect(() => {
+    if (!mounted || !drawerOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [drawerOpen, mounted]);
+
+  useEffect(() => {
+    if (!drawerOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeDrawer();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeDrawer, drawerOpen]);
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
-    onClose?.();
+    closeDrawer();
     router.replace("/login");
     router.refresh();
   }
@@ -164,17 +213,18 @@ export default function Sidebar({
         <button
           type="button"
           aria-label="Tutup sidebar"
-          className="fixed inset-0 z-[60] h-[100dvh] max-h-[100dvh] cursor-default bg-slate-950/20 backdrop-blur-[1px] transition"
-          onClick={onClose}
+          className="fixed inset-0 z-[60] h-[100dvh] max-h-[100dvh] cursor-default bg-slate-950/20 transition-opacity duration-200"
+          onClick={closeDrawer}
         />
       ) : null}
 
       <aside
         className={`app-sidebar-drawer fixed inset-y-0 left-0 z-[70] flex h-dvh max-h-dvh w-[min(82vw,300px)] flex-col overflow-hidden rounded-none border-r border-slate-200 bg-white text-slate-700 shadow-2xl shadow-slate-950/20 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isDesktop
-            ? `hidden lg:flex ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`
-            : `${drawerOpen ? "translate-x-0" : "-translate-x-full"}`
+            ? `hidden lg:flex ${drawerOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none -translate-x-full"}`
+            : `${drawerOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none -translate-x-full"}`
         }`}
+        aria-hidden={!drawerOpen}
       >
         {/* HEADER: judul aplikasi dan tombol buka/tutup sidebar. */}
         <div className="flex min-h-[88px] shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4">
@@ -204,7 +254,7 @@ export default function Sidebar({
 
           <button
             type="button"
-            onClick={isDesktop ? onToggleDesktop : onClose}
+            onClick={closeDrawer}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#edf7f1] text-[#08783f] hover:bg-[#e2f3e9]"
             aria-label="Tutup menu"
             title="Tutup menu"
@@ -235,7 +285,7 @@ export default function Sidebar({
                       <Link
                         key={item.href}
                         href={item.href}
-                        onClick={onClose}
+                        onClick={closeDrawer}
                         className={`flex min-h-10 items-center gap-3 rounded-md px-4 text-sm font-bold transition ${
                           active
                             ? "bg-[#08783f] text-white shadow-lg shadow-emerald-900/15"
@@ -257,7 +307,7 @@ export default function Sidebar({
         <div className="shrink-0 space-y-2 border-t border-slate-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Link
             href="/profile"
-            onClick={onClose}
+            onClick={closeDrawer}
             className={`flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-black transition ${
               isActivePath(pathname, "/profile")
                 ? "bg-[#08783f] text-white shadow-lg shadow-emerald-900/15"

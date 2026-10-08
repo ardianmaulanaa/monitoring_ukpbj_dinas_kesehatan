@@ -3977,18 +3977,56 @@ async function ModuleListView({
                       )
                     : null;
                 const primaryFieldIndex = Math.min(1, fields.length - 1);
+                const columnTemplateFor = (column: string, fieldIndex: number) => {
+                  const normalized = column.toLowerCase();
+
+                  if (fieldIndex === primaryFieldIndex) return "minmax(280px,1.45fr)";
+                  if (
+                    normalized.includes("nama") ||
+                    normalized.includes("paket") ||
+                    normalized.includes("unit") ||
+                    normalized.includes("penyedia") ||
+                    normalized.includes("vendor") ||
+                    normalized.includes("program") ||
+                    normalized.includes("kegiatan") ||
+                    normalized.includes("lokasi")
+                  ) {
+                    return "minmax(220px,1.05fr)";
+                  }
+                  if (
+                    normalized.includes("pagu") ||
+                    normalized.includes("hps") ||
+                    normalized.includes("harga") ||
+                    normalized.includes("nilai") ||
+                    normalized.includes("kontrak") ||
+                    normalized.includes("realisasi")
+                  ) {
+                    return "170px";
+                  }
+                  if (
+                    normalized.includes("status") ||
+                    normalized.includes("tahap") ||
+                    normalized.includes("metode") ||
+                    normalized.includes("sumber")
+                  ) {
+                    return "150px";
+                  }
+                  if (normalized.includes("tahun") || normalized.includes("kode")) {
+                    return "130px";
+                  }
+
+                  return "minmax(150px,0.85fr)";
+                };
                 const dataCardMinWidth = `${Math.max(
-                  1320,
-                  56 + fields.length * 154 + (action ? 240 : 0),
+                  1560,
+                  56 + fields.length * 180 + (action ? 260 : 0),
                 )}px`;
                 const dataCardColumns = [
                   "56px",
-                  ...fields.map((_, fieldIndex) =>
-                    fieldIndex === primaryFieldIndex
-                      ? "minmax(260px,1.45fr)"
-                      : "minmax(132px,0.78fr)",
+                  ...fields.map((field, fieldIndex) =>
+                    columnTemplateFor(field.column, fieldIndex),
                   ),
-                  action ? "minmax(220px,auto)" : "",
+                  action ? "minmax(240px,auto)" : "",
                 ]
                   .filter(Boolean)
                   .join(" ");
@@ -4018,10 +4056,11 @@ async function ModuleListView({
                         }
                       >
                         <div
+                          title={typeof value === "string" ? value : undefined}
                           className={
                             columnIndex === primaryFieldIndex
-                              ? "line-clamp-2 leading-5"
-                              : "truncate"
+                              ? "min-w-0 break-words leading-5 line-clamp-2"
+                              : "min-w-0 truncate whitespace-nowrap"
                           }
                         >
                           {tableCellContent(column, value, rowIndex)}

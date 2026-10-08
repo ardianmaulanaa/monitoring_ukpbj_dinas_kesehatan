@@ -1,10 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, FileSearch, RotateCcw } from "lucide-react";
 import ModalShell from "@/components/modal/ModalShell";
+import {
+  DetailField,
+  DetailHorizontalSection,
+  DetailInfoCard,
+  DetailModalHeader,
+  DetailStatusBadge,
+} from "@/components/detail/DetailHorizontalSection";
 import { formatCurrency } from "@/lib/currency";
 import { planningStatusLabels, planningStatusStyles } from "@/lib/planning-workflow";
 
@@ -74,44 +80,6 @@ function dateTime(value?: string | null) {
 
 function money(value?: string | number | null) {
   return formatCurrency(String(value ?? 0));
-}
-
-function DetailRow({
-  label,
-  value,
-  wide = false,
-}: {
-  label: string;
-  value?: string | number | null;
-  wide?: boolean;
-}) {
-  return (
-    <div className={`rounded-lg bg-slate-50 p-3 ${wide ? "md:col-span-2" : ""}`}>
-      <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-slate-700">
-        {valueOrDash(value)}
-      </p>
-    </div>
-  );
-}
-
-function Section({
-  children,
-  title,
-}: {
-  children: ReactNode;
-  title: string;
-}) {
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h3 className="text-sm font-black uppercase tracking-wide text-[#16227c]">
-        {title}
-      </h3>
-      <div className="mt-3 grid gap-3 md:grid-cols-2">{children}</div>
-    </section>
-  );
 }
 
 type VerificationDetailModalButtonProps = {
@@ -216,7 +184,7 @@ export default function VerificationDetailModalButton({
         onClose={closeDetail}
         eyebrow="Detail Pengajuan"
         title={detail ? detail.kodeRup : "Memuat pengajuan"}
-        maxWidthClassName="max-w-6xl"
+        maxWidthClassName="max-w-7xl"
       >
         {loading ? (
           <div className="grid gap-3">
@@ -234,70 +202,123 @@ export default function VerificationDetailModalButton({
 
         {detail ? (
           <div className="grid gap-4">
-            <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <p className="font-mono text-xs font-black uppercase tracking-wide text-slate-400">
-                  {detail.kodeRup}
-                </p>
-                <h2 className="mt-1 break-words text-xl font-black text-[#16227c]">
-                  {detail.namaPaket}
-                </h2>
-              </div>
-              <span
-                className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-black ${
-                  planningStatusStyles[detail.statusUsulan] ??
-                  "bg-slate-100 text-slate-600"
-                }`}
-              >
-                {planningStatusLabels[detail.statusUsulan] ?? detail.statusUsulan}
-              </span>
-            </div>
+            <DetailModalHeader
+              code={detail.kodeRup}
+              title={detail.namaPaket}
+              badge={
+                <DetailStatusBadge
+                  className={
+                    planningStatusStyles[detail.statusUsulan] ??
+                    "bg-slate-100 text-slate-600 ring-slate-200"
+                  }
+                >
+                  {planningStatusLabels[detail.statusUsulan] ?? detail.statusUsulan}
+                </DetailStatusBadge>
+              }
+              items={[
+                { label: "Unit Pengusul", value: detail.unitPengusul },
+                { label: "Tahun Anggaran", value: `TA ${detail.tahunAnggaran}` },
+                { label: "Pagu", value: money(totalEstimasi) },
+                { label: "Metode", value: "-" },
+                { label: "Tanggal Pengajuan", value: dateTime(detail.submittedAt) },
+              ]}
+            />
 
-            <Section title="Informasi Pengajuan">
-              <DetailRow label="Kode Usulan" value={detail.kodeRup} />
-              <DetailRow label="Tahun Anggaran" value={detail.tahunAnggaran} />
-              <DetailRow label="Unit Pengusul" value={detail.unitPengusul} />
-              <DetailRow label="Unit / Bidang" value={detail.unitBidang} />
-              <DetailRow label="Tanggal Pengajuan" value={dateTime(detail.submittedAt)} />
-              <DetailRow label="Prioritas" value={detail.prioritas} />
-            </Section>
+            <DetailHorizontalSection>
+              <DetailInfoCard title="Identitas Usulan">
+                <DetailField label="Kode Usulan" value={detail.kodeRup} />
+                <DetailField
+                  label="Status"
+                  value={planningStatusLabels[detail.statusUsulan] ?? detail.statusUsulan}
+                />
+                <DetailField label="Unit Pengusul" value={detail.unitPengusul} />
+                <DetailField label="Unit / Bidang" value={detail.unitBidang} />
+                <DetailField label="PPK / PPTK" value={null} />
+                <DetailField label="Kontak Penanggung Jawab" value={null} />
+                <DetailField label="Tanggal Pengajuan" value={dateTime(detail.submittedAt)} />
+              </DetailInfoCard>
 
-            <Section title="Data Anggaran">
-              <DetailRow label="Program" value={detail.program} />
-              <DetailRow label="Kegiatan" value={detail.kegiatan} />
-              <DetailRow label="Sub Kegiatan" value={detail.subKegiatan} />
-              <DetailRow label="Kode Rekening" value={detail.kodeRekening} />
-              <DetailRow label="Sumber Dana" value={detail.sumberDana} />
-              <DetailRow label="Pagu / Total Estimasi" value={money(totalEstimasi)} />
-            </Section>
+              <DetailInfoCard title="Program & Anggaran">
+                <DetailField label="Program" value={detail.program} />
+                <DetailField label="Kegiatan" value={detail.kegiatan} />
+                <DetailField label="Sub Kegiatan" value={detail.subKegiatan} />
+                <DetailField label="Kode Rekening" value={detail.kodeRekening} />
+                <DetailField label="Sumber Dana" value={detail.sumberDana} />
+                <DetailField
+                  label="Pagu"
+                  value={money(totalEstimasi)}
+                  valueClassName="whitespace-nowrap"
+                />
+                <DetailField label="Tahun Anggaran" value={`TA ${detail.tahunAnggaran}`} />
+              </DetailInfoCard>
 
-            <Section title="Data Kebutuhan">
-              <DetailRow label="Nama / Uraian" value={detail.namaPaket} />
-              <DetailRow
-                label="Jumlah"
-                value={`${valueOrDash(detail.jumlahKebutuhan ?? detail.volumeKebutuhan)} ${detail.satuanKebutuhan ?? ""}`}
-              />
-              <DetailRow
-                label="Estimasi Harga Satuan"
-                value={money(detail.estimasiHargaSatuan)}
-              />
-              <DetailRow label="Total Estimasi" value={money(totalEstimasi)} />
-              <DetailRow label="Spesifikasi Awal" value={detail.spesifikasiAwal} wide />
-              <DetailRow label="Justifikasi" value={detail.justifikasi} wide />
-            </Section>
+              <DetailInfoCard title="Kebutuhan">
+                <DetailField label="Uraian Belanja" value={detail.namaPaket} />
+                <DetailField label="Uraian Kebutuhan" value={detail.uraianKebutuhan} />
+                <DetailField label="Jenis Belanja" value={null} />
+                <DetailField
+                  label="Volume / Satuan"
+                  value={`${valueOrDash(
+                    detail.jumlahKebutuhan ?? detail.volumeKebutuhan,
+                  )} ${detail.satuanKebutuhan ?? ""}`}
+                />
+                <DetailField label="Prioritas" value={detail.prioritas} />
+                <DetailField label="Waktu Kebutuhan" value={null} />
+                <DetailField label="Output yang Diharapkan" value={detail.justifikasi} />
+                <DetailField label="Spesifikasi Awal" value={detail.spesifikasiAwal} />
+              </DetailInfoCard>
 
-            <Section title="Dokumen Pendukung">
-              <DetailRow label="KAK / Spesifikasi" value={detail.statusKak ?? "BELUM ADA"} />
-              <DetailRow label="HPS" value={detail.statusHps ?? "BELUM ADA"} />
-              <DetailRow
-                label="Rancangan Kontrak"
-                value={detail.statusRancanganKontrak ?? "BELUM ADA"}
-              />
-              <DetailRow
-                label="Dokumen Pendukung"
-                value={detail.statusDokumenPendukung ?? "BELUM ADA"}
-              />
-            </Section>
+              <DetailInfoCard title="Jadwal & RUP/SIRUP">
+                <DetailField label="ID RUP SIRUP" value={null} />
+                <DetailField label="Link SIRUP" value={null} />
+                <DetailField label="Tanggal Input SIRUP" value={null} />
+                <DetailField label="Tanggal Tayang SIRUP" value={null} />
+                <DetailField label="Jadwal Pemilihan" value={null} />
+                <DetailField label="Jadwal Rencana" value={null} />
+                <DetailField label="Cara Pengadaan" value={null} />
+                <DetailField label="Metode Pengadaan" value={null} />
+              </DetailInfoCard>
+
+              <DetailInfoCard title="E-Purchasing / Katalog">
+                <DetailField label="Jenis Katalog" value={null} />
+                <DetailField label="Etalase Katalog" value={null} />
+                <DetailField label="Nama Produk Katalog" value={null} />
+                <DetailField label="Merek / Tipe" value={null} />
+                <DetailField label="Harga Satuan Tayang" value={null} />
+                <DetailField label="Total Harga Tayang" value={null} />
+                <DetailField label="Penyedia Katalog" value={null} />
+                <DetailField label="Status Negosiasi" value={null} />
+                <DetailField label="Harga Negosiasi" value={null} />
+                <DetailField label="Nomor Surat Pesanan" value={null} />
+                <DetailField label="Tanggal Surat Pesanan" value={null} />
+                <DetailField label="Status Transaksi Katalog" value={null} />
+              </DetailInfoCard>
+
+              <DetailInfoCard title="Dokumen">
+                <DetailField label="Status KAK" value={detail.statusKak ?? "BELUM ADA"} />
+                <DetailField label="Status HPS" value={detail.statusHps ?? "BELUM ADA"} />
+                <DetailField
+                  label="Status Rancangan Kontrak"
+                  value={detail.statusRancanganKontrak ?? "BELUM ADA"}
+                />
+                <DetailField
+                  label="Status Dokumen Pendukung"
+                  value={detail.statusDokumenPendukung ?? "BELUM ADA"}
+                />
+                <DetailField label="Kekurangan Dokumen" value={null} />
+              </DetailInfoCard>
+
+              <DetailInfoCard title="Catatan & Tindak Lanjut">
+                <DetailField label="Kendala" value={detail.catatan} />
+                <DetailField label="Tindak Lanjut" value={null} />
+                <DetailField label="PIC Tindak Lanjut" value={null} />
+                <DetailField
+                  label="Catatan / Revisi"
+                  value={detail.revisionNote || detail.verificationNote || detail.catatan}
+                />
+                <DetailField label="Catatan E-Purchasing" value={null} />
+              </DetailInfoCard>
+            </DetailHorizontalSection>
 
             {detail.statusUsulan === "PERLU_REVISI" ? (
               <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">

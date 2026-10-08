@@ -2,9 +2,13 @@ import { redirect } from "next/navigation";
 import { ClipboardCheck, FileSearch } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
 import {
+  DataCardBadge,
+  DataCardCurrency,
   DataCardEmpty,
   DataCardField,
   DataCardRow,
+  DataCardTextLong,
+  DataCardTextShort,
 } from "@/components/data-card/DataCardList";
 import VerificationDetailModalButton from "@/app/verifikasi/VerificationDetailModalButton";
 import { getCurrentUser } from "@/lib/auth";
@@ -243,38 +247,58 @@ export default async function Page({ searchParams }: PageProps) {
                       <DataCardRow
                         key={item.id}
                         icon={<ClipboardCheck className="h-5 w-5" strokeWidth={2.4} />}
-                        minWidth="1600px"
-                        columns="56px minmax(118px,0.8fr) minmax(240px,1.6fr) minmax(120px,0.8fr) minmax(76px,0.45fr) minmax(126px,0.8fr) minmax(98px,0.62fr) minmax(118px,0.76fr) minmax(128px,0.82fr) minmax(164px,auto)"
+                        minWidth="1820px"
+                        columns="56px 130px minmax(280px,1.55fr) minmax(220px,1.1fr) 90px 170px 130px 150px 150px minmax(170px,auto)"
                         actions={<VerificationDetailModalButton proposalId={item.id} />}
                       >
                   <DataCardField label="Kode Usulan" valueClassName="font-mono text-xs font-black text-slate-600">
-                    <span className="truncate">{item.kodeRup}</span>
+                    <DataCardTextShort title={item.kodeRup}>
+                      {item.kodeRup}
+                    </DataCardTextShort>
                   </DataCardField>
                   <DataCardField label="Nama / Uraian" valueClassName="font-black text-[#16227c]">
-                    <p className="line-clamp-2 leading-5">{item.namaPaket}</p>
-                    <p className="mt-1 truncate text-xs font-bold text-slate-500">
+                    <DataCardTextLong title={item.namaPaket}>
+                      {item.namaPaket}
+                    </DataCardTextLong>
+                    <DataCardTextShort
+                      className="mt-1 text-xs font-bold text-slate-500"
+                      title={item.unitPengusul}
+                    >
                       Unit: {item.unitPengusul}
-                    </p>
+                    </DataCardTextShort>
                   </DataCardField>
                   <DataCardField label="Unit">
-                    <span className="truncate">{item.unitPengusul}</span>
+                    <DataCardTextLong title={item.unitPengusul}>
+                      {item.unitPengusul}
+                    </DataCardTextLong>
                   </DataCardField>
                   <DataCardField label="Tahun">{item.tahunAnggaran}</DataCardField>
                   <DataCardField label="Total Estimasi" valueClassName="font-black text-slate-800">
-                    {formatCurrency((item.totalEstimasi ?? item.pagu).toString())}
+                    <DataCardCurrency>
+                      {formatCurrency((item.totalEstimasi ?? item.pagu).toString())}
+                    </DataCardCurrency>
                   </DataCardField>
                   <DataCardField label="Prioritas">
-                    <span className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${priorityClass(item.prioritas)}`}>
-                      <span className="truncate">{item.prioritas ?? "-"}</span>
-                    </span>
+                    <DataCardBadge
+                      className={priorityClass(item.prioritas)}
+                      title={item.prioritas ?? "-"}
+                    >
+                      {item.prioritas ?? "-"}
+                    </DataCardBadge>
                   </DataCardField>
                   <DataCardField label="Tanggal Pengajuan">
                     <span className="whitespace-nowrap">{dateLabel(item.submittedAt ?? item.createdAt)}</span>
                   </DataCardField>
                   <DataCardField label="Status">
-                    <span className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[item.statusUsulan] ?? "bg-slate-100 text-slate-600"}`}>
-                      <span className="truncate">{planningStatusLabels[item.statusUsulan] ?? item.statusUsulan}</span>
-                    </span>
+                    <DataCardBadge
+                      className={
+                        planningStatusStyles[item.statusUsulan] ??
+                        "bg-slate-100 text-slate-600"
+                      }
+                      title={planningStatusLabels[item.statusUsulan] ?? item.statusUsulan}
+                    >
+                      {planningStatusLabels[item.statusUsulan] ?? item.statusUsulan}
+                    </DataCardBadge>
                   </DataCardField>
                       </DataCardRow>
                     ))}

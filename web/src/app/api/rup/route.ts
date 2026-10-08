@@ -5,6 +5,7 @@ import { canDeletePlanningProposal } from "@/lib/permissions";
 import { canEditUsulan, canSubmitTransition } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/response";
+import { getPlanningCompleteness } from "@/lib/workflow-completeness";
 
 const rupStatuses = [
   "DRAFT",
@@ -162,6 +163,7 @@ const createRupSchema = z
     if (!isPlanningSubmit) return;
 
     const requiredFields: Array<[keyof typeof data, string]> = [
+      ["kodeRup", "Kode usulan wajib diisi."],
       ["namaPaket", "Uraian / nama kebutuhan wajib diisi."],
       ["unitPengusul", "Unit pengusul wajib diisi."],
       ["tahunAnggaran", "Tahun anggaran wajib diisi."],
@@ -194,6 +196,13 @@ const createRupSchema = z
 
 function nullableText(value?: string) {
   return value && value.length > 0 ? value : null;
+}
+
+function completionErrors(fields: string[]) {
+  return fields.map((field) => ({
+    field,
+    message: `${field} belum lengkap.`,
+  }));
 }
 
 function requiredText(value: string | undefined, fallback: string) {
@@ -366,6 +375,18 @@ function rupMutationData(parsedData: z.infer<typeof createRupSchema>) {
   };
 }
 
+function duplicateCodeErrorMessage(mode?: string) {
+  return mode === "planning"
+    ? "Kode Usulan sudah digunakan. Gunakan kode lain."
+    : "Kode RUP sudah digunakan. Gunakan kode lain.";
+}
+
+function duplicateCodeFieldMessage(mode?: string) {
+  return mode === "planning"
+    ? "Kode Usulan sudah digunakan. Gunakan kode lain."
+    : "Kode RUP harus unik.";
+}
+
 async function appendUsulanHistory({
   action,
   actorId,
@@ -457,18 +478,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   const json = await request.json().catch(() => null);
-  const userProfile =
-    user && json && typeof json === "object" && "mode" in json && json.mode === "planning"
-      ? await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { unitKerja: true },
-        })
-      : null;
-  const parseInput =
-    json && typeof json === "object" && "mode" in json && json.mode === "planning" && userProfile?.unitKerja
-      ? { ...json, unitPengusul: userProfile.unitKerja }
-      : json;
-  const parsed = createRupSchema.safeParse(parseInput);
+  const parsed = createRupSchema.safeParse(json);
 
   if (!parsed.success) {
     const isPlanning = json && typeof json === "object" && json.mode === "planning";
@@ -483,14 +493,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const planningUnit =
-      parsed.data.mode === "planning" && userProfile?.unitKerja
-        ? userProfile.unitKerja
-        : parsed.data.unitPengusul;
-    const planningPayload =
-      parsed.data.mode === "planning"
-        ? { ...parsed.data, unitPengusul: planningUnit }
-        : parsed.data;
+    const planningPayload = parsed.data;
     const kodeRup =
       planningPayload.kodeRup ||
       (planningPayload.mode === "planning"
@@ -498,9 +501,36 @@ export async function POST(request: Request) {
         : "");
 
     if (!kodeRup) {
-      return apiError("Kode RUP wajib diisi.", 422, [
-        { field: "kodeRup", message: "Kode RUP wajib diisi." },
-      ]);
+      return apiError(
+        planningPayload.mode === "planning"
+          ? "Kode Usulan wajib diisi."
+          : "Kode RUP wajib diisi.",
+        422,
+        [
+          {
+            field: "kodeRup",
+            message:
+              planningPayload.mode === "planning"
+                ? "Kode Usulan wajib diisi."
+                : "Kode RUP wajib diisi.",
+          },
+        ],
+      );
+    }
+
+    if (planningPayload.mode === "planning" && planningPayload.submitIntent === "submit") {
+      const completeness = getPlanningCompleteness({
+        ...planningPayload,
+        pagu: planningPayload.pagu,
+      });
+
+      if (!completeness.complete) {
+        return apiError(
+          "Usulan belum lengkap dan belum dapat diajukan.",
+          400,
+          completionErrors(completeness.missingFields),
+        );
+      }
     }
 
     const rup = await prisma.rencanaUmumPengadaan.create({
@@ -544,8 +574,9 @@ export async function POST(request: Request) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return apiError("Kode RUP sudah digunakan.", 409, [
-        { field: "kodeRup", message: "Kode RUP harus unik." },
+      const mode = json && typeof json === "object" ? String(json.mode ?? "") : "";
+      return apiError(duplicateCodeErrorMessage(mode), 409, [
+        { field: "kodeRup", message: duplicateCodeFieldMessage(mode) },
       ]);
     }
 
@@ -570,18 +601,7 @@ export async function PUT(request: Request) {
   }
 
   const json = await request.json().catch(() => null);
-  const userProfile =
-    json && typeof json === "object" && "mode" in json && json.mode === "planning"
-      ? await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { unitKerja: true },
-        })
-      : null;
-  const parseInput =
-    json && typeof json === "object" && "mode" in json && json.mode === "planning" && userProfile?.unitKerja
-      ? { ...json, unitPengusul: userProfile.unitKerja }
-      : json;
-  const parsed = createRupSchema.safeParse(parseInput);
+  const parsed = createRupSchema.safeParse(json);
 
   if (!parsed.success) {
     const isPlanning = json && typeof json === "object" && json.mode === "planning";
@@ -596,14 +616,7 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const planningUnit =
-      parsed.data.mode === "planning" && userProfile?.unitKerja
-        ? userProfile.unitKerja
-        : parsed.data.unitPengusul;
-    const planningPayload =
-      parsed.data.mode === "planning"
-        ? { ...parsed.data, unitPengusul: planningUnit }
-        : parsed.data;
+    const planningPayload = parsed.data;
     const existing = await prisma.rencanaUmumPengadaan.findUnique({
       where: { id: idParsed.data.id },
       select: { statusUsulan: true },
@@ -641,9 +654,36 @@ export async function PUT(request: Request) {
         : "");
 
     if (!kodeRup) {
-      return apiError("Kode RUP wajib diisi.", 422, [
-        { field: "kodeRup", message: "Kode RUP wajib diisi." },
-      ]);
+      return apiError(
+        planningPayload.mode === "planning"
+          ? "Kode Usulan wajib diisi."
+          : "Kode RUP wajib diisi.",
+        422,
+        [
+          {
+            field: "kodeRup",
+            message:
+              planningPayload.mode === "planning"
+                ? "Kode Usulan wajib diisi."
+                : "Kode RUP wajib diisi.",
+          },
+        ],
+      );
+    }
+
+    if (planningPayload.mode === "planning" && planningPayload.submitIntent === "submit") {
+      const completeness = getPlanningCompleteness({
+        ...planningPayload,
+        pagu: planningPayload.pagu,
+      });
+
+      if (!completeness.complete) {
+        return apiError(
+          "Usulan belum lengkap dan belum dapat diajukan.",
+          400,
+          completionErrors(completeness.missingFields),
+        );
+      }
     }
 
     const rup = await prisma.rencanaUmumPengadaan.update({
@@ -694,8 +734,9 @@ export async function PUT(request: Request) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return apiError("Kode RUP sudah digunakan.", 409, [
-        { field: "kodeRup", message: "Kode RUP harus unik." },
+      const mode = json && typeof json === "object" ? String(json.mode ?? "") : "";
+      return apiError(duplicateCodeErrorMessage(mode), 409, [
+        { field: "kodeRup", message: duplicateCodeFieldMessage(mode) },
       ]);
     }
 

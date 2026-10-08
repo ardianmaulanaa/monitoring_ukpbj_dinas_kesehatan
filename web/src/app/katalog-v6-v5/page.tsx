@@ -53,9 +53,13 @@ import UnitManagementPanel, {
 } from "@/app/pengaturan/UnitManagementPanel";
 import AppHeader from "@/components/appheader/AppHeader";
 import {
+  DataCardBadge,
+  DataCardCurrency,
   DataCardEmpty,
   DataCardField,
   DataCardRow,
+  DataCardTextLong,
+  DataCardTextShort,
 } from "@/components/data-card/DataCardList";
 import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
 import GenericInputModalButton from "@/components/button/shared/GenericInputModalButton";
@@ -3455,8 +3459,8 @@ async function KatalogWorkflowView({
                         <DataCardRow
                           key={rup.id}
                           icon={<ShoppingCart className="h-5 w-5" strokeWidth={2.4} />}
-                          minWidth="2100px"
-                          columns="56px 128px minmax(280px,1.35fr) 132px 132px 140px 132px 150px 140px 126px 138px 178px"
+                          minWidth="2360px"
+                          columns="56px 130px minmax(290px,1.45fr) 150px 150px 170px 150px minmax(210px,1fr) 170px 150px 160px minmax(190px,auto)"
                           actions={
                             <Link
                               href={`/e-purchasing?detailId=${rup.id}`}
@@ -3468,45 +3472,67 @@ async function KatalogWorkflowView({
                           }
                         >
                           <DataCardField label="Kode RUP" valueClassName="font-mono text-xs font-black text-slate-700">
-                            <span className="truncate">{rup.kodeRup}</span>
+                            <DataCardTextShort title={rup.kodeRup}>
+                              {rup.kodeRup}
+                            </DataCardTextShort>
                           </DataCardField>
                           <DataCardField label="Nama Paket" valueClassName="font-black text-[#16227c]">
-                            <p className="line-clamp-2 leading-5">{rup.namaPaket}</p>
-                            <p className="mt-1 truncate text-xs font-bold text-slate-500">
+                            <DataCardTextLong title={rup.namaPaket}>
+                              {rup.namaPaket}
+                            </DataCardTextLong>
+                            <DataCardTextShort
+                              className="mt-1 text-xs font-bold text-slate-500"
+                              title={rup.unitPengusul}
+                            >
                               Unit: {rup.unitPengusul}
-                            </p>
+                            </DataCardTextShort>
                           </DataCardField>
                           <DataCardField label="Sumber Dana">
-                            <span className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${sourceFundClass(rup.sumberDana)}`}>
-                              <span className="truncate">{rup.sumberDana}</span>
-                            </span>
+                            <DataCardBadge
+                              className={sourceFundClass(rup.sumberDana)}
+                              title={rup.sumberDana}
+                            >
+                              {rup.sumberDana}
+                            </DataCardBadge>
                           </DataCardField>
                           <DataCardField label="Jenis Belanja">
-                            <span className="inline-flex max-w-full rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-                              <span className="truncate">{rup.jenisBelanja || "-"}</span>
-                            </span>
+                            <DataCardBadge
+                              className="bg-slate-100 text-slate-600"
+                              title={rup.jenisBelanja || "-"}
+                            >
+                              {rup.jenisBelanja || "-"}
+                            </DataCardBadge>
                           </DataCardField>
                           <DataCardField label="Pagu" valueClassName="font-black text-slate-800">
-                            <span className="whitespace-nowrap">
+                            <DataCardCurrency>
                               {formatCompactCurrency(decimalNumber(rup.pagu))}
-                            </span>
+                            </DataCardCurrency>
                           </DataCardField>
                           <DataCardField label="PP/PPK">
-                            <span className="truncate">{rup.ppkPptk || "-"}</span>
+                            <DataCardTextLong title={rup.ppkPptk || "-"}>
+                              {rup.ppkPptk || "-"}
+                            </DataCardTextLong>
                           </DataCardField>
                           <DataCardField label="Penyedia">
-                            <span className="truncate">{rup.namaPenyediaKatalog || "-"}</span>
+                            <DataCardTextLong title={rup.namaPenyediaKatalog || "-"}>
+                              {rup.namaPenyediaKatalog || "-"}
+                            </DataCardTextLong>
                           </DataCardField>
                           <DataCardField label="Harga Final" valueClassName="font-black text-slate-700">
-                            <span className="whitespace-nowrap">{hargaFinal}</span>
+                            <DataCardCurrency>{hargaFinal}</DataCardCurrency>
                           </DataCardField>
                           <DataCardField label="Tahap" valueClassName="font-black uppercase text-slate-700">
-                            <span className="truncate">{tahap}</span>
+                            <DataCardTextShort title={tahap}>{tahap}</DataCardTextShort>
                           </DataCardField>
                           <DataCardField label="Status">
-                            <span className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${katalogProcessStyle(rup.statusTransaksiKatalog || paket?.statusPaket)}`}>
-                              <span className="truncate">{status}</span>
-                            </span>
+                            <DataCardBadge
+                              className={katalogProcessStyle(
+                                rup.statusTransaksiKatalog || paket?.statusPaket,
+                              )}
+                              title={status}
+                            >
+                              {status}
+                            </DataCardBadge>
                           </DataCardField>
                         </DataCardRow>
                       );
@@ -3584,7 +3610,9 @@ async function KatalogWorkflowView({
             }}
             rup={{
               id: selectedRup.id,
+              idRupSirup: selectedRup.idRupSirup,
               kodeRup: selectedRup.kodeRup,
+              linkSirup: selectedRup.linkSirup,
               namaPaket: selectedRup.namaPaket,
               unitPengusul: selectedRup.unitPengusul,
               lokasiPaket:
@@ -3599,6 +3627,8 @@ async function KatalogWorkflowView({
               subKegiatan: selectedRup.subKegiatan,
               ppkPptk: selectedRup.ppkPptk,
               metodePengadaan: selectedRup.metodePengadaan,
+              statusSirup: selectedRup.statusSirup,
+              tanggalTayangSirup: selectedRup.tanggalTayangSirup,
             }}
             stageLabel={
               selectedRup.statusTransaksiKatalog ||
@@ -4565,18 +4595,56 @@ async function ModuleListView({
                       )
                     : null;
                 const primaryFieldIndex = Math.min(1, fields.length - 1);
+                const columnTemplateFor = (column: string, fieldIndex: number) => {
+                  const normalized = column.toLowerCase();
+
+                  if (fieldIndex === primaryFieldIndex) return "minmax(280px,1.45fr)";
+                  if (
+                    normalized.includes("nama") ||
+                    normalized.includes("paket") ||
+                    normalized.includes("unit") ||
+                    normalized.includes("penyedia") ||
+                    normalized.includes("vendor") ||
+                    normalized.includes("program") ||
+                    normalized.includes("kegiatan") ||
+                    normalized.includes("lokasi")
+                  ) {
+                    return "minmax(220px,1.05fr)";
+                  }
+                  if (
+                    normalized.includes("pagu") ||
+                    normalized.includes("hps") ||
+                    normalized.includes("harga") ||
+                    normalized.includes("nilai") ||
+                    normalized.includes("kontrak") ||
+                    normalized.includes("realisasi")
+                  ) {
+                    return "170px";
+                  }
+                  if (
+                    normalized.includes("status") ||
+                    normalized.includes("tahap") ||
+                    normalized.includes("metode") ||
+                    normalized.includes("sumber")
+                  ) {
+                    return "150px";
+                  }
+                  if (normalized.includes("tahun") || normalized.includes("kode")) {
+                    return "130px";
+                  }
+
+                  return "minmax(150px,0.85fr)";
+                };
                 const dataCardMinWidth = `${Math.max(
-                  1320,
-                  56 + fields.length * 154 + (action ? 240 : 0),
+                  1560,
+                  56 + fields.length * 180 + (action ? 260 : 0),
                 )}px`;
                 const dataCardColumns = [
                   "56px",
-                  ...fields.map((_, fieldIndex) =>
-                    fieldIndex === primaryFieldIndex
-                      ? "minmax(260px,1.45fr)"
-                      : "minmax(132px,0.78fr)",
+                  ...fields.map((field, fieldIndex) =>
+                    columnTemplateFor(field.column, fieldIndex),
                   ),
-                  action ? "minmax(220px,auto)" : "",
+                  action ? "minmax(240px,auto)" : "",
                 ]
                   .filter(Boolean)
                   .join(" ");
@@ -4606,10 +4674,11 @@ async function ModuleListView({
                         }
                       >
                         <div
+                          title={typeof value === "string" ? value : undefined}
                           className={
                             columnIndex === primaryFieldIndex
-                              ? "line-clamp-2 leading-5"
-                              : "truncate"
+                              ? "min-w-0 break-words leading-5 line-clamp-2"
+                              : "min-w-0 truncate whitespace-nowrap"
                           }
                         >
                           {tableCellContent(column, value, rowIndex)}

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { getEPurchasingCompleteness } from "@/lib/workflow-completeness";
 
 export type KatalogWorkflowState = {
   message: string;
@@ -130,6 +131,10 @@ function statusAfterStep(step: z.output<typeof katalogWorkflowSchema>["step"]) {
   return labels[step];
 }
 
+function incompleteMessage(stage: string, fields: string[]) {
+  return `${stage} belum lengkap: ${fields.join(", ")}.`;
+}
+
 export async function updateKatalogWorkflowAction(
   input: z.input<typeof katalogWorkflowSchema>,
 ): Promise<KatalogWorkflowState> {
@@ -161,12 +166,48 @@ export async function updateKatalogWorkflowAction(
     where: { id: parsed.data.id },
     select: {
       id: true,
-      pagu: true,
-      metodePengadaan: true,
-      statusSirup: true,
-      jumlahProdukKatalog: true,
+      catatanKatalog: true,
+      hargaNegosiasiKatalog: true,
+      hargaPenawaranKatalog: true,
       hargaSatuanKatalog: true,
+      hasilPemeriksaan: true,
+      idRupSirup: true,
+      jenisKatalog: true,
+      jumlahProdukKatalog: true,
+      linkSirup: true,
+      metodePengadaan: true,
+      namaPaket: true,
+      namaPenyediaKatalog: true,
+      namaProdukKatalog: true,
+      nilaiPembayaran: true,
+      nomorBaPemeriksaan: true,
+      nomorBast: true,
+      nomorInvoice: true,
+      nomorSpkKontrak: true,
+      nomorSuratJalan: true,
+      nomorSuratPesanan: true,
+      pagu: true,
+      satuanProdukKatalog: true,
+      spesifikasiProdukKatalog: true,
+      statusDokumenPembayaran: true,
+      statusNegosiasiKatalog: true,
+      statusPembayaranEp: true,
+      statusPemeriksaanEp: true,
+      statusPengirimanEp: true,
+      statusSirup: true,
+      statusSuratPesanan: true,
+      statusTransaksiKatalog: true,
+      sumberDana: true,
+      tanggalAktualKirim: true,
+      tanggalBast: true,
+      tanggalKontrakEp: true,
+      tanggalPembayaranEp: true,
+      tanggalPemeriksaan: true,
+      tanggalSuratPesanan: true,
+      tanggalTayangSirup: true,
+      tahunAnggaran: true,
       totalHargaKatalog: true,
+      unitPengusul: true,
     },
   });
 
@@ -189,11 +230,28 @@ export async function updateKatalogWorkflowAction(
 
   if (parsed.data.step === "product") {
     const totalHarga = parsed.data.jumlah * parsed.data.hargaTayang;
+    const candidate = {
+      ...existing,
+      jenisKatalog: optionalText(parsed.data.platform),
+      jumlahProdukKatalog: String(parsed.data.jumlah),
+      namaProdukKatalog: parsed.data.namaProduk,
+      satuanProdukKatalog: parsed.data.satuan,
+      hargaSatuanKatalog: decimal(parsed.data.hargaTayang),
+      totalHargaKatalog: decimal(totalHarga),
+    };
+    const completion = getEPurchasingCompleteness(candidate);
 
     if (totalHarga > pagu) {
       return {
         ok: false,
         message: "Total harga tayang tidak boleh melebihi pagu RUP.",
+      };
+    }
+
+    if (!completion.sections.product.complete) {
+      return {
+        ok: false,
+        message: incompleteMessage("Produk", completion.sections.product.missingFields),
       };
     }
 
@@ -217,6 +275,19 @@ export async function updateKatalogWorkflowAction(
   }
 
   if (parsed.data.step === "provider") {
+    const candidate = {
+      ...existing,
+      namaPenyediaKatalog: parsed.data.namaPenyedia,
+    };
+    const completion = getEPurchasingCompleteness(candidate);
+
+    if (!completion.sections.provider.complete) {
+      return {
+        ok: false,
+        message: incompleteMessage("Penyedia", completion.sections.provider.missingFields),
+      };
+    }
+
     await prisma.rencanaUmumPengadaan.update({
       where: { id: parsed.data.id },
       data: {
@@ -231,6 +302,13 @@ export async function updateKatalogWorkflowAction(
 
   if (parsed.data.step === "negotiation") {
     const totalHargaTayang = Number(existing.totalHargaKatalog ?? 0);
+    const candidate = {
+      ...existing,
+      hargaNegosiasiKatalog: decimal(parsed.data.hargaKesepakatan),
+      hargaPenawaranKatalog: decimal(parsed.data.hargaPenawaran),
+      statusNegosiasiKatalog: parsed.data.statusNegosiasi,
+    };
+    const completion = getEPurchasingCompleteness(candidate);
 
     if (!existing.jumlahProdukKatalog || !existing.hargaSatuanKatalog) {
       return {
@@ -253,6 +331,16 @@ export async function updateKatalogWorkflowAction(
       };
     }
 
+    if (!completion.sections.negotiation.complete) {
+      return {
+        ok: false,
+        message: incompleteMessage(
+          "Negosiasi",
+          completion.sections.negotiation.missingFields,
+        ),
+      };
+    }
+
     await prisma.rencanaUmumPengadaan.update({
       where: { id: parsed.data.id },
       data: {
@@ -266,6 +354,23 @@ export async function updateKatalogWorkflowAction(
   }
 
   if (parsed.data.step === "contract") {
+    const candidate = {
+      ...existing,
+      nomorSpkKontrak: optionalText(parsed.data.nomorSpkKontrak),
+      nomorSuratPesanan: optionalText(parsed.data.nomorSuratPesanan),
+      statusSuratPesanan: optionalText(parsed.data.statusSuratPesanan),
+      tanggalKontrakEp: optionalText(parsed.data.tanggalKontrak),
+      tanggalSuratPesanan: optionalText(parsed.data.tanggalSuratPesanan),
+    };
+    const completion = getEPurchasingCompleteness(candidate);
+
+    if (!completion.sections.contract.complete) {
+      return {
+        ok: false,
+        message: incompleteMessage("Kontrak", completion.sections.contract.missingFields),
+      };
+    }
+
     await prisma.rencanaUmumPengadaan.update({
       where: { id: parsed.data.id },
       data: {
@@ -284,6 +389,24 @@ export async function updateKatalogWorkflowAction(
   }
 
   if (parsed.data.step === "delivery") {
+    const candidate = {
+      ...existing,
+      nomorSuratJalan: optionalText(parsed.data.nomorSuratJalan),
+      statusPengirimanEp: parsed.data.statusPengiriman,
+      tanggalAktualKirim: optionalText(parsed.data.tanggalAktualKirim),
+    };
+    const completion = getEPurchasingCompleteness(candidate);
+
+    if (!completion.sections.delivery.complete) {
+      return {
+        ok: false,
+        message: incompleteMessage(
+          "Pengiriman",
+          completion.sections.delivery.missingFields,
+        ),
+      };
+    }
+
     await prisma.rencanaUmumPengadaan.update({
       where: { id: parsed.data.id },
       data: {
@@ -298,6 +421,28 @@ export async function updateKatalogWorkflowAction(
   }
 
   if (parsed.data.step === "inspection") {
+    const candidate = {
+      ...existing,
+      catatanKatalog: optionalText(parsed.data.catatan),
+      hasilPemeriksaan: optionalText(parsed.data.hasilPemeriksaan),
+      nomorBaPemeriksaan: optionalText(parsed.data.nomorBaPemeriksaan),
+      nomorBast: optionalText(parsed.data.nomorBast),
+      statusPemeriksaanEp: optionalText(parsed.data.statusPemeriksaan),
+      tanggalBast: optionalText(parsed.data.tanggalBast),
+      tanggalPemeriksaan: optionalText(parsed.data.tanggalPemeriksaan),
+    };
+    const completion = getEPurchasingCompleteness(candidate);
+
+    if (!completion.sections.inspection.complete) {
+      return {
+        ok: false,
+        message: incompleteMessage(
+          "Pemeriksaan/BAST",
+          completion.sections.inspection.missingFields,
+        ),
+      };
+    }
+
     await prisma.rencanaUmumPengadaan.update({
       where: { id: parsed.data.id },
       data: {
@@ -317,6 +462,26 @@ export async function updateKatalogWorkflowAction(
   }
 
   if (parsed.data.step === "payment") {
+    const candidate = {
+      ...existing,
+      nilaiPembayaran: decimal(parsed.data.nilaiPembayaran),
+      nomorInvoice: optionalText(parsed.data.nomorInvoice),
+      statusDokumenPembayaran: parsed.data.statusDokumenPembayaran,
+      statusPembayaranEp: parsed.data.statusPembayaran,
+      tanggalPembayaranEp: optionalText(parsed.data.tanggalPembayaran),
+    };
+    const completion = getEPurchasingCompleteness(candidate);
+
+    if (!completion.sections.payment.complete || !completion.sections.documents.complete) {
+      return {
+        ok: false,
+        message: incompleteMessage("Pembayaran", [
+          ...completion.sections.payment.missingFields,
+          ...completion.sections.documents.missingFields,
+        ]),
+      };
+    }
+
     await prisma.rencanaUmumPengadaan.update({
       where: { id: parsed.data.id },
       data: {

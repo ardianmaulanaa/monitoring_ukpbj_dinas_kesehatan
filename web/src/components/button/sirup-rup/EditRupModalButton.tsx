@@ -12,6 +12,7 @@ type SumberDanaOption = {
 };
 
 type EditRupModalButtonProps = {
+  defaultKodeUsulan?: string | null;
   defaultUnitPengusul?: string | null;
   initialData: Record<string, string | number | null | undefined>;
   sumberDanaOptions: SumberDanaOption[];
@@ -20,6 +21,7 @@ type EditRupModalButtonProps = {
 };
 
 export default function EditRupModalButton({
+  defaultKodeUsulan,
   defaultUnitPengusul,
   initialData,
   sumberDanaOptions,
@@ -51,9 +53,10 @@ export default function EditRupModalButton({
         onClose={close}
         eyebrow={mode === "planning" ? "Perencanaan" : "SIRUP / RUP"}
         title={label}
-        maxWidthClassName="max-w-5xl"
+        maxWidthClassName={mode === "planning" ? "max-w-6xl" : "max-w-5xl"}
       >
         <RupForm
+          defaultKodeUsulan={defaultKodeUsulan}
           defaultUnitPengusul={defaultUnitPengusul}
           sumberDanaOptions={sumberDanaOptions}
           mode={mode}

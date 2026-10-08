@@ -5,6 +5,13 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, RotateCcw, Save } from "lucide-react";
 import ModalShell from "@/components/modal/ModalShell";
+import {
+  DetailField,
+  DetailHorizontalSection,
+  DetailInfoCard,
+  DetailModalHeader,
+  DetailStatusBadge,
+} from "@/components/detail/DetailHorizontalSection";
 import { formatCurrency } from "@/lib/currency";
 import {
   updateRupRevisionAction,
@@ -87,7 +94,6 @@ const initialState: RupRevisionState = {
 
 const inputClass =
   "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100";
-const labelClass = "text-xs font-black uppercase tracking-wide text-slate-400";
 
 function methodLabel(value: string) {
   const labels: Record<string, string> = {
@@ -103,15 +109,6 @@ function methodLabel(value: string) {
 
 function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
-      <dt className={labelClass}>{label}</dt>
-      <dd className="break-words text-sm font-bold text-slate-700">{value}</dd>
-    </div>
-  );
 }
 
 function RevisionSubmitButton({
@@ -180,210 +177,158 @@ export default function RupDetailModalButton({
         onClose={() => setIsOpen(false)}
         eyebrow="Detail Perencanaan"
         title={item.namaPaket}
-        maxWidthClassName="max-w-4xl"
+        maxWidthClassName="max-w-7xl"
       >
         <div className="grid gap-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4">
-            <div>
-              <p className="font-mono text-xs font-black uppercase tracking-wide text-slate-400">
-                {item.kodeRup}
-              </p>
-              <p className="mt-1 text-lg font-black text-[#16227c]">
-                {item.namaPaket}
-              </p>
-            </div>
-            <span
-              className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${statusStyle}`}
-            >
-              {statusLabel}
-            </span>
-            {item.metodePengadaan === "E_PURCHASING" &&
-            item.statusSirup === "SUDAH_TAYANG" ? (
-              <Link
-                href={`/e-purchasing?detailId=${item.id}`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50"
-              >
-                Proses E-Purchasing
-              </Link>
-            ) : null}
-          </div>
-
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <DetailRow label="Unit Pengusul" value={item.unitPengusul} />
-            <DetailRow label="ID RUP SIRUP" value={item.idRupSirup || "-"} />
-            <DetailRow
-              label="Tanggal Input SIRUP"
-              value={item.tanggalInputSirup || "-"}
-            />
-            <DetailRow
-              label="Tanggal Tayang SIRUP"
-              value={item.tanggalTayangSirup || "-"}
-            />
-            <DetailRow label="Unit / Bidang" value={item.unitBidang || "-"} />
-            <DetailRow label="PPK / PPTK" value={item.ppkPptk || "-"} />
-            <DetailRow
-              label="Kontak Penanggung Jawab"
-              value={item.kontakPenanggungJawab || "-"}
-            />
-            <DetailRow label="Program" value={item.program || "-"} />
-            <DetailRow label="Kegiatan" value={item.kegiatan || "-"} />
-            <DetailRow label="Sub Kegiatan" value={item.subKegiatan || "-"} />
-            <DetailRow
-              label="Kode Rekening"
-              value={item.kodeRekening || "-"}
-            />
-            <DetailRow label="Lokasi Paket" value={item.lokasiPaket || "-"} />
-            <DetailRow label="Jenis Belanja" value={item.jenisBelanja || "-"} />
-
-            <DetailRow label="Sumber Dana" value={item.sumberDana} />
-            <DetailRow label="Pagu" value={formatCurrency(item.pagu)} />
-            <DetailRow
-              label="Volume / Satuan"
-              value={`${item.volumeKebutuhan || "-"} ${item.satuanKebutuhan || ""}`.trim()}
-            />
-            <DetailRow label="Prioritas" value={item.prioritas || "-"} />
-            <DetailRow
-              label="Waktu Kebutuhan"
-              value={item.waktuKebutuhan || "-"}
-            />
-            <DetailRow
-              label="Cara Pengadaan"
-              value={item.caraPengadaan || "-"}
-            />
-            <DetailRow
-              label="Metode Pengadaan"
-              value={methodLabel(item.metodePengadaan)}
-            />
-            <DetailRow
-              label="Jadwal Pemilihan"
-              value={item.jadwalPemilihan || "-"}
-            />
-            <DetailRow
-              label="Jadwal Rencana"
-              value={`${item.jadwalMulaiRencana || "-"} s.d. ${
-                item.jadwalSelesaiRencana || "-"
-              }`}
-            />
-            <DetailRow
-              label="Tahun Anggaran"
-              value={`TA ${item.tahunAnggaran}`}
-            />
-            <DetailRow label="Link SIRUP" value={item.linkSirup || "-"} />
-            {item.metodePengadaan === "E_PURCHASING" ? (
-              <>
-                <DetailRow
-                  label="Jenis Katalog"
-                  value={item.jenisKatalog || "-"}
-                />
-                <DetailRow
-                  label="Etalase Katalog"
-                  value={item.etalaseKatalog || "-"}
-                />
-                <DetailRow
-                  label="Nama Produk Katalog"
-                  value={item.namaProdukKatalog || "-"}
-                />
-                <DetailRow
-                  label="Merek / Tipe"
-                  value={item.merekTipeKatalog || "-"}
-                />
-                <DetailRow
-                  label="Jumlah / Satuan"
-                  value={`${item.jumlahProdukKatalog || "-"} ${
-                    item.satuanProdukKatalog || ""
-                  }`.trim()}
-                />
-                <DetailRow
-                  label="Harga Satuan Tayang"
-                  value={
-                    item.hargaSatuanKatalog
-                      ? formatCurrency(item.hargaSatuanKatalog)
-                      : "-"
-                  }
-                />
-                <DetailRow
-                  label="Total Harga Tayang"
-                  value={
-                    item.totalHargaKatalog
-                      ? formatCurrency(item.totalHargaKatalog)
-                      : "-"
-                  }
-                />
-                <DetailRow
-                  label="Penyedia Katalog"
-                  value={item.namaPenyediaKatalog || "-"}
-                />
-                <DetailRow
-                  label="Status Negosiasi"
-                  value={item.statusNegosiasiKatalog || "-"}
-                />
-                <DetailRow
-                  label="Harga Negosiasi"
-                  value={
-                    item.hargaNegosiasiKatalog
-                      ? formatCurrency(item.hargaNegosiasiKatalog)
-                      : "-"
-                  }
-                />
-                <DetailRow
-                  label="Nomor Surat Pesanan"
-                  value={item.nomorSuratPesanan || "-"}
-                />
-                <DetailRow
-                  label="Tanggal Surat Pesanan"
-                  value={item.tanggalSuratPesanan || "-"}
-                />
-                <DetailRow
-                  label="Status Transaksi Katalog"
-                  value={item.statusTransaksiKatalog || "-"}
-                />
-              </>
-            ) : null}
-            <DetailRow label="Status KAK" value={item.statusKak || "-"} />
-            <DetailRow label="Status HPS" value={item.statusHps || "-"} />
-            <DetailRow
-              label="Status Rancangan Kontrak"
-              value={item.statusRancanganKontrak || "-"}
-            />
-            <DetailRow
-              label="Status Dokumen Pendukung"
-              value={item.statusDokumenPendukung || "-"}
-            />
-          </dl>
-
-          {[
-            ["Uraian Belanja", item.uraianBelanja],
-            ["Uraian Kebutuhan", item.uraianKebutuhan],
-            ["Spesifikasi Awal", item.spesifikasiAwal],
-            ["Spesifikasi Produk Katalog", item.spesifikasiProdukKatalog],
-            ["Output yang Diharapkan", item.outputDiharapkan],
-            ["Kekurangan Dokumen", item.kekuranganDokumen],
-            ["Kendala", item.kendala],
-            ["Tindak Lanjut", item.tindakLanjut],
-            ["Catatan E-Purchasing", item.catatanKatalog],
-          ].map(([label, value]) => (
-            <div
-              key={label}
-              className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
-              <p className={labelClass}>{label}</p>
-              <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-700">
-                {value || "-"}
-              </p>
-            </div>
-          ))}
-
-          <DetailRow
-            label="PIC Tindak Lanjut"
-            value={item.picTindakLanjut || "-"}
+          <DetailModalHeader
+            code={item.kodeRup}
+            title={item.namaPaket}
+            badge={<DetailStatusBadge className={statusStyle}>{statusLabel}</DetailStatusBadge>}
+            action={
+              item.metodePengadaan === "E_PURCHASING" &&
+              item.statusSirup === "SUDAH_TAYANG" ? (
+                <Link
+                  href={`/e-purchasing?detailId=${item.id}`}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50"
+                >
+                  Proses E-Purchasing
+                </Link>
+              ) : null
+            }
+            items={[
+              { label: "Unit Pengusul", value: item.unitPengusul },
+              { label: "Tahun Anggaran", value: `TA ${item.tahunAnggaran}` },
+              { label: "Pagu", value: formatCurrency(item.pagu) },
+              { label: "Metode", value: methodLabel(item.metodePengadaan) },
+              { label: "Sumber Dana", value: item.sumberDana },
+            ]}
           />
 
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className={labelClass}>Catatan / Revisi</p>
-            <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-700">
-              {item.catatan || "Belum ada catatan revisi."}
-            </p>
-          </div>
+          <DetailHorizontalSection>
+            <DetailInfoCard title="Identitas Usulan">
+              <DetailField label="Kode Usulan" value={item.kodeRup} />
+              <DetailField label="Status" value={statusLabel} />
+              <DetailField label="Unit Pengusul" value={item.unitPengusul} />
+              <DetailField label="Unit / Bidang" value={item.unitBidang} />
+              <DetailField label="PPK / PPTK" value={item.ppkPptk} />
+              <DetailField
+                label="Kontak Penanggung Jawab"
+                value={item.kontakPenanggungJawab}
+              />
+            </DetailInfoCard>
+
+            <DetailInfoCard title="Program & Anggaran">
+              <DetailField label="Program" value={item.program} />
+              <DetailField label="Kegiatan" value={item.kegiatan} />
+              <DetailField label="Sub Kegiatan" value={item.subKegiatan} />
+              <DetailField label="Kode Rekening" value={item.kodeRekening} />
+              <DetailField label="Sumber Dana" value={item.sumberDana} />
+              <DetailField
+                label="Pagu"
+                value={formatCurrency(item.pagu)}
+                valueClassName="whitespace-nowrap"
+              />
+              <DetailField label="Tahun Anggaran" value={`TA ${item.tahunAnggaran}`} />
+            </DetailInfoCard>
+
+            <DetailInfoCard title="Kebutuhan">
+              <DetailField label="Uraian Belanja" value={item.uraianBelanja} />
+              <DetailField label="Uraian Kebutuhan" value={item.uraianKebutuhan} />
+              <DetailField label="Jenis Belanja" value={item.jenisBelanja} />
+              <DetailField
+                label="Volume / Satuan"
+                value={`${item.volumeKebutuhan || "-"} ${
+                  item.satuanKebutuhan || ""
+                }`.trim()}
+              />
+              <DetailField label="Prioritas" value={item.prioritas} />
+              <DetailField label="Waktu Kebutuhan" value={item.waktuKebutuhan} />
+              <DetailField label="Output yang Diharapkan" value={item.outputDiharapkan} />
+            </DetailInfoCard>
+
+            <DetailInfoCard title="Jadwal & RUP/SIRUP">
+              <DetailField label="ID RUP SIRUP" value={item.idRupSirup} />
+              <DetailField label="Link SIRUP" value={item.linkSirup} />
+              <DetailField label="Tanggal Input SIRUP" value={item.tanggalInputSirup} />
+              <DetailField label="Tanggal Tayang SIRUP" value={item.tanggalTayangSirup} />
+              <DetailField label="Jadwal Pemilihan" value={item.jadwalPemilihan} />
+              <DetailField
+                label="Jadwal Rencana"
+                value={`${item.jadwalMulaiRencana || "-"} s.d. ${
+                  item.jadwalSelesaiRencana || "-"
+                }`}
+              />
+              <DetailField label="Cara Pengadaan" value={item.caraPengadaan} />
+              <DetailField
+                label="Metode Pengadaan"
+                value={methodLabel(item.metodePengadaan)}
+              />
+            </DetailInfoCard>
+
+            <DetailInfoCard title="E-Purchasing / Katalog">
+              <DetailField label="Jenis Katalog" value={item.jenisKatalog} />
+              <DetailField label="Etalase Katalog" value={item.etalaseKatalog} />
+              <DetailField label="Nama Produk Katalog" value={item.namaProdukKatalog} />
+              <DetailField label="Merek / Tipe" value={item.merekTipeKatalog} />
+              <DetailField
+                label="Harga Satuan Tayang"
+                value={
+                  item.hargaSatuanKatalog
+                    ? formatCurrency(item.hargaSatuanKatalog)
+                    : null
+                }
+                valueClassName="whitespace-nowrap"
+              />
+              <DetailField
+                label="Total Harga Tayang"
+                value={
+                  item.totalHargaKatalog
+                    ? formatCurrency(item.totalHargaKatalog)
+                    : null
+                }
+                valueClassName="whitespace-nowrap"
+              />
+              <DetailField label="Penyedia Katalog" value={item.namaPenyediaKatalog} />
+              <DetailField label="Status Negosiasi" value={item.statusNegosiasiKatalog} />
+              <DetailField
+                label="Harga Negosiasi"
+                value={
+                  item.hargaNegosiasiKatalog
+                    ? formatCurrency(item.hargaNegosiasiKatalog)
+                    : null
+                }
+                valueClassName="whitespace-nowrap"
+              />
+              <DetailField label="Nomor Surat Pesanan" value={item.nomorSuratPesanan} />
+              <DetailField label="Tanggal Surat Pesanan" value={item.tanggalSuratPesanan} />
+              <DetailField label="Status Transaksi Katalog" value={item.statusTransaksiKatalog} />
+            </DetailInfoCard>
+
+            <DetailInfoCard title="Dokumen">
+              <DetailField label="Status KAK" value={item.statusKak} />
+              <DetailField label="Status HPS" value={item.statusHps} />
+              <DetailField
+                label="Status Rancangan Kontrak"
+                value={item.statusRancanganKontrak}
+              />
+              <DetailField
+                label="Status Dokumen Pendukung"
+                value={item.statusDokumenPendukung}
+              />
+              <DetailField label="Kekurangan Dokumen" value={item.kekuranganDokumen} />
+            </DetailInfoCard>
+
+            <DetailInfoCard title="Catatan & Tindak Lanjut">
+              <DetailField label="Kendala" value={item.kendala} />
+              <DetailField label="Tindak Lanjut" value={item.tindakLanjut} />
+              <DetailField label="PIC Tindak Lanjut" value={item.picTindakLanjut} />
+              <DetailField
+                label="Catatan / Revisi"
+                value={item.catatan || "Belum ada catatan revisi."}
+              />
+              <DetailField label="Catatan E-Purchasing" value={item.catatanKatalog} />
+            </DetailInfoCard>
+          </DetailHorizontalSection>
 
           {item.statusSirup === "REVISI_PAGU" && !canEditRevision ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
