@@ -1,15 +1,10 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export function SmoothRouteProgress() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const routeKey = useMemo(
-    () => `${pathname}?${searchParams.toString()}`,
-    [pathname, searchParams],
-  );
   const [active, setActive] = useState(false);
 
   useEffect(() => {
@@ -24,7 +19,7 @@ export function SmoothRouteProgress() {
       cancelAnimationFrame(startFrame);
       window.clearTimeout(timeout);
     };
-  }, [routeKey]);
+  }, [pathname]);
 
   return (
     <div

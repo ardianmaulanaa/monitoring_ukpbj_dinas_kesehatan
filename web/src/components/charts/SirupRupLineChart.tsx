@@ -25,17 +25,16 @@ type SirupRupLineChartProps = {
 };
 
 const CHART_COLORS = [
-  "#16227c",
   "#08783f",
-  "#f5bd20",
-  "#159cc3",
-  "#e53935",
-  "#7c3aed",
+  "#16227c",
+  "#f5b719",
+  "#159fbe",
   "#0f766e",
-  "#f57c00",
 ];
 
 const GRID_COLOR = "rgba(148, 163, 184, 0.2)";
+const CHART_FONT_FAMILY =
+  "Plus Jakarta Sans, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
 
 function formatCompactCurrency(value: number) {
   if (value >= 1_000_000_000) {
@@ -112,8 +111,9 @@ export default function SirupRupLineChart({
               boxWidth: 10,
               color: "#475569",
               font: {
+                family: CHART_FONT_FAMILY,
                 size: 12,
-                weight: 700,
+                weight: 600,
               },
               padding: 14,
               usePointStyle: true,
@@ -122,8 +122,9 @@ export default function SirupRupLineChart({
           tooltip: {
             backgroundColor: "#0f172a",
             bodyFont: {
+              family: CHART_FONT_FAMILY,
               size: 12,
-              weight: 700,
+              weight: 600,
             },
             callbacks: {
               label(context) {
@@ -135,8 +136,9 @@ export default function SirupRupLineChart({
             },
             padding: 12,
             titleFont: {
+              family: CHART_FONT_FAMILY,
               size: 12,
-              weight: 800,
+              weight: 700,
             },
           },
         },
@@ -181,8 +183,9 @@ export default function SirupRupLineChart({
           tooltip: {
             backgroundColor: "#0f172a",
             bodyFont: {
+              family: CHART_FONT_FAMILY,
               size: 12,
-              weight: 700,
+              weight: 600,
             },
             callbacks: {
               label(context) {
@@ -194,8 +197,9 @@ export default function SirupRupLineChart({
             },
             padding: 12,
             titleFont: {
+              family: CHART_FONT_FAMILY,
               size: 12,
-              weight: 800,
+              weight: 700,
             },
           },
         },
@@ -207,8 +211,9 @@ export default function SirupRupLineChart({
             ticks: {
               color: "#64748b",
               font: {
+                family: CHART_FONT_FAMILY,
                 size: 11,
-                weight: 700,
+                weight: 600,
               },
               maxRotation: 0,
               minRotation: 0,
@@ -228,8 +233,9 @@ export default function SirupRupLineChart({
               },
               color: "#64748b",
               font: {
+                family: CHART_FONT_FAMILY,
                 size: 11,
-                weight: 700,
+                weight: 600,
               },
               padding: 8,
             },
@@ -247,10 +253,10 @@ export default function SirupRupLineChart({
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
-          <p className="text-[11px] font-black uppercase tracking-wide text-[#08783f]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-[#08783f]">
             Monitoring SIRUP / RUP
           </p>
-          <h2 className="mt-1 text-lg font-black leading-tight text-[#16227c] sm:text-xl">
+          <h2 className="mt-1 text-lg font-bold leading-tight tracking-tight text-[#16227c] sm:text-xl">
             Grafik distribusi pagu dan paket
           </h2>
           <p className="mt-1 text-sm font-bold text-slate-500">
@@ -260,26 +266,26 @@ export default function SirupRupLineChart({
 
         <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[620px]">
           <div className="rounded-xl bg-slate-50 px-4 py-3">
-            <p className="text-[10px] font-black uppercase text-slate-400">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-400">
               Paket Terpantau
             </p>
-            <p className="mt-1 truncate text-xl font-black text-slate-950 sm:text-2xl">
+            <p className="mt-1 truncate text-xl font-bold text-slate-950 sm:text-2xl">
               {totalPackages.toLocaleString("id-ID")}
             </p>
           </div>
           <div className="rounded-xl bg-slate-50 px-4 py-3">
-            <p className="text-[10px] font-black uppercase text-slate-400">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-400">
               Total Pagu
             </p>
-            <p className="mt-1 truncate text-xl font-black text-slate-950 sm:text-2xl">
+            <p className="mt-1 truncate text-xl font-bold text-slate-950 sm:text-2xl">
               {formatCompactCurrency(totalPagu)}
             </p>
           </div>
           <div className="rounded-xl bg-slate-50 px-4 py-3">
-            <p className="text-[10px] font-black uppercase text-slate-400">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-400">
               Sumber Dana Utama
             </p>
-            <p className="mt-1 truncate text-xl font-black text-slate-950 sm:text-2xl">
+            <p className="mt-1 truncate text-xl font-bold text-slate-950 sm:text-2xl">
               {primarySourceFund ?? "-"}
             </p>
           </div>
@@ -294,7 +300,7 @@ export default function SirupRupLineChart({
           onChange={(event) =>
             setSelectedCategoryKey(event.target.value as ChartCategoryKey)
           }
-          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-[#16227c] outline-none transition focus:border-[#08783f] focus:ring-4 focus:ring-emerald-100 sm:w-[260px]"
+          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-[#16227c] outline-none transition focus:border-[#08783f] focus:ring-4 focus:ring-emerald-100 sm:w-[260px]"
         >
           {categories.map((category) => (
             <option key={category.key} value={category.key}>
@@ -313,13 +319,13 @@ export default function SirupRupLineChart({
                 aria-label={`Doughnut chart ${selectedCategory?.label ?? "SIRUP RUP"}`}
               />
               <div className="pointer-events-none absolute inset-x-0 top-[38%] mx-auto w-32 text-center">
-                <p className="text-[10px] font-black uppercase text-slate-400">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-400">
                   Dominan
                 </p>
-                <p className="mt-1 truncate text-base font-black text-slate-950">
+                <p className="mt-1 truncate text-base font-bold text-slate-950">
                   {dominantItem?.label ?? "-"}
                 </p>
-                <p className="mt-1 text-xs font-black text-[#08783f]">
+                <p className="mt-1 text-xs font-semibold text-[#08783f]">
                   {formatCompactCurrency(dominantItem?.amount ?? 0)}
                 </p>
               </div>

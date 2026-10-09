@@ -52,7 +52,7 @@ export function DetailStatusBadge({
 }) {
   return (
     <span
-      className={`inline-flex w-fit shrink-0 rounded-full px-3 py-1 text-xs font-black ring-1 ${className}`}
+      className={`inline-flex w-fit shrink-0 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${className}`}
     >
       {children}
     </span>
@@ -70,10 +70,10 @@ export function DetailModalHeader({
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="font-mono text-xs font-black uppercase tracking-[0.16em] text-[#08783f]">
+          <p className="font-mono text-xs font-semibold uppercase tracking-[0.04em] text-[#08783f]">
             {detailValue(code)}
           </p>
-          <h3 className="mt-2 max-w-4xl break-words text-xl font-black leading-snug text-[#16227c]">
+          <h3 className="mt-2 max-w-4xl break-words text-xl font-bold leading-snug tracking-tight text-[#16227c]">
             {detailValue(title)}
           </h3>
         </div>
@@ -86,7 +86,7 @@ export function DetailModalHeader({
       <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {items.map((item) => (
           <div key={item.label} className="min-w-0 rounded-xl bg-slate-50 px-3 py-2.5">
-            <dt className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+            <dt className="text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-400">
               {item.label}
             </dt>
             <dd className="mt-1 break-words text-sm font-bold leading-5 text-slate-700">
@@ -153,7 +153,7 @@ export function DetailHorizontalSection({
 export function DetailInfoCard({ children, title }: DetailInfoCardProps) {
   return (
     <article className="min-h-full w-[min(84vw,400px)] shrink-0 snap-start rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:w-[360px] lg:w-[400px]">
-      <h4 className="text-xs font-black uppercase tracking-[0.16em] text-[#08783f]">
+      <h4 className="text-xs font-semibold uppercase tracking-[0.04em] text-[#08783f]">
         {title}
       </h4>
       <dl className="mt-4 grid gap-3">{children}</dl>
@@ -164,7 +164,7 @@ export function DetailInfoCard({ children, title }: DetailInfoCardProps) {
 export function DetailSection({ children, title }: DetailSectionProps) {
   return (
     <section className="min-w-0">
-      <h4 className="text-xs font-black uppercase tracking-[0.16em] text-[#08783f]">
+      <h4 className="text-xs font-semibold uppercase tracking-[0.04em] text-[#08783f]">
         {title}
       </h4>
       <dl className="mt-3 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -184,11 +184,11 @@ export function DetailField({
     <div
       className={`min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3 ${className}`}
     >
-      <dt className="text-xs font-black uppercase tracking-wide text-slate-500">
+      <dt className="text-xs font-semibold uppercase tracking-[0.04em] text-slate-500">
         {label}
       </dt>
       <dd
-        className={`mt-2 whitespace-pre-wrap break-words text-sm font-black leading-6 text-slate-800 ${valueClassName}`}
+        className={`mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-800 ${valueClassName}`}
       >
         {detailValue(value)}
       </dd>

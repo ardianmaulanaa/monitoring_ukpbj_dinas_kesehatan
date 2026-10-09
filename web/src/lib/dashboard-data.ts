@@ -1112,6 +1112,6 @@ export async function getDashboardData(filters: DashboardFilters = {}) {
   return unstable_cache(
     () => computeDashboardData({ ...filters, tahunAnggaran }),
     ["dashboard-data", cacheKey],
-    { revalidate: 300 },
+    { revalidate: 300, tags: ["dashboard-data"] },
   )();
 }

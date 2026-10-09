@@ -7,9 +7,19 @@ import { getCurrentUser } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { isEligibleForEPurchasing } from "@/lib/e-purchasing-eligibility";
-import { getEPurchasingCompleteness } from "@/lib/workflow-completeness";
+import {
+  canEnterEPurchasingStage,
+  friendlyIncompleteMessage,
+  getEPurchasingCompleteness,
+  prerequisiteMessage,
+} from "@/lib/workflow-completeness";
 
 export type KatalogWorkflowState = {
+  data?: {
+    id: string;
+    statusTransaksiKatalog: string | null;
+    totalHargaKatalog: string | null;
+  };
   message: string;
   ok: boolean;
 };
@@ -17,9 +27,10 @@ export type KatalogWorkflowState = {
 const executableRoles = ["SUPER_ADMIN", "PPK", "PROCUREMENT_OFFICER"] as const;
 
 const text = z.string().trim().optional();
-const positiveNumber = z.coerce
-  .number()
-  .positive("Nilai harus lebih dari 0.");
+const positiveNumber = (label: string) =>
+  z.coerce
+    .number({ message: `${label} harus berupa angka.` })
+    .positive(`${label} harus lebih dari 0.`);
 
 const katalogWorkflowSchema = z.discriminatedUnion("step", [
   z.object({
@@ -27,14 +38,14 @@ const katalogWorkflowSchema = z.discriminatedUnion("step", [
     id: z.string().uuid(),
     namaProduk: z.string().trim().min(1, "Nama produk wajib diisi."),
     merk: text,
-    jumlah: positiveNumber,
+    jumlah: positiveNumber("Jumlah produk"),
     satuan: z.string().trim().min(1, "Satuan wajib diisi."),
     spesifikasi: text,
     etalase: text,
     platform: text,
     kategori: text,
     linkProduk: text,
-    hargaTayang: positiveNumber,
+    hargaTayang: positiveNumber("Harga tayang satuan"),
   }),
   z.object({
     step: z.literal("provider"),
@@ -47,8 +58,8 @@ const katalogWorkflowSchema = z.discriminatedUnion("step", [
   z.object({
     step: z.literal("negotiation"),
     id: z.string().uuid(),
-    hargaPenawaran: positiveNumber,
-    hargaKesepakatan: positiveNumber,
+    hargaPenawaran: positiveNumber("Harga penawaran"),
+    hargaKesepakatan: positiveNumber("Harga nego final"),
     statusNegosiasi: z.string().trim().min(1, "Status negosiasi wajib diisi."),
     catatan: text,
   }),
@@ -132,8 +143,23 @@ function statusAfterStep(step: z.output<typeof katalogWorkflowSchema>["step"]) {
   return labels[step];
 }
 
+function stageForStep(step: z.output<typeof katalogWorkflowSchema>["step"]) {
+  const stages = {
+    product: "product",
+    provider: "provider",
+    negotiation: "negotiation",
+    contract: "contract",
+    delivery: "delivery",
+    inspection: "inspection",
+    payment: "payment",
+    reset: null,
+  } as const;
+
+  return stages[step];
+}
+
 function incompleteMessage(stage: string, fields: string[]) {
-  return `${stage} belum lengkap: ${fields.join(", ")}.`;
+  return friendlyIncompleteMessage(stage, fields);
 }
 
 export async function updateKatalogWorkflowAction(
@@ -225,7 +251,24 @@ export async function updateKatalogWorkflowAction(
     };
   }
 
+  const targetStage = stageForStep(parsed.data.step);
+  const existingCompletion = getEPurchasingCompleteness(existing);
+
+  if (targetStage && !canEnterEPurchasingStage(existingCompletion, targetStage)) {
+    return {
+      ok: false,
+      message: prerequisiteMessage(targetStage),
+    };
+  }
+
   const pagu = Number(existing.pagu);
+  let updated:
+    | {
+        id: string;
+        statusTransaksiKatalog: string | null;
+        totalHargaKatalog: Prisma.Decimal | null;
+      }
+    | null = null;
 
   if (parsed.data.step === "product") {
     const totalHarga = parsed.data.jumlah * parsed.data.hargaTayang;
@@ -527,5 +570,27 @@ export async function updateKatalogWorkflowAction(
   revalidatePath("/sirup-rup");
   revalidatePath(`/sirup-rup/${parsed.data.id}`);
 
-  return { ok: true, message: "Data E-Purchasing berhasil disimpan." };
+  updated = await prisma.rencanaUmumPengadaan.findUnique({
+    where: { id: parsed.data.id },
+    select: {
+      id: true,
+      statusTransaksiKatalog: true,
+      totalHargaKatalog: true,
+    },
+  });
+
+  return {
+    ok: true,
+    message:
+      parsed.data.step === "product"
+        ? "Data produk berhasil disimpan."
+        : "Data E-Purchasing berhasil disimpan.",
+    data: updated
+      ? {
+          id: updated.id,
+          statusTransaksiKatalog: updated.statusTransaksiKatalog,
+          totalHargaKatalog: updated.totalHargaKatalog?.toString() ?? null,
+        }
+      : undefined,
+  };
 }

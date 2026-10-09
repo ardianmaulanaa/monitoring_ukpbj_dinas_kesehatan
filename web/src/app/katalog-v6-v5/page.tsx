@@ -24,6 +24,7 @@ import {
   FileCheck2,
   FolderOpen,
   Handshake,
+  Eye,
   Landmark,
   ListChecks,
   MessageSquareText,
@@ -64,7 +65,9 @@ import {
 import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
 import GenericInputModalButton from "@/components/button/shared/GenericInputModalButton";
 import EPurchasingDetailModal from "@/app/katalog-v6-v5/EPurchasingDetailModal";
+import EPurchasingReadOnlyDetailModal from "@/app/katalog-v6-v5/EPurchasingReadOnlyDetailModal";
 import ProcurementCompactCard, {
+  CompactDetailLink,
   CompactManageLink,
 } from "@/components/procurement/ProcurementCompactCard";
 import { buildEPurchasingEligibilityWhere } from "@/lib/e-purchasing-eligibility";
@@ -1327,7 +1330,7 @@ async function PlanningModuleView({
         className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
       >
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)] xl:grid-cols-[auto_minmax(132px,150px)_minmax(190px,220px)_minmax(132px,170px)_minmax(150px,180px)_minmax(240px,1fr)] xl:items-center">
-          <span className="self-center text-sm font-black text-slate-400 sm:col-span-2 lg:col-span-1">
+          <span className="self-center text-sm font-bold text-slate-400 sm:col-span-2 lg:col-span-1">
             Filter:
           </span>
 
@@ -1433,10 +1436,10 @@ async function PlanningModuleView({
               key={item.label}
               className={`rounded-lg border border-slate-200 border-l-4 bg-white px-4 py-3 shadow-sm ${item.tone}`}
             >
-              <p className="text-xs font-black uppercase text-slate-400">
+              <p className="text-xs font-bold uppercase text-slate-400">
                 {item.label}
               </p>
-              <p className="mt-2 text-2xl font-black text-[#16227c]">
+              <p className="mt-2 text-2xl font-bold text-[#16227c]">
                 {item.value}
               </p>
               <p className="mt-1 text-xs font-bold text-slate-500">
@@ -1450,7 +1453,7 @@ async function PlanningModuleView({
           <div className="border-b border-slate-100 px-5 py-4">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-[#08783f]" />
-              <h2 className="text-lg font-black text-[#16227c]">
+              <h2 className="text-lg font-bold text-[#16227c]">
                 Mekanisme Approval Perencanaan
               </h2>
             </div>
@@ -1461,10 +1464,10 @@ async function PlanningModuleView({
                 key={step.label}
                 className="relative rounded-lg border border-slate-200 bg-slate-50 p-4"
               >
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#08783f] text-xs font-black text-white">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#08783f] text-xs font-bold text-white">
                   {index + 1}
                 </span>
-                <p className="mt-3 text-sm font-black text-slate-900">
+                <p className="mt-3 text-sm font-bold text-slate-900">
                   {step.label}
                 </p>
                 <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
@@ -1479,7 +1482,7 @@ async function PlanningModuleView({
           <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2">
               <FileSearch className="h-5 w-5 shrink-0 text-[#08783f]" />
-              <h1 className="truncate text-lg font-black text-[#16227c]">
+              <h1 className="truncate text-lg font-bold text-[#16227c]">
                 Perencanaan Pengadaan
               </h1>
             </div>
@@ -1494,7 +1497,7 @@ async function PlanningModuleView({
           <div className="overflow-x-auto">
             <table className="min-w-[1080px] w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
+                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase text-slate-400">
                   <th className="px-4 py-3">Kode RUP</th>
                   <th className="px-4 py-3">Nama Usulan</th>
                   <th className="px-4 py-3">Unit</th>
@@ -1513,7 +1516,7 @@ async function PlanningModuleView({
                       <td className="whitespace-nowrap px-4 py-4 font-mono text-xs font-bold text-slate-500">
                         {item.kodeRup}
                       </td>
-                      <td className="max-w-[280px] px-4 py-4 font-black text-[#16227c]">
+                      <td className="max-w-[280px] px-4 py-4 font-bold text-[#16227c]">
                         {item.namaPaket}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-600">
@@ -1521,7 +1524,7 @@ async function PlanningModuleView({
                       </td>
                       <td className="whitespace-nowrap px-4 py-4">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${sourceFundClass(item.sumberDana)}`}
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${sourceFundClass(item.sumberDana)}`}
                         >
                           {item.sumberDana}
                         </span>
@@ -1537,7 +1540,7 @@ async function PlanningModuleView({
                       </td>
                       <td className="whitespace-nowrap px-4 py-4">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${planningStatusStyles[item.statusSirup] ?? "bg-slate-100 text-slate-600"}`}
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${planningStatusStyles[item.statusSirup] ?? "bg-slate-100 text-slate-600"}`}
                         >
                           {planningStatusLabels[item.statusSirup] ??
                             humanize(item.statusSirup)}
@@ -1581,7 +1584,7 @@ async function PlanningModuleView({
                   <tr>
                     <td colSpan={9} className="px-4 py-16 text-center">
                       <FileSearch className="mx-auto h-14 w-14 text-slate-300" />
-                      <p className="mt-4 text-base font-black text-slate-700">
+                      <p className="mt-4 text-base font-bold text-slate-700">
                         Belum ada usulan perencanaan
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-500">
@@ -1600,7 +1603,7 @@ async function PlanningModuleView({
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <FileCheck2 className="h-5 w-5 text-[#08783f]" />
-              <h2 className="text-lg font-black text-[#16227c]">
+              <h2 className="text-lg font-bold text-[#16227c]">
                 Dokumen Awal yang Dicek
               </h2>
             </div>
@@ -1629,15 +1632,15 @@ async function PlanningModuleView({
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <UsersRound className="h-5 w-5 text-[#08783f]" />
-              <h2 className="text-lg font-black text-[#16227c]">
+              <h2 className="text-lg font-bold text-[#16227c]">
                 Aksi Sesuai Role
               </h2>
             </div>
             <div className="mt-4 rounded-lg bg-slate-50 p-4">
-              <p className="text-xs font-black uppercase text-slate-400">
+              <p className="text-xs font-bold uppercase text-slate-400">
                 Usulan aktif
               </p>
-              <p className="mt-2 text-sm font-black text-[#16227c]">
+              <p className="mt-2 text-sm font-bold text-[#16227c]">
                 {selectedProposal?.namaPaket ?? "Belum ada usulan"}
               </p>
               <p className="mt-1 text-xs font-bold text-slate-500">
@@ -1679,7 +1682,7 @@ async function PlanningModuleView({
                 name="action"
                 value="approve"
                 disabled={!canActOnSelectedProposal}
-                className="h-10 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:cursor-not-allowed disabled:bg-slate-300"
+                className="h-10 rounded-lg bg-[#08783f] px-4 text-sm font-bold text-white transition hover:bg-[#066532] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 {selectedNextStatus
                   ? `Approve ke ${planningStatusLabels[selectedNextStatus]}`
@@ -1689,7 +1692,7 @@ async function PlanningModuleView({
                 name="action"
                 value="revise"
                 disabled={!canActOnSelectedProposal}
-                className="h-10 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-black text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+                className="h-10 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
               >
                 Minta Revisi
               </button>
@@ -1697,7 +1700,7 @@ async function PlanningModuleView({
                 name="action"
                 value="reject"
                 disabled={!canActOnSelectedProposal}
-                className="h-10 rounded-lg border border-red-200 bg-red-50 px-4 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+                className="h-10 rounded-lg border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
               >
                 Tolak Usulan
               </button>
@@ -1721,7 +1724,7 @@ function tableCellContent(
     return (
       <button
         type="button"
-        className="inline-flex h-8 items-center justify-center rounded-md border border-emerald-200 bg-white px-3 text-xs font-black text-[#08783f] transition hover:bg-emerald-50"
+        className="inline-flex h-8 items-center justify-center rounded-md border border-emerald-200 bg-white px-3 text-xs font-bold text-[#08783f] transition hover:bg-emerald-50"
       >
         {value}
       </button>
@@ -1757,7 +1760,7 @@ function tableCellContent(
 
     return (
       <span
-        className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${className}`}
+        className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${className}`}
       >
         {value}
       </span>
@@ -1766,7 +1769,7 @@ function tableCellContent(
 
   if (normalizedColumn.includes("nama") || normalizedColumn.includes("paket")) {
     return (
-      <span className="font-black text-[#16227c]">
+      <span className="font-bold text-[#16227c]">
         {value || `Data ${rowIndex + 1}`}
       </span>
     );
@@ -1928,7 +1931,7 @@ async function RealisasiBelanjaView() {
         className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="shrink-0 text-sm font-black text-slate-400">
+          <span className="shrink-0 text-sm font-bold text-slate-400">
             Filter:
           </span>
 
@@ -1992,7 +1995,7 @@ async function RealisasiBelanjaView() {
             />
             <button
               type="button"
-              className="inline-flex h-9 items-center justify-center rounded-md border border-sky-200 bg-white px-3 text-xs font-black text-[#1976d2] transition hover:bg-sky-50"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-sky-200 bg-white px-3 text-xs font-bold text-[#1976d2] transition hover:bg-sky-50"
             >
               PDF
             </button>
@@ -2007,10 +2010,10 @@ async function RealisasiBelanjaView() {
               key={label}
               className={`min-h-[96px] rounded-lg border border-l-4 border-slate-200 bg-white px-5 py-4 shadow-sm ${border}`}
             >
-              <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
                 {label}
               </p>
-              <p className="mt-2 text-2xl font-black leading-none text-[#16227c]">
+              <p className="mt-2 text-2xl font-bold leading-none text-[#16227c]">
                 {value}
               </p>
               {helper ? (
@@ -2026,7 +2029,7 @@ async function RealisasiBelanjaView() {
           <div className="border-b border-slate-100 px-5 py-4">
             <div className="flex items-center gap-2">
               <CircleDollarSign className="h-5 w-5 text-[#08783f]" />
-              <h2 className="text-lg font-black text-[#16227c]">
+              <h2 className="text-lg font-bold text-[#16227c]">
                 Rekap Realisasi per Sumber Dana
               </h2>
             </div>
@@ -2035,7 +2038,7 @@ async function RealisasiBelanjaView() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
+                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase text-slate-400">
                   <th className="px-4 py-3">Sumber Dana</th>
                   <th className="px-4 py-3">Pagu</th>
                   <th className="px-4 py-3">Nilai Kontrak</th>
@@ -2047,7 +2050,7 @@ async function RealisasiBelanjaView() {
               <tbody className="divide-y divide-slate-100">
                 {tableRows.map((item, index) => (
                   <tr key={item.label} className="hover:bg-slate-50">
-                    <td className="px-4 py-4 font-black text-slate-600">
+                    <td className="px-4 py-4 font-bold text-slate-600">
                       {item.label}
                     </td>
                     <td className="px-4 py-4 font-semibold text-slate-600">
@@ -2083,7 +2086,7 @@ async function RealisasiBelanjaView() {
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-sky-50 font-black text-slate-700">
+                <tr className="bg-sky-50 font-bold text-slate-700">
                   <td className="px-4 py-4">TOTAL</td>
                   <td className="px-4 py-4">
                     {formatCurrency(summary.totalPagu)}
@@ -2103,7 +2106,7 @@ async function RealisasiBelanjaView() {
                           style={{ width: `${Math.min(totalSerapan, 100)}%` }}
                         />
                       </div>
-                      <p className="mt-1 text-xs font-black text-slate-700">
+                      <p className="mt-1 text-xs font-bold text-slate-700">
                         {totalSerapan}%
                       </p>
                     </div>
@@ -2155,7 +2158,7 @@ function TopFilterBar() {
       className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
     >
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="shrink-0 text-sm font-black text-slate-400">
+        <span className="shrink-0 text-sm font-bold text-slate-400">
           Filter:
         </span>
         <select className="h-9 min-w-[128px] rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600">
@@ -2186,13 +2189,13 @@ function TopFilterBar() {
         <div className="ml-auto flex gap-2">
           <button
             type="button"
-            className="h-9 rounded-md border border-emerald-200 bg-white px-3 text-sm font-black text-[#08783f]"
+            className="h-9 rounded-md border border-emerald-200 bg-white px-3 text-sm font-bold text-[#08783f]"
           >
             Excel
           </button>
           <button
             type="button"
-            className="h-9 rounded-md border border-emerald-200 bg-white px-3 text-sm font-black text-[#08783f]"
+            className="h-9 rounded-md border border-emerald-200 bg-white px-3 text-sm font-bold text-[#08783f]"
           >
             PDF
           </button>
@@ -2223,7 +2226,7 @@ function SimpleCard({
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="flex min-h-[58px] items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-        <h2 className="text-lg font-black text-[#16227c]">{title}</h2>
+        <h2 className="text-lg font-bold text-[#16227c]">{title}</h2>
         {action}
       </div>
       {children}
@@ -2247,7 +2250,7 @@ function StatusBadge({ children }: { children: ReactNode }) {
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${tone}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${tone}`}
     >
       {children}
     </span>
@@ -2309,7 +2312,7 @@ async function RiskMitigationView() {
       >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+            <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-400">
               <tr>
                 {[
                   "No",
@@ -2416,7 +2419,7 @@ async function AuditReadinessView() {
         <SimpleCard title="Kelengkapan Dokumen">
           <div className="p-5">
             <div className="mb-5 text-center">
-              <div className="text-4xl font-black text-[#08783f]">
+              <div className="text-4xl font-bold text-[#08783f]">
                 {dashboard.auditReadiness.percent}%
               </div>
               <p className="mt-1 text-sm font-semibold text-slate-400">
@@ -2446,7 +2449,7 @@ async function AuditReadinessView() {
         <SimpleCard title="Status Siap Audit per Paket">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+              <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-400">
                 <tr>
                   <th className="px-4 py-3">Paket</th>
                   <th className="px-4 py-3">Kelengkapan</th>
@@ -2510,7 +2513,7 @@ async function TimelineView() {
                   <div className="rounded-lg border border-slate-200 bg-white p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-black text-slate-900">
+                        <p className="text-sm font-bold text-slate-900">
                           {item.judul}
                         </p>
                         <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -2535,7 +2538,7 @@ async function TimelineView() {
           </div>
           <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full min-w-[680px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+              <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-400">
                 <tr>
                   <th className="px-4 py-3">Paket</th>
                   <th className="px-4 py-3">Unit</th>
@@ -2613,26 +2616,26 @@ async function VendorMarketView() {
       <SimpleCard title="Vendor & Market Intelligence">
         <div className="grid gap-3 p-5 sm:grid-cols-3">
           <div className="rounded-lg border border-slate-200 border-l-4 border-l-[#1976d2] bg-white p-4">
-            <p className="text-xs font-black uppercase text-slate-400">
+            <p className="text-xs font-bold uppercase text-slate-400">
               Total Vendor
             </p>
-            <p className="mt-2 text-2xl font-black text-[#16227c]">
+            <p className="mt-2 text-2xl font-bold text-[#16227c]">
               {vendors.length.toLocaleString("id-ID")}
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 border-l-4 border-l-[#43a047] bg-white p-4">
-            <p className="text-xs font-black uppercase text-slate-400">
+            <p className="text-xs font-bold uppercase text-slate-400">
               Nilai Kontrak
             </p>
-            <p className="mt-2 text-2xl font-black text-[#16227c]">
+            <p className="mt-2 text-2xl font-bold text-[#16227c]">
               {formatCompactCurrency(totalNilai)}
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 border-l-4 border-l-[#f57c00] bg-white p-4">
-            <p className="text-xs font-black uppercase text-slate-400">
+            <p className="text-xs font-bold uppercase text-slate-400">
               Kontrak Vendor
             </p>
-            <p className="mt-2 text-2xl font-black text-[#16227c]">
+            <p className="mt-2 text-2xl font-bold text-[#16227c]">
               {vendors
                 .reduce(
                   (total, item) =>
@@ -2645,7 +2648,7 @@ async function VendorMarketView() {
         </div>
         <div className="overflow-x-auto border-t border-slate-100">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+            <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-400">
               <tr>
                 <th className="px-4 py-3">Vendor</th>
                 <th className="px-4 py-3">Jumlah Kontrak</th>
@@ -2657,7 +2660,7 @@ async function VendorMarketView() {
               {vendors.length > 0 ? (
                 vendors.map((item) => (
                   <tr key={item.id}>
-                    <td className="px-4 py-4 font-black text-slate-700">
+                    <td className="px-4 py-4 font-bold text-slate-700">
                       {item.nama}
                     </td>
                     <td className="px-4 py-4 font-semibold text-slate-500">
@@ -2745,12 +2748,12 @@ async function ClinicView() {
               consultations.map((item) => (
                 <div key={item.id} className="p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-black text-slate-800">
+                    <p className="text-sm font-bold text-slate-800">
                       {item.unitKerja}
                     </p>
                     <StatusBadge>{humanize(item.status)}</StatusBadge>
                   </div>
-                  <p className="mt-1 text-xs font-black uppercase text-slate-400">
+                  <p className="mt-1 text-xs font-bold uppercase text-slate-400">
                     {item.jenis}
                   </p>
                   <p className="mt-2 line-clamp-2 text-sm font-semibold text-slate-500">
@@ -2781,7 +2784,7 @@ async function DocumentTemplateView() {
       <SimpleCard title="Dokumen & Template">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+            <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-400">
               <tr>
                 <th className="px-4 py-3">Nama</th>
                 <th className="px-4 py-3">Jenis</th>
@@ -2793,7 +2796,7 @@ async function DocumentTemplateView() {
               {documents.length > 0 ? (
                 documents.map((item) => (
                   <tr key={item.id}>
-                    <td className="px-4 py-4 font-black text-slate-700">
+                    <td className="px-4 py-4 font-bold text-slate-700">
                       {item.nama}
                     </td>
                     <td className="px-4 py-4 font-semibold text-slate-500">
@@ -2859,10 +2862,10 @@ async function ReportView() {
                 key={label}
                 className="rounded-lg border border-slate-200 bg-white p-4"
               >
-                <p className="text-xs font-black uppercase text-slate-400">
+                <p className="text-xs font-bold uppercase text-slate-400">
                   {label}
                 </p>
-                <p className="mt-2 text-xl font-black text-[#16227c]">
+                <p className="mt-2 text-xl font-bold text-[#16227c]">
                   {value}
                 </p>
               </div>
@@ -2871,13 +2874,13 @@ async function ReportView() {
         </SimpleCard>
         <SimpleCard title="Parameter Laporan">
           <div className="space-y-4 p-5">
-            <label className="block text-sm font-black text-slate-400">
+            <label className="block text-sm font-bold text-slate-400">
               Periode
               <select className="mt-1 h-9 w-full rounded-md border border-slate-300 bg-white px-3 font-semibold text-slate-600">
                 <option>TA {dashboard.summary.tahunAnggaran}</option>
               </select>
             </label>
-            <label className="block text-sm font-black text-slate-400">
+            <label className="block text-sm font-bold text-slate-400">
               Sumber Dana
               <select className="mt-1 h-9 w-full rounded-md border border-slate-300 bg-white px-3 font-semibold text-slate-600">
                 <option>Semua</option>
@@ -2887,14 +2890,14 @@ async function ReportView() {
               </select>
             </label>
             <div>
-              <p className="mb-2 text-sm font-black text-slate-400">
+              <p className="mb-2 text-sm font-bold text-slate-400">
                 Format Ekspor
               </p>
               <div className="flex gap-3">
-                <button className="h-10 rounded-md bg-[#08783f] px-5 text-sm font-black text-white">
+                <button className="h-10 rounded-md bg-[#08783f] px-5 text-sm font-bold text-white">
                   Excel
                 </button>
-                <button className="h-10 rounded-md border border-emerald-200 bg-white px-5 text-sm font-black text-[#08783f]">
+                <button className="h-10 rounded-md border border-emerald-200 bg-white px-5 text-sm font-bold text-[#08783f]">
                   PDF
                 </button>
               </div>
@@ -2906,7 +2909,7 @@ async function ReportView() {
         <SimpleCard title="Laporan Tersimpan">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-black uppercase text-slate-400">
+              <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-400">
                 <tr>
                   <th className="px-4 py-3">Judul</th>
                   <th className="px-4 py-3">Jenis</th>
@@ -2918,7 +2921,7 @@ async function ReportView() {
                 {storedReports.length > 0 ? (
                   storedReports.map((item) => (
                     <tr key={item.id}>
-                      <td className="px-4 py-4 font-black text-slate-700">
+                      <td className="px-4 py-4 font-bold text-slate-700">
                         {item.judul}
                       </td>
                       <td className="px-4 py-4 font-semibold text-slate-500">
@@ -3091,6 +3094,29 @@ async function KatalogWorkflowView({
   const sumberDana = getParam(searchParams, "sumberDana") ?? "";
   const unitPengusul = getParam(searchParams, "unitPengusul") ?? "";
   const detailId = getParam(searchParams, "detailId") ?? "";
+  const processId = getParam(searchParams, "processId") ?? "";
+  const activeModal = processId
+    ? ({ type: "process", id: processId } as const)
+    : detailId
+      ? ({ type: "detail", id: detailId } as const)
+      : null;
+  const modalBaseParams = new URLSearchParams();
+
+  if (q) modalBaseParams.set("q", q);
+  if (tahunAnggaran) modalBaseParams.set("tahunAnggaran", tahunAnggaran);
+  if (sumberDana) modalBaseParams.set("sumberDana", sumberDana);
+  if (unitPengusul) modalBaseParams.set("unitPengusul", unitPengusul);
+
+  const modalBaseQuery = modalBaseParams.toString();
+  const modalBasePath = modalBaseQuery
+    ? `/e-purchasing?${modalBaseQuery}`
+    : "/e-purchasing";
+  const modalHref = (type: "detail" | "process", id: string) => {
+    const params = new URLSearchParams(modalBaseParams);
+    params.set(type === "detail" ? "detailId" : "processId", id);
+
+    return `/e-purchasing?${params.toString()}`;
+  };
 
   const rupWhere = buildEPurchasingEligibilityWhere({
     ...(tahunAnggaran ? { tahunAnggaran: Number(tahunAnggaran) } : {}),
@@ -3188,11 +3214,97 @@ async function KatalogWorkflowView({
     1,
   );
 
-  const selectedRup = detailId
-    ? (rupRows.find((item) => item.id === detailId) ?? null)
+  const selectedDetailRup = activeModal?.type === "detail"
+    ? (rupRows.find((item) => item.id === activeModal.id) ?? null)
+    : null;
+  const selectedProcessRup = activeModal?.type === "process"
+    ? (rupRows.find((item) => item.id === activeModal.id) ?? null)
     : null;
 
-  const selectedPackage = selectedRup ? getLinkedPackage(selectedRup) : null;
+  const selectedDetailPackage = selectedDetailRup
+    ? getLinkedPackage(selectedDetailRup)
+    : null;
+  const selectedProcessPackage = selectedProcessRup
+    ? getLinkedPackage(selectedProcessRup)
+    : null;
+
+  const buildKatalogDraft = (selectedRup: (typeof rupRows)[number]) => ({
+    alamatPenyediaKatalog: selectedRup.alamatPenyediaKatalog,
+    catatanKatalog: selectedRup.catatanKatalog,
+    emailPenyediaKatalog: selectedRup.emailPenyediaKatalog,
+    etalaseKatalog: selectedRup.etalaseKatalog,
+    hargaNegosiasiKatalog:
+      selectedRup.hargaNegosiasiKatalog?.toString() ?? null,
+    hargaPenawaranKatalog:
+      selectedRup.hargaPenawaranKatalog?.toString() ?? null,
+    hargaSatuanKatalog: selectedRup.hargaSatuanKatalog?.toString() ?? null,
+    hasilPemeriksaan: selectedRup.hasilPemeriksaan,
+    jenisKatalog: selectedRup.jenisKatalog,
+    jumlahProdukKatalog: selectedRup.jumlahProdukKatalog,
+    kategoriProdukKatalog: selectedRup.kategoriProdukKatalog,
+    kontakPenyediaKatalog: selectedRup.kontakPenyediaKatalog,
+    linkProdukKatalog: selectedRup.linkProdukKatalog,
+    merekTipeKatalog: selectedRup.merekTipeKatalog,
+    namaPenyediaKatalog: selectedRup.namaPenyediaKatalog,
+    namaProdukKatalog: selectedRup.namaProdukKatalog,
+    nilaiPembayaran: selectedRup.nilaiPembayaran?.toString() ?? null,
+    nomorBaPemeriksaan: selectedRup.nomorBaPemeriksaan,
+    nomorBaUjiFungsi: selectedRup.nomorBaUjiFungsi,
+    nomorBast: selectedRup.nomorBast,
+    nomorFaktur: selectedRup.nomorFaktur,
+    nomorInvoice: selectedRup.nomorInvoice,
+    nomorSpkKontrak: selectedRup.nomorSpkKontrak,
+    nomorSpmk: selectedRup.nomorSpmk,
+    nomorSppbj: selectedRup.nomorSppbj,
+    nomorSuratJalan: selectedRup.nomorSuratJalan,
+    nomorSuratPesanan: selectedRup.nomorSuratPesanan,
+    satuanProdukKatalog: selectedRup.satuanProdukKatalog,
+    spesifikasiProdukKatalog: selectedRup.spesifikasiProdukKatalog,
+    statusDokumenPembayaran: selectedRup.statusDokumenPembayaran,
+    statusNegosiasiKatalog: selectedRup.statusNegosiasiKatalog,
+    statusPembayaranEp: selectedRup.statusPembayaranEp,
+    statusPemeriksaanEp: selectedRup.statusPemeriksaanEp,
+    statusPengirimanEp: selectedRup.statusPengirimanEp,
+    statusSuratPesanan: selectedRup.statusSuratPesanan,
+    statusTransaksiKatalog: selectedRup.statusTransaksiKatalog,
+    statusUjiFungsi: selectedRup.statusUjiFungsi,
+    tanggalAktualKirim: selectedRup.tanggalAktualKirim,
+    tanggalBast: selectedRup.tanggalBast,
+    tanggalKontrakEp: selectedRup.tanggalKontrakEp,
+    tanggalPembayaranEp: selectedRup.tanggalPembayaranEp,
+    tanggalPemeriksaan: selectedRup.tanggalPemeriksaan,
+    tanggalRencanaKirim: selectedRup.tanggalRencanaKirim,
+    tanggalSpmk: selectedRup.tanggalSpmk,
+    tanggalSppbj: selectedRup.tanggalSppbj,
+    tanggalSuratPesanan: selectedRup.tanggalSuratPesanan,
+    tanggalUjiFungsi: selectedRup.tanggalUjiFungsi,
+    totalHargaKatalog: selectedRup.totalHargaKatalog?.toString() ?? null,
+  });
+
+  const buildKatalogRupSummary = (
+    selectedRup: (typeof rupRows)[number],
+    selectedPackage: (typeof existingPackages)[number] | null | undefined,
+  ) => ({
+    id: selectedRup.id,
+    idRupSirup: selectedRup.idRupSirup,
+    kodeRup: selectedRup.kodeRup,
+    linkSirup: selectedRup.linkSirup,
+    namaPaket: selectedRup.namaPaket,
+    unitPengusul: selectedRup.unitPengusul,
+    lokasiPaket:
+      selectedPackage?.lokasiPelaksanaan || selectedRup.lokasiPaket || null,
+    sumberDana: selectedRup.sumberDana,
+    pagu: decimalNumber(selectedRup.pagu),
+    tahunAnggaran: selectedRup.tahunAnggaran,
+    program: selectedRup.program,
+    kegiatan: selectedRup.kegiatan,
+    subKegiatan: selectedRup.subKegiatan,
+    ppkPptk: selectedRup.ppkPptk,
+    metodePengadaan: selectedRup.metodePengadaan,
+    statusSirup: selectedRup.statusSirup,
+    tanggalInputSirup: selectedRup.tanggalInputSirup,
+    tanggalTayangSirup: selectedRup.tanggalTayangSirup,
+  });
 
   return (
     <main className="min-h-screen bg-[#f4f7f5]">
@@ -3201,7 +3313,7 @@ async function KatalogWorkflowView({
         className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8"
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="shrink-0 text-sm font-black text-slate-400">
+          <span className="shrink-0 text-sm font-bold text-slate-400">
             Filter:
           </span>
 
@@ -3256,7 +3368,7 @@ async function KatalogWorkflowView({
 
           <button
             type="submit"
-            className="h-9 rounded-md bg-[#08783f] px-4 text-sm font-black text-white"
+            className="h-9 rounded-md bg-[#08783f] px-4 text-sm font-bold text-white"
           >
             Terapkan
           </button>
@@ -3295,10 +3407,10 @@ async function KatalogWorkflowView({
               key={item.label}
               className={`rounded-lg border border-l-4 border-slate-200 bg-white px-5 py-4 shadow-sm ${item.tone}`}
             >
-              <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
                 {item.label}
               </p>
-              <p className="mt-2 text-2xl font-black text-[#16227c]">
+              <p className="mt-2 text-2xl font-bold text-[#16227c]">
                 {item.value}
               </p>
               <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -3311,10 +3423,10 @@ async function KatalogWorkflowView({
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-wide text-[#08783f]">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#08783f]">
                 Grafik Sumber Dana
               </p>
-              <h2 className="mt-2 text-xl font-black leading-tight text-[#16227c] sm:text-2xl">
+              <h2 className="mt-2 text-xl font-bold leading-tight text-[#16227c] sm:text-2xl">
                 Distribusi pagu berdasarkan sumber dana
               </h2>
             </div>
@@ -3329,10 +3441,10 @@ async function KatalogWorkflowView({
                     <Landmark className="h-7 w-7" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-black uppercase text-[#08783f]">
+                    <p className="text-sm font-bold uppercase text-[#08783f]">
                       Sumber Dana Terbesar
                     </p>
-                    <p className="mt-1 truncate text-2xl font-black tracking-wide text-slate-950 sm:text-3xl">
+                    <p className="mt-1 truncate text-2xl font-bold tracking-wide text-slate-950 sm:text-3xl">
                       {dominantSourceFund.label}
                     </p>
                     <p className="mt-1 text-sm font-bold text-slate-500">
@@ -3341,7 +3453,7 @@ async function KatalogWorkflowView({
                     </p>
                   </div>
                 </div>
-                <p className="shrink-0 text-right text-lg font-black text-slate-950 sm:text-xl">
+                <p className="shrink-0 text-right text-lg font-bold text-slate-950 sm:text-xl">
                   {formatCompactCurrency(dominantSourceFund.amount)}
                 </p>
               </div>
@@ -3365,14 +3477,14 @@ async function KatalogWorkflowView({
                     <div key={item.label}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-base font-black text-slate-900">
+                          <p className="truncate text-base font-bold text-slate-900">
                             {item.label}
                           </p>
                           <p className="mt-1 text-sm font-bold text-slate-500">
                             {item.count.toLocaleString("id-ID")} paket
                           </p>
                         </div>
-                        <p className="shrink-0 text-right text-base font-black text-slate-900">
+                        <p className="shrink-0 text-right text-base font-bold text-slate-900">
                           {formatCompactCurrency(item.amount)}
                         </p>
                       </div>
@@ -3398,7 +3510,7 @@ async function KatalogWorkflowView({
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="mt-1 text-lg font-black text-[#16227c]">
+              <h2 className="mt-1 text-lg font-bold text-[#16227c]">
                 Daftar Paket Siap / Sedang Diproses
               </h2>
               <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -3476,9 +3588,16 @@ async function KatalogWorkflowView({
                           },
                         ]}
                         actions={
-                          <CompactManageLink
-                            href={`/e-purchasing?detailId=${rup.id}`}
-                          />
+                          <div className="grid gap-2">
+                            <CompactDetailLink
+                              href={modalHref("detail", rup.id)}
+                              label={`Detail E-Purchasing untuk ${rup.namaPaket}`}
+                            />
+                            <CompactManageLink
+                              href={modalHref("process", rup.id)}
+                              label={`Proses E-Purchasing untuk ${rup.namaPaket}`}
+                            />
+                          </div>
                         }
                       />
                     );
@@ -3505,21 +3624,32 @@ async function KatalogWorkflowView({
                           minWidth="2360px"
                           columns="56px 130px minmax(290px,1.45fr) 150px 150px 170px 150px minmax(210px,1fr) 170px 150px 160px minmax(190px,auto)"
                           actions={
-                            <Link
-                              href={`/e-purchasing?detailId=${rup.id}`}
-                              className="inline-flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
-                            >
-                              Kelola Proses
-                              <ArrowUpRight className="h-4 w-4" strokeWidth={2.5} />
-                            </Link>
+                            <div className="flex flex-col gap-2 xl:flex-row">
+                              <Link
+                                href={modalHref("detail", rup.id)}
+                                aria-label={`Detail E-Purchasing untuk ${rup.namaPaket}`}
+                                className="inline-flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-4 text-sm font-semibold text-[#08783f] transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
+                              >
+                                <Eye className="h-4 w-4" strokeWidth={2.4} />
+                                Detail
+                              </Link>
+                              <Link
+                                href={modalHref("process", rup.id)}
+                                aria-label={`Proses E-Purchasing untuk ${rup.namaPaket}`}
+                                className="inline-flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#08783f] px-4 text-sm font-semibold text-white transition hover:bg-[#066b38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
+                              >
+                                Proses E-Purchasing
+                                <ArrowUpRight className="h-4 w-4" strokeWidth={2.5} />
+                              </Link>
+                            </div>
                           }
                         >
-                          <DataCardField label="Kode RUP" valueClassName="font-mono text-xs font-black text-slate-700">
+                          <DataCardField label="Kode RUP" valueClassName="font-mono text-xs font-bold text-slate-700">
                             <DataCardTextShort title={rup.kodeRup}>
                               {rup.kodeRup}
                             </DataCardTextShort>
                           </DataCardField>
-                          <DataCardField label="Nama Paket" valueClassName="font-black text-[#16227c]">
+                          <DataCardField label="Nama Paket" valueClassName="font-bold text-[#16227c]">
                             <DataCardTextLong title={rup.namaPaket}>
                               {rup.namaPaket}
                             </DataCardTextLong>
@@ -3546,7 +3676,7 @@ async function KatalogWorkflowView({
                               {rup.jenisBelanja || "-"}
                             </DataCardBadge>
                           </DataCardField>
-                          <DataCardField label="Pagu" valueClassName="font-black text-slate-800">
+                          <DataCardField label="Pagu" valueClassName="font-bold text-slate-800">
                             <DataCardCurrency>
                               {formatCompactCurrency(decimalNumber(rup.pagu))}
                             </DataCardCurrency>
@@ -3561,10 +3691,10 @@ async function KatalogWorkflowView({
                               {rup.namaPenyediaKatalog || "-"}
                             </DataCardTextLong>
                           </DataCardField>
-                          <DataCardField label="Harga Final" valueClassName="font-black text-slate-700">
+                          <DataCardField label="Harga Final" valueClassName="font-bold text-slate-700">
                             <DataCardCurrency>{hargaFinal}</DataCardCurrency>
                           </DataCardField>
-                          <DataCardField label="Tahap" valueClassName="font-black uppercase text-slate-700">
+                          <DataCardField label="Tahap" valueClassName="font-bold uppercase text-slate-700">
                             <DataCardTextShort title={tahap}>{tahap}</DataCardTextShort>
                           </DataCardField>
                           <DataCardField label="Status">
@@ -3595,87 +3725,32 @@ async function KatalogWorkflowView({
           </div>
         </section>
 
-        {selectedRup ? (
-          <EPurchasingDetailModal
-            draft={{
-              alamatPenyediaKatalog: selectedRup.alamatPenyediaKatalog,
-              catatanKatalog: selectedRup.catatanKatalog,
-              emailPenyediaKatalog: selectedRup.emailPenyediaKatalog,
-              etalaseKatalog: selectedRup.etalaseKatalog,
-              hargaNegosiasiKatalog:
-                selectedRup.hargaNegosiasiKatalog?.toString() ?? null,
-              hargaPenawaranKatalog:
-                selectedRup.hargaPenawaranKatalog?.toString() ?? null,
-              hargaSatuanKatalog:
-                selectedRup.hargaSatuanKatalog?.toString() ?? null,
-              hasilPemeriksaan: selectedRup.hasilPemeriksaan,
-              jenisKatalog: selectedRup.jenisKatalog,
-              jumlahProdukKatalog: selectedRup.jumlahProdukKatalog,
-              kategoriProdukKatalog: selectedRup.kategoriProdukKatalog,
-              kontakPenyediaKatalog: selectedRup.kontakPenyediaKatalog,
-              linkProdukKatalog: selectedRup.linkProdukKatalog,
-              merekTipeKatalog: selectedRup.merekTipeKatalog,
-              namaPenyediaKatalog: selectedRup.namaPenyediaKatalog,
-              namaProdukKatalog: selectedRup.namaProdukKatalog,
-              nilaiPembayaran: selectedRup.nilaiPembayaran?.toString() ?? null,
-              nomorBaPemeriksaan: selectedRup.nomorBaPemeriksaan,
-              nomorBaUjiFungsi: selectedRup.nomorBaUjiFungsi,
-              nomorBast: selectedRup.nomorBast,
-              nomorFaktur: selectedRup.nomorFaktur,
-              nomorInvoice: selectedRup.nomorInvoice,
-              nomorSpkKontrak: selectedRup.nomorSpkKontrak,
-              nomorSpmk: selectedRup.nomorSpmk,
-              nomorSppbj: selectedRup.nomorSppbj,
-              nomorSuratJalan: selectedRup.nomorSuratJalan,
-              nomorSuratPesanan: selectedRup.nomorSuratPesanan,
-              satuanProdukKatalog: selectedRup.satuanProdukKatalog,
-              spesifikasiProdukKatalog: selectedRup.spesifikasiProdukKatalog,
-              statusDokumenPembayaran: selectedRup.statusDokumenPembayaran,
-              statusNegosiasiKatalog: selectedRup.statusNegosiasiKatalog,
-              statusPembayaranEp: selectedRup.statusPembayaranEp,
-              statusPemeriksaanEp: selectedRup.statusPemeriksaanEp,
-              statusPengirimanEp: selectedRup.statusPengirimanEp,
-              statusSuratPesanan: selectedRup.statusSuratPesanan,
-              statusTransaksiKatalog: selectedRup.statusTransaksiKatalog,
-              statusUjiFungsi: selectedRup.statusUjiFungsi,
-              tanggalAktualKirim: selectedRup.tanggalAktualKirim,
-              tanggalBast: selectedRup.tanggalBast,
-              tanggalKontrakEp: selectedRup.tanggalKontrakEp,
-              tanggalPembayaranEp: selectedRup.tanggalPembayaranEp,
-              tanggalPemeriksaan: selectedRup.tanggalPemeriksaan,
-              tanggalRencanaKirim: selectedRup.tanggalRencanaKirim,
-              tanggalSpmk: selectedRup.tanggalSpmk,
-              tanggalSppbj: selectedRup.tanggalSppbj,
-              tanggalSuratPesanan: selectedRup.tanggalSuratPesanan,
-              tanggalUjiFungsi: selectedRup.tanggalUjiFungsi,
-              totalHargaKatalog:
-                selectedRup.totalHargaKatalog?.toString() ?? null,
-            }}
-            rup={{
-              id: selectedRup.id,
-              idRupSirup: selectedRup.idRupSirup,
-              kodeRup: selectedRup.kodeRup,
-              linkSirup: selectedRup.linkSirup,
-              namaPaket: selectedRup.namaPaket,
-              unitPengusul: selectedRup.unitPengusul,
-              lokasiPaket:
-                selectedPackage?.lokasiPelaksanaan ||
-                selectedRup.lokasiPaket ||
-                null,
-              sumberDana: selectedRup.sumberDana,
-              pagu: decimalNumber(selectedRup.pagu),
-              tahunAnggaran: selectedRup.tahunAnggaran,
-              program: selectedRup.program,
-              kegiatan: selectedRup.kegiatan,
-              subKegiatan: selectedRup.subKegiatan,
-              ppkPptk: selectedRup.ppkPptk,
-              metodePengadaan: selectedRup.metodePengadaan,
-              statusSirup: selectedRup.statusSirup,
-              tanggalTayangSirup: selectedRup.tanggalTayangSirup,
-            }}
+        {selectedDetailRup ? (
+          <EPurchasingReadOnlyDetailModal
+            basePath={modalBasePath}
+            draft={buildKatalogDraft(selectedDetailRup)}
+            rup={buildKatalogRupSummary(
+              selectedDetailRup,
+              selectedDetailPackage,
+            )}
             stageLabel={
-              selectedRup.statusTransaksiKatalog ||
-              katalogProcessLabel(selectedPackage?.statusPaket)
+              selectedDetailRup.statusTransaksiKatalog ||
+              katalogProcessLabel(selectedDetailPackage?.statusPaket)
+            }
+          />
+        ) : null}
+
+        {selectedProcessRup ? (
+          <EPurchasingDetailModal
+            basePath={modalBasePath}
+            draft={buildKatalogDraft(selectedProcessRup)}
+            rup={buildKatalogRupSummary(
+              selectedProcessRup,
+              selectedProcessPackage,
+            )}
+            stageLabel={
+              selectedProcessRup.statusTransaksiKatalog ||
+              katalogProcessLabel(selectedProcessPackage?.statusPaket)
             }
           />
         ) : null}
@@ -3784,10 +3859,10 @@ async function AdminUsersView() {
             key={item.label}
             className={`rounded-lg border border-slate-200 border-l-4 bg-white px-5 py-4 shadow-sm ${item.tone}`}
           >
-            <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
               {item.label}
             </p>
-            <p className="mt-2 text-2xl font-black text-[#16227c]">
+            <p className="mt-2 text-2xl font-bold text-[#16227c]">
               {item.value}
             </p>
             <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -3802,7 +3877,7 @@ async function AdminUsersView() {
           <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <UsersRound className="h-5 w-5 text-[#08783f]" />
-              <h2 className="text-lg font-black text-[#16227c]">
+              <h2 className="text-lg font-bold text-[#16227c]">
                 Manajemen User & Role
               </h2>
             </div>
@@ -3815,7 +3890,7 @@ async function AdminUsersView() {
           <div className="overflow-x-auto">
             <table className="min-w-[980px] w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
+                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase text-slate-400">
                   <th className="px-4 py-3">Nama</th>
                   <th className="px-4 py-3">Jabatan</th>
                   <th className="px-4 py-3">Unit Kerja</th>
@@ -3830,7 +3905,7 @@ async function AdminUsersView() {
                   users.map((user) => (
                     <tr key={user.id} className="transition hover:bg-slate-50">
                       <td className="px-4 py-4">
-                        <p className="font-black text-[#16227c]">{user.name}</p>
+                        <p className="font-bold text-[#16227c]">{user.name}</p>
                         <p className="mt-1 text-xs font-semibold text-slate-400">
                           {user.email}
                         </p>
@@ -3847,7 +3922,7 @@ async function AdminUsersView() {
                             user.roles.map((userRole) => (
                               <span
                                 key={userRole.role.id}
-                                className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${roleTone(userRole.role.code)}`}
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${roleTone(userRole.role.code)}`}
                               >
                                 {userRole.role.name}
                               </span>
@@ -3861,7 +3936,7 @@ async function AdminUsersView() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-4">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
                             user.status === "ACTIVE"
                               ? "bg-emerald-100 text-emerald-700"
                               : "bg-red-100 text-red-700"
@@ -3876,7 +3951,7 @@ async function AdminUsersView() {
                       <td className="whitespace-nowrap px-4 py-4 text-right">
                         <Link
                           href={`/admin/users/${user.id}`}
-                          className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-white px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-50"
+                          className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-white px-4 text-sm font-bold text-[#08783f] transition hover:bg-emerald-50"
                         >
                           Detail
                         </Link>
@@ -3887,7 +3962,7 @@ async function AdminUsersView() {
                   <tr>
                     <td colSpan={7} className="px-4 py-16 text-center">
                       <UsersRound className="mx-auto h-14 w-14 text-slate-300" />
-                      <p className="mt-4 text-base font-black text-slate-700">
+                      <p className="mt-4 text-base font-bold text-slate-700">
                         Belum ada user
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-500">
@@ -3904,7 +3979,7 @@ async function AdminUsersView() {
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-[#08783f]" />
-            <h2 className="text-lg font-black text-[#16227c]">
+            <h2 className="text-lg font-bold text-[#16227c]">
               Role Approval Perencanaan
             </h2>
           </div>
@@ -3921,11 +3996,11 @@ async function AdminUsersView() {
                 key={number}
                 className="flex gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3"
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#08783f] text-xs font-black text-white">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#08783f] text-xs font-bold text-white">
                   {number}
                 </span>
                 <div>
-                  <p className="text-sm font-black text-slate-900">{label}</p>
+                  <p className="text-sm font-bold text-slate-900">{label}</p>
                   <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
                     {helper}
                   </p>
@@ -3935,7 +4010,7 @@ async function AdminUsersView() {
           </div>
           <Link
             href="/admin/roles"
-            className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 text-sm font-black text-[#08783f] transition hover:bg-emerald-100"
+            className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 text-sm font-bold text-[#08783f] transition hover:bg-emerald-100"
           >
             Lihat Detail Role
           </Link>
@@ -3991,7 +4066,7 @@ async function AdminRolesView() {
           <div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-[#08783f]" />
-              <h2 className="text-lg font-black text-[#16227c]">
+              <h2 className="text-lg font-bold text-[#16227c]">
                 Struktur User Role Sistem
               </h2>
             </div>
@@ -4013,15 +4088,15 @@ async function AdminRolesView() {
           >
             <div className="flex items-start justify-between gap-3">
               <span
-                className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${role.tone}`}
+                className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${role.tone}`}
               >
                 {role.name}
               </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                 {roleByCode.get(role.code)?._count.users ?? 0} user
               </span>
             </div>
-            <h3 className="mt-4 text-base font-black text-slate-950">
+            <h3 className="mt-4 text-base font-bold text-slate-950">
               {role.actor}
             </h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
@@ -4048,14 +4123,14 @@ async function AdminRolesView() {
               </div>
             </div>
             <div className="mt-4 border-t border-slate-100 pt-4">
-              <p className="text-xs font-black uppercase text-slate-400">
+              <p className="text-xs font-bold uppercase text-slate-400">
                 Grant Access
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {role.grants.map((grant) => (
                   <span
                     key={`${role.code}-${grant}`}
-                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-600"
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600"
                   >
                     {grant}
                   </span>
@@ -4068,14 +4143,14 @@ async function AdminRolesView() {
 
       <section className="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-5 py-4">
-          <h2 className="text-lg font-black text-[#16227c]">
+          <h2 className="text-lg font-bold text-[#16227c]">
             Matriks Role & Akses Modul
           </h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-[980px] w-full border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-400">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase text-slate-400">
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Aktor</th>
                 <th className="px-4 py-3">Tahap Workflow</th>
@@ -4089,7 +4164,7 @@ async function AdminRolesView() {
                 <tr key={role.code} className="transition hover:bg-slate-50">
                   <td className="px-4 py-4">
                     <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${role.tone}`}
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${role.tone}`}
                     >
                       {role.name}
                     </span>
@@ -4111,14 +4186,14 @@ async function AdminRolesView() {
                       {role.grants.map((grant) => (
                         <span
                           key={`${role.code}-matrix-${grant}`}
-                          className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600"
+                          className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600"
                         >
                           {grant}
                         </span>
                       ))}
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4 font-black text-[#16227c]">
+                  <td className="whitespace-nowrap px-4 py-4 font-bold text-[#16227c]">
                     {roleByCode.get(role.code)?._count.users ?? 0}
                   </td>
                 </tr>
@@ -4222,10 +4297,10 @@ async function ModuleListView({
           {isPemilihan ? (
             <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
                   UKPBJ / Pemilihan Penyedia
                 </p>
-                <h1 className="mt-1 text-lg font-black text-[#16227c]">
+                <h1 className="mt-1 text-lg font-bold text-[#16227c]">
                   Tender & Non Tender
                 </h1>
               </div>
@@ -4239,7 +4314,7 @@ async function ModuleListView({
 
           <div className={isPemilihan ? "px-5 py-3" : ""}>
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <span className="shrink-0 text-sm font-black text-slate-400">
+              <span className="shrink-0 text-sm font-bold text-slate-400">
                 Filter:
               </span>
               <select
@@ -4317,10 +4392,10 @@ async function ModuleListView({
                 key={item.label}
                 className={`rounded-lg border border-l-4 border-slate-200 bg-white px-5 py-4 shadow-sm ${kpiBorderClass(item.tone)}`}
               >
-                <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
                   {item.label}
                 </p>
-                <p className="mt-2 text-2xl font-black text-[#16227c]">
+                <p className="mt-2 text-2xl font-bold text-[#16227c]">
                   {item.value}
                 </p>
                 {item.helper ? (
@@ -4379,11 +4454,11 @@ async function ModuleListView({
                       <span className="text-base" aria-hidden="true">
                         {item.icon}
                       </span>
-                      <h2 className="truncate text-sm font-black text-[#16227c]">
+                      <h2 className="truncate text-sm font-bold text-[#16227c]">
                         {item.title}
                       </h2>
                     </div>
-                    <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-[#08783f]">
                       {item.count} paket
                     </span>
                   </div>
@@ -4394,10 +4469,10 @@ async function ModuleListView({
                         key={`${item.title}-${step}`}
                         className="min-h-[58px] rounded-md border border-slate-200 bg-[#f4f7f5] px-3 py-2"
                       >
-                        <span className="text-[10px] font-black uppercase text-slate-400">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">
                           Tahap {index + 1}
                         </span>
-                        <p className="mt-1 text-xs font-black text-slate-700">
+                        <p className="mt-1 text-xs font-bold text-slate-700">
                           {step}
                         </p>
                       </div>
@@ -4405,10 +4480,10 @@ async function ModuleListView({
                   </div>
 
                   <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3">
-                    <span className="text-xs font-black uppercase text-slate-400">
+                    <span className="text-xs font-bold uppercase text-slate-400">
                       Total Pagu
                     </span>
-                    <span className="text-sm font-black text-slate-900">
+                    <span className="text-sm font-bold text-slate-900">
                       {item.value}
                     </span>
                   </div>
@@ -4420,7 +4495,7 @@ async function ModuleListView({
               <div className="border-b border-slate-100 px-5 py-3">
                 <div className="flex items-center gap-2">
                   <ListChecks className="h-5 w-5 text-[#08783f]" />
-                  <h2 className="text-sm font-black text-[#16227c]">
+                  <h2 className="text-sm font-bold text-[#16227c]">
                     Workflow Pemilihan
                   </h2>
                 </div>
@@ -4438,10 +4513,10 @@ async function ModuleListView({
                     key={number}
                     className="min-h-[86px] rounded-md border border-slate-200 bg-[#f4f7f5] p-3"
                   >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-black text-white">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-bold text-white">
                       {number}
                     </span>
-                    <p className="mt-2 text-xs font-black text-slate-900">
+                    <p className="mt-2 text-xs font-bold text-slate-900">
                       {title}
                     </p>
                     <p className="mt-1 text-[11px] font-semibold leading-4 text-slate-500">
@@ -4461,11 +4536,11 @@ async function ModuleListView({
                 <div className="flex min-h-[58px] items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
                   <div className="flex min-w-0 items-center gap-2">
                     <FileCheck2 className="h-5 w-5 shrink-0 text-[#08783f]" />
-                    <h2 className="truncate text-sm font-black text-[#16227c]">
+                    <h2 className="truncate text-sm font-bold text-[#16227c]">
                       Struktur Kontrak & Surat Pesanan
                     </h2>
                   </div>
-                  <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-[#08783f]">
+                  <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-[#08783f]">
                     {activeKontrakCount} aktif
                   </span>
                 </div>
@@ -4497,10 +4572,10 @@ async function ModuleListView({
                       key={title}
                       className="min-h-[104px] rounded-md border border-slate-200 bg-[#f4f7f5] p-3"
                     >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-black text-white">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-bold text-white">
                         {number}
                       </span>
-                      <p className="mt-3 text-xs font-black text-slate-900">
+                      <p className="mt-3 text-xs font-bold text-slate-900">
                         {title}
                       </p>
                       <p className="mt-1 text-[11px] font-semibold leading-4 text-slate-500">
@@ -4515,7 +4590,7 @@ async function ModuleListView({
                 <div className="border-b border-slate-100 px-5 py-3">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-[#08783f]" />
-                    <h2 className="text-sm font-black text-[#16227c]">
+                    <h2 className="text-sm font-bold text-[#16227c]">
                       Kontrol Status
                     </h2>
                   </div>
@@ -4542,11 +4617,11 @@ async function ModuleListView({
                       key={label}
                       className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3"
                     >
-                      <span className="text-xs font-black text-slate-600">
+                      <span className="text-xs font-bold text-slate-600">
                         {label}
                       </span>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-black ${tone}`}
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${tone}`}
                       >
                         {value}
                       </span>
@@ -4560,7 +4635,7 @@ async function ModuleListView({
               <div className="border-b border-slate-100 px-5 py-3">
                 <div className="flex items-center gap-2">
                   <ListChecks className="h-5 w-5 text-[#08783f]" />
-                  <h2 className="text-sm font-black text-[#16227c]">
+                  <h2 className="text-sm font-bold text-[#16227c]">
                     Alur Dokumen Kontrak
                   </h2>
                 </div>
@@ -4578,10 +4653,10 @@ async function ModuleListView({
                     key={number}
                     className="min-h-[86px] rounded-md border border-slate-200 bg-[#f4f7f5] p-3"
                   >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-black text-white">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#08783f] text-[11px] font-bold text-white">
                       {number}
                     </span>
-                    <p className="mt-2 text-xs font-black text-slate-900">
+                    <p className="mt-2 text-xs font-bold text-slate-900">
                       {title}
                     </p>
                     <p className="mt-1 text-[11px] font-semibold leading-4 text-slate-500">
@@ -4598,7 +4673,7 @@ async function ModuleListView({
           <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2">
               <config.icon className="h-5 w-5 shrink-0 text-[#08783f]" />
-              <h2 className="truncate text-lg font-black text-[#16227c]">
+              <h2 className="truncate text-lg font-bold text-[#16227c]">
                 {moduleKey === "katalog"
                   ? "Daftar Paket E-Purchasing"
                   : moduleKey === "pemilihan"
@@ -4712,7 +4787,7 @@ async function ModuleListView({
                         label={column}
                         valueClassName={
                           columnIndex === primaryFieldIndex
-                            ? "font-black text-[#16227c]"
+                            ? "font-bold text-[#16227c]"
                             : "font-semibold text-slate-600"
                         }
                       >
@@ -4846,10 +4921,10 @@ function ProcurementStages({
               <PackageSearch className="h-7 w-7" strokeWidth={2.2} />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#08783f]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#08783f]">
                 {content.eyebrow}
               </p>
-              <h2 className="mt-1 text-2xl font-black text-slate-950">
+              <h2 className="mt-1 text-2xl font-bold text-slate-950">
                 {content.title}
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
@@ -4873,10 +4948,10 @@ function ProcurementStages({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-black text-slate-500">
+                  <p className="text-sm font-bold text-slate-500">
                     {card.label}
                   </p>
-                  <p className="mt-3 text-3xl font-black text-slate-950">
+                  <p className="mt-3 text-3xl font-bold text-slate-950">
                     {card.value}
                   </p>
                 </div>
@@ -4908,18 +4983,18 @@ function ProcurementStages({
                 >
                   <Icon className="h-6 w-6" strokeWidth={2.3} />
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                   Tahap {index + 1}
                 </span>
               </div>
-              <h3 className="mt-4 text-lg font-black text-slate-950">
+              <h3 className="mt-4 text-lg font-bold text-slate-950">
                 {stage.title}
               </h3>
               <p className="mt-2 min-h-12 text-sm font-semibold leading-6 text-slate-500">
                 {stage.description}
               </p>
               <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-                <span className="text-sm font-black text-slate-900">
+                <span className="text-sm font-bold text-slate-900">
                   {stage.count.toLocaleString("id-ID")} paket
                 </span>
                 <ArrowUpRight className="h-4 w-4 text-slate-400 transition group-hover:text-[#08783f]" />
@@ -4932,16 +5007,16 @@ function ProcurementStages({
       <section className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-5">
-            <p className="text-[11px] font-black uppercase text-[#08783f]">
+            <p className="text-[11px] font-bold uppercase text-[#08783f]">
               Paket Pengadaan Terkini
             </p>
-            <h2 className="mt-1 text-xl font-black text-slate-950">
+            <h2 className="mt-1 text-xl font-bold text-slate-950">
               Posisi paket di tahapan
             </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-[760px] w-full border-collapse text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
+              <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Kode</th>
                   <th className="px-5 py-3">Nama Paket</th>
@@ -4954,7 +5029,7 @@ function ProcurementStages({
                 {dashboard.recentPackages.length > 0 ? (
                   dashboard.recentPackages.map((item) => (
                     <tr key={item.code} className="hover:bg-slate-50">
-                      <td className="px-5 py-4 font-black text-slate-800">
+                      <td className="px-5 py-4 font-bold text-slate-800">
                         {item.code}
                       </td>
                       <td className="px-5 py-4 font-bold text-slate-900">
@@ -4968,7 +5043,7 @@ function ProcurementStages({
                       </td>
                       <td className="px-5 py-4">
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-black ${statusClass(item.status)}`}
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass(item.status)}`}
                         >
                           {humanize(item.status)}
                         </span>
@@ -4991,10 +5066,10 @@ function ProcurementStages({
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-black uppercase text-[#08783f]">
+          <p className="text-[11px] font-bold uppercase text-[#08783f]">
             Timeline Pengadaan
           </p>
-          <h2 className="mt-1 text-xl font-black text-slate-950">
+          <h2 className="mt-1 text-xl font-bold text-slate-950">
             Alur dari RUP sampai realisasi
           </h2>
           <div className="mt-5 space-y-4">
@@ -5003,14 +5078,14 @@ function ProcurementStages({
                 <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-[#08783f] ring-4 ring-emerald-100" />
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-black text-slate-900">
+                    <p className="text-sm font-bold text-slate-900">
                       {item.label}
                     </p>
                     <p className="mt-1 text-xs font-semibold text-slate-500">
                       {item.period}
                     </p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
                     {item.count}
                   </span>
                 </div>

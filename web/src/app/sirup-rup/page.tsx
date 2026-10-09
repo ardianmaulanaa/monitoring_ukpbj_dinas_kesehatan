@@ -643,6 +643,9 @@ export default async function Page({ searchParams }: RupPageProps) {
                           <div className="grid grid-cols-2 gap-2">
                             <RupDetailModalButton
                               item={{
+                                catatan: item.catatan,
+                                caraPengadaan: item.caraPengadaan,
+                                createdAt: item.createdAt.toISOString(),
                                 id: item.id,
                                 kodeRup: item.kodeRup,
                                 idRupSirup: item.idRupSirup,
@@ -670,22 +673,54 @@ export default async function Page({ searchParams }: RupPageProps) {
                                 statusTransaksiKatalog:
                                   item.statusTransaksiKatalog,
                                 catatanKatalog: item.catatanKatalog,
-                                namaPaket: item.namaPaket,
-                                unitPengusul: item.unitPengusul,
-                                lokasiPaket: item.lokasiPaket,
                                 jenisBelanja: item.jenisBelanja,
+                                jumlahKebutuhan:
+                                  item.jumlahKebutuhan?.toString() ?? null,
+                                justifikasi: item.justifikasi,
+                                kegiatan: item.kegiatan,
+                                kekuranganDokumen: item.kekuranganDokumen,
+                                kendala: item.kendala,
+                                kodeRekening: item.kodeRekening,
+                                kontakPenanggungJawab:
+                                  item.kontakPenanggungJawab,
+                                lokasiPaket: item.lokasiPaket,
+                                namaPaket: item.namaPaket,
+                                outputDiharapkan: item.outputDiharapkan,
                                 sumberDana: normalizeFundingSource(
                                   item.sumberDana,
                                 ),
                                 pagu: item.pagu.toString(),
+                                picTindakLanjut: item.picTindakLanjut,
+                                ppkPptk: item.ppkPptk,
+                                prioritas: item.prioritas,
+                                program: item.program,
+                                satuanKebutuhan: item.satuanKebutuhan,
+                                spesifikasiAwal: item.spesifikasiAwal,
+                                statusDokumenPendukung:
+                                  item.statusDokumenPendukung,
+                                statusHps: item.statusHps,
+                                statusKak: item.statusKak,
+                                statusRancanganKontrak:
+                                  item.statusRancanganKontrak,
+                                subKegiatan: item.subKegiatan,
                                 metodePengadaan: item.metodePengadaan,
                                 jadwalPemilihan: item.jadwalPemilihan,
+                                jadwalMulaiRencana: item.jadwalMulaiRencana,
+                                jadwalSelesaiRencana:
+                                  item.jadwalSelesaiRencana,
                                 tanggalInputSirup: item.tanggalInputSirup,
                                 tanggalTayangSirup: item.tanggalTayangSirup,
                                 linkSirup: item.linkSirup,
                                 tahunAnggaran: item.tahunAnggaran,
                                 statusSirup: item.statusSirup,
-                                catatan: item.catatan,
+                                tindakLanjut: item.tindakLanjut,
+                                unitBidang: item.unitBidang,
+                                unitPengusul: item.unitPengusul,
+                                updatedAt: item.updatedAt.toISOString(),
+                                uraianBelanja: item.uraianBelanja,
+                                uraianKebutuhan: item.uraianKebutuhan,
+                                volumeKebutuhan: item.volumeKebutuhan,
+                                waktuKebutuhan: item.waktuKebutuhan,
                               }}
                               statusLabel={
                                 statusLabels[item.statusSirup] ??
@@ -783,6 +818,9 @@ export default async function Page({ searchParams }: RupPageProps) {
                             <div className="flex min-w-max flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                               <RupDetailModalButton
                                 item={{
+                                  catatan: item.catatan,
+                                  caraPengadaan: item.caraPengadaan,
+                                  createdAt: item.createdAt.toISOString(),
                                   id: item.id,
 
                                   kodeRup: item.kodeRup,
@@ -828,6 +866,17 @@ export default async function Page({ searchParams }: RupPageProps) {
 
                                   catatanKatalog: item.catatanKatalog,
 
+                                  kegiatan: item.kegiatan,
+
+                                  kekuranganDokumen: item.kekuranganDokumen,
+
+                                  kendala: item.kendala,
+
+                                  kodeRekening: item.kodeRekening,
+
+                                  kontakPenanggungJawab:
+                                    item.kontakPenanggungJawab,
+
                                   namaPaket: item.namaPaket,
 
                                   unitPengusul: item.unitPengusul,
@@ -836,15 +885,51 @@ export default async function Page({ searchParams }: RupPageProps) {
 
                                   jenisBelanja: item.jenisBelanja,
 
+                                  jumlahKebutuhan:
+                                    item.jumlahKebutuhan?.toString() ?? null,
+
+                                  justifikasi: item.justifikasi,
+
+                                  outputDiharapkan: item.outputDiharapkan,
+
                                   sumberDana: normalizeFundingSource(
                                     item.sumberDana,
                                   ),
 
                                   pagu: item.pagu.toString(),
 
+                                  picTindakLanjut: item.picTindakLanjut,
+
+                                  ppkPptk: item.ppkPptk,
+
+                                  prioritas: item.prioritas,
+
+                                  program: item.program,
+
+                                  satuanKebutuhan: item.satuanKebutuhan,
+
+                                  spesifikasiAwal: item.spesifikasiAwal,
+
+                                  statusDokumenPendukung:
+                                    item.statusDokumenPendukung,
+
+                                  statusHps: item.statusHps,
+
+                                  statusKak: item.statusKak,
+
+                                  statusRancanganKontrak:
+                                    item.statusRancanganKontrak,
+
+                                  subKegiatan: item.subKegiatan,
+
                                   metodePengadaan: item.metodePengadaan,
 
                                   jadwalPemilihan: item.jadwalPemilihan,
+
+                                  jadwalMulaiRencana: item.jadwalMulaiRencana,
+
+                                  jadwalSelesaiRencana:
+                                    item.jadwalSelesaiRencana,
 
                                   tanggalInputSirup: item.tanggalInputSirup,
 
@@ -856,7 +941,19 @@ export default async function Page({ searchParams }: RupPageProps) {
 
                                   statusSirup: item.statusSirup,
 
-                                  catatan: item.catatan,
+                                  tindakLanjut: item.tindakLanjut,
+
+                                  unitBidang: item.unitBidang,
+
+                                  updatedAt: item.updatedAt.toISOString(),
+
+                                  uraianBelanja: item.uraianBelanja,
+
+                                  uraianKebutuhan: item.uraianKebutuhan,
+
+                                  volumeKebutuhan: item.volumeKebutuhan,
+
+                                  waktuKebutuhan: item.waktuKebutuhan,
                                 }}
                                 statusLabel={
                                   statusLabels[item.statusSirup] ??

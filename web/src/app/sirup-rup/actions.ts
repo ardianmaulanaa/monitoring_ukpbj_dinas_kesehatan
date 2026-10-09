@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { canProcessRup } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
@@ -12,6 +12,17 @@ export type RupRevisionState = {
 };
 
 export type SirupPublicationState = {
+  data?: {
+    catatan: string | null;
+    id: string;
+    idRupSirup: string | null;
+    linkSirup: string | null;
+    metodePengadaan: string;
+    pagu: string;
+    statusSirup: string;
+    tanggalInputSirup: string | null;
+    tanggalTayangSirup: string | null;
+  };
   message: string;
   ok: boolean;
 };
@@ -190,7 +201,7 @@ export async function updateSirupPublicationAction(
     }
   }
 
-  await prisma.rencanaUmumPengadaan.update({
+  const updated = await prisma.rencanaUmumPengadaan.update({
     where: { id },
     data: {
       idRupSirup: optionalText(formData.get("idRupSirup")),
@@ -218,16 +229,33 @@ export async function updateSirupPublicationAction(
         : {}),
       catatan: optionalText(formData.get("catatan")),
     },
+    select: {
+      catatan: true,
+      id: true,
+      idRupSirup: true,
+      linkSirup: true,
+      metodePengadaan: true,
+      pagu: true,
+      statusSirup: true,
+      tanggalInputSirup: true,
+      tanggalTayangSirup: true,
+    },
   });
 
   revalidatePath("/perencanaan");
+  revalidatePath("/dashboard");
   revalidatePath("/e-purchasing");
   revalidatePath("/katalog-v6-v5");
   revalidatePath("/sirup-rup");
   revalidatePath("/tender-non-tender");
   revalidatePath(`/sirup-rup/${id}`);
+  updateTag("dashboard-data");
 
   return {
+    data: {
+      ...updated,
+      pagu: updated.pagu.toString(),
+    },
     ok: true,
     message: "Data SIRUP berhasil disimpan.",
   };

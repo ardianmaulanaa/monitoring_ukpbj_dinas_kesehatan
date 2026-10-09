@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardCheck, Save } from "lucide-react";
 import ModalShell from "@/components/modal/ModalShell";
@@ -80,10 +80,8 @@ export default function CompleteSirupModalButton({
 }: CompleteSirupModalButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [state, formAction] = useActionState(
-    updateSirupPublicationAction,
-    initialState,
-  );
+  const [state, setState] = useState<SirupPublicationState>(initialState);
+  const [isPending, startTransition] = useTransition();
   const [pagu, setPagu] = useState(onlyDigits(item.pagu));
   const [metodePengadaan, setMetodePengadaan] = useState(
     item.metodePengadaan,
@@ -91,15 +89,39 @@ export default function CompleteSirupModalButton({
 
   const formattedPagu = useMemo(() => formatCurrency(pagu), [pagu]);
 
-  useEffect(() => {
-    if (state.ok) router.refresh();
-  }, [router, state.ok]);
+  function openModal() {
+    setState(initialState);
+    setPagu(onlyDigits(item.pagu));
+    setMetodePengadaan(item.metodePengadaan);
+    setIsOpen(true);
+  }
+
+  function handleSubmit(formData: FormData) {
+    startTransition(async () => {
+      const nextState = await updateSirupPublicationAction(state, formData);
+      setState(nextState);
+
+      if (!nextState.ok) return;
+
+      if (nextState.data) {
+        setPagu(onlyDigits(nextState.data.pagu));
+        setMetodePengadaan(nextState.data.metodePengadaan);
+      }
+
+      setIsOpen(false);
+      router.refresh();
+    });
+  }
+
+  function closeModal() {
+    setIsOpen(false);
+  }
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={openModal}
         className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532]"
       >
         <ClipboardCheck className="h-4 w-4" strokeWidth={2.4} />
@@ -108,12 +130,12 @@ export default function CompleteSirupModalButton({
 
       <ModalShell
         isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        onClose={closeModal}
         eyebrow="SIRUP / RUP"
         title={label}
         maxWidthClassName="max-w-4xl"
       >
-        <form action={formAction} className="grid gap-5">
+        <form action={handleSubmit} className="grid gap-5">
           <input type="hidden" name="id" value={item.id} />
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -256,10 +278,11 @@ export default function CompleteSirupModalButton({
             </button>
             <button
               type="submit"
+              disabled={isPending}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532]"
             >
               <Save className="h-4 w-4" strokeWidth={2.4} />
-              Simpan Data SIRUP
+              {isPending ? "Menyimpan..." : "Simpan Data SIRUP"}
             </button>
           </div>
         </form>

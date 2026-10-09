@@ -23,12 +23,11 @@ import type {
 } from "@/lib/dashboard-data";
 
 const chartPalette = [
-  "#08783f",
-  "#0ea5e9",
-  "#f59e0b",
-  "#64748b",
-  "#10b981",
-  "#94a3b8",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ];
 
 function formatCompactCurrency(value: number) {
@@ -123,15 +122,15 @@ function PanelHeader({
   return (
     <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
       <div>
-        <p className="text-[11px] font-black uppercase text-[#08783f]">
+        <p className="text-[11px] font-bold uppercase text-[#08783f]">
           {eyebrow}
         </p>
 
-        <h2 className="mt-1 text-lg font-black text-slate-950">{title}</h2>
+        <h2 className="mt-1 text-lg font-bold text-slate-950">{title}</h2>
       </div>
 
       {value ? (
-        <p className="text-sm font-black text-slate-500">{value}</p>
+        <p className="text-sm font-bold text-slate-500">{value}</p>
       ) : null}
     </div>
   );
@@ -140,7 +139,7 @@ function PanelHeader({
 function VerticalBar({
   value,
   max,
-  color = "#08783f",
+  color = "var(--chart-1)",
   title,
 }: {
   value: number;
@@ -201,7 +200,7 @@ function VerticalBreakdownBars({
               </div>
               <div className="pt-3 text-center">
                 <p
-                  className="truncate text-xs font-black text-slate-700"
+                  className="truncate text-xs font-bold text-slate-700"
                   title={item.label}
                 >
                   {item.label}
@@ -449,7 +448,7 @@ export default async function Page({
             <div className="flex gap-2 xl:ml-auto">
               <button
                 type="submit"
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-[#08783f] px-4 text-sm font-black text-white shadow-sm xl:flex-none"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-[#08783f] px-4 text-sm font-bold text-white shadow-sm xl:flex-none"
               >
                 Filter
               </button>
@@ -476,13 +475,13 @@ export default async function Page({
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-slate-100 bg-slate-50">
-                      <span className={`text-2xl font-black ${card.color}`}>
+                      <span className={`text-2xl font-bold ${card.color}`}>
                         {numberLabel(card.value)}
                       </span>
                     </div>
 
                     <div className="min-w-0">
-                      <p className="truncate text-base font-black text-slate-900">
+                      <p className="truncate text-base font-bold text-slate-900">
                         {card.label}
                       </p>
 
@@ -517,14 +516,14 @@ export default async function Page({
                         className="rounded-lg bg-slate-50 p-4"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-xs font-black uppercase text-slate-400">
+                          <p className="text-xs font-bold uppercase text-slate-400">
                             {item.label}
                           </p>
 
                           <Icon className="h-5 w-5 text-[#08783f]" />
                         </div>
 
-                        <p className="mt-2 text-2xl font-black text-slate-950">
+                        <p className="mt-2 text-2xl font-bold text-slate-950">
                           {item.value}
                         </p>
 
@@ -554,23 +553,23 @@ export default async function Page({
                           <VerticalBar
                             value={item.pagu}
                             max={maxFinancial}
-                            color="#08783f"
+                            color="var(--chart-1)"
                             title={`Pagu ${item.month}: ${formatCurrency(item.pagu)}`}
                           />
                           <VerticalBar
                             value={item.kontrak}
                             max={maxFinancial}
-                            color="#0ea5e9"
+                            color="var(--chart-2)"
                             title={`Nilai kontrak ${item.month}: ${formatCurrency(item.kontrak)}`}
                           />
                           <VerticalBar
                             value={item.realisasi}
                             max={maxFinancial}
-                            color="#10b981"
+                            color="var(--chart-4)"
                             title={`Realisasi ${item.month}: ${formatCurrency(item.realisasi)}`}
                           />
                         </div>
-                        <span className="text-center text-[11px] font-black text-slate-500">
+                        <span className="text-center text-[11px] font-bold text-slate-500">
                           {item.month}
                         </span>
                       </div>
@@ -584,11 +583,11 @@ export default async function Page({
                   </span>
 
                   <span>
-                    <span className="text-sky-500">■</span> Nilai Kontrak
+                    <span className="text-[#16227c]">■</span> Nilai Kontrak
                   </span>
 
                   <span>
-                    <span className="text-emerald-500">■</span> Realisasi
+                    <span className="text-[#159fbe]">■</span> Realisasi
                   </span>
                 </div>
               </div>
@@ -647,11 +646,11 @@ export default async function Page({
                       }}
                     >
                       <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white text-center shadow-inner">
-                        <p className="text-2xl font-black text-slate-950">
+                        <p className="text-2xl font-bold text-slate-950">
                           {numberLabel(totalMethods)}
                         </p>
 
-                        <p className="mt-1 text-xs font-black uppercase text-slate-400">
+                        <p className="mt-1 text-xs font-bold uppercase text-slate-400">
                           Paket
                         </p>
                       </div>
@@ -672,7 +671,7 @@ export default async function Page({
                           />
 
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-black text-slate-800">
+                            <p className="truncate text-sm font-bold text-slate-800">
                               {item.percent}% - {item.label}
                             </p>
 
@@ -705,7 +704,7 @@ export default async function Page({
                         key={item.label}
                         className="grid grid-cols-[minmax(0,96px)_1fr_42px] items-center gap-3"
                       >
-                        <p className="truncate text-sm font-black text-slate-700">
+                        <p className="truncate text-sm font-bold text-slate-700">
                           {item.label}
                         </p>
 
@@ -722,7 +721,7 @@ export default async function Page({
                           />
                         </div>
 
-                        <p className="text-right text-sm font-black text-slate-900">
+                        <p className="text-right text-sm font-bold text-slate-900">
                           {numberLabel(item.count)}
                         </p>
                       </div>
@@ -748,7 +747,7 @@ export default async function Page({
                     const content = (
                       <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-black text-slate-800">
+                          <p className="truncate text-sm font-bold text-slate-800">
                             {item.label}
                           </p>
 
@@ -757,7 +756,7 @@ export default async function Page({
                           </p>
                         </div>
 
-                        <p className="text-xl font-black text-[#08783f]">
+                        <p className="text-xl font-bold text-[#08783f]">
                           {numberLabel(item.count)}
                         </p>
                       </div>
@@ -784,31 +783,31 @@ export default async function Page({
                 {dashboard.efficiency.eligibleCount > 0 ? (
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                     <div className="rounded-lg bg-slate-50 p-4">
-                      <p className="text-xs font-black uppercase text-slate-400">
+                      <p className="text-xs font-bold uppercase text-slate-400">
                         Pagu
                       </p>
 
-                      <p className="mt-2 text-xl font-black text-slate-950">
+                      <p className="mt-2 text-xl font-bold text-slate-950">
                         {formatCompactCurrency(dashboard.efficiency.totalPagu)}
                       </p>
                     </div>
 
                     <div className="rounded-lg bg-slate-50 p-4">
-                      <p className="text-xs font-black uppercase text-slate-400">
+                      <p className="text-xs font-bold uppercase text-slate-400">
                         Nilai Final
                       </p>
 
-                      <p className="mt-2 text-xl font-black text-slate-950">
+                      <p className="mt-2 text-xl font-bold text-slate-950">
                         {formatCompactCurrency(dashboard.efficiency.totalFinal)}
                       </p>
                     </div>
 
                     <div className="rounded-lg bg-emerald-50 p-4">
-                      <p className="text-xs font-black uppercase text-emerald-700">
+                      <p className="text-xs font-bold uppercase text-emerald-700">
                         Efisiensi
                       </p>
 
-                      <p className="mt-2 text-xl font-black text-emerald-700">
+                      <p className="mt-2 text-xl font-bold text-emerald-700">
                         {formatCompactCurrency(
                           dashboard.efficiency.totalSaving,
                         )}
@@ -816,11 +815,11 @@ export default async function Page({
                     </div>
 
                     <div className="rounded-lg bg-emerald-50 p-4">
-                      <p className="text-xs font-black uppercase text-emerald-700">
+                      <p className="text-xs font-bold uppercase text-emerald-700">
                         Saving Rate
                       </p>
 
-                      <p className="mt-2 text-xl font-black text-emerald-700">
+                      <p className="mt-2 text-xl font-bold text-emerald-700">
                         {dashboard.efficiency.savingRate.toLocaleString(
                           "id-ID",
                         )}
@@ -845,12 +844,12 @@ export default async function Page({
                   dashboard.activities.slice(0, 5).map((item, index) => {
                     const content = (
                       <div className="grid grid-cols-[48px_minmax(0,1fr)] gap-3 py-3">
-                        <p className="text-sm font-black text-slate-500">
+                        <p className="text-sm font-bold text-slate-500">
                           {item.time}
                         </p>
 
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-black text-slate-900">
+                          <p className="truncate text-sm font-bold text-slate-900">
                             {item.title}
                           </p>
 

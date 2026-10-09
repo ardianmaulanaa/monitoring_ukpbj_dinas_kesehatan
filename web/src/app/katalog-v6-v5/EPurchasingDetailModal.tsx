@@ -31,6 +31,7 @@ type EPurchasingDetailModalProps = {
     ppkPptk?: string | null;
     metodePengadaan: string;
     statusSirup?: string | null;
+    tanggalInputSirup?: string | null;
     tanggalTayangSirup?: string | null;
   };
   stageLabel: string;
@@ -52,7 +53,7 @@ export default function EPurchasingDetailModal({
     <ModalShell
       isOpen
       onClose={closeModal}
-      eyebrow="E-Purchasing"
+      eyebrow="Proses E-Purchasing"
       title={rup.namaPaket}
       maxWidthClassName="max-w-7xl"
     >

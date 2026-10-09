@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowUpRight, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Eye, type LucideIcon } from "lucide-react";
 
 type ProcurementCompactCardProps = {
   icon: LucideIcon;
@@ -45,10 +45,10 @@ export default function ProcurementCompactCard({
         </span>
 
         <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 min-w-0 break-words text-base font-black leading-5 text-[#16227c]">
+          <h3 className="line-clamp-2 min-w-0 break-words text-base font-bold leading-5 text-[#16227c]">
             {title || "-"}
           </h3>
-          <p className="mt-1 truncate text-xs font-black uppercase tracking-wide text-slate-400">
+          <p className="mt-1 truncate text-xs font-semibold uppercase tracking-[0.04em] text-slate-400">
             {codeLabel || "-"}
           </p>
         </div>
@@ -57,14 +57,14 @@ export default function ProcurementCompactCard({
       <div className="mt-4 flex min-w-0 flex-wrap gap-2">
         {sourceFund ? (
           <span
-            className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${sourceFundClassName}`}
+            className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-semibold ${sourceFundClassName}`}
             title={sourceFund}
           >
             <span className="truncate">{sourceFund}</span>
           </span>
         ) : null}
         <span
-          className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-black ${statusClassName}`}
+          className={`inline-flex max-w-full rounded-full px-3 py-1 text-xs font-semibold ${statusClassName}`}
           title={status}
         >
           <span className="truncate">{status}</span>
@@ -77,10 +77,10 @@ export default function ProcurementCompactCard({
             key={row.label}
             className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2.5"
           >
-            <span className="shrink-0 text-[11px] font-black uppercase tracking-wide text-slate-400">
+            <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-400">
               {row.label}
             </span>
-            <span className="line-clamp-2 min-w-0 break-words text-right text-sm font-black leading-5 text-slate-800">
+            <span className="line-clamp-2 min-w-0 break-words text-right text-sm font-semibold leading-5 text-slate-800">
               {row.value || "-"}
             </span>
           </div>
@@ -96,18 +96,40 @@ export default function ProcurementCompactCard({
 
 export function CompactManageLink({
   href,
-  children = "Kelola Proses",
+  children = "Proses E-Purchasing",
+  label,
 }: {
   href: string;
   children?: ReactNode;
+  label?: string;
 }) {
   return (
     <Link
       href={href}
-      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#08783f] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#066b38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2 active:scale-[0.98]"
+      aria-label={label}
+      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#08783f] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#066b38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2 active:scale-[0.98]"
     >
       {children}
       <ArrowUpRight className="h-4 w-4" strokeWidth={2.5} />
+    </Link>
+  );
+}
+
+export function CompactDetailLink({
+  href,
+  label,
+}: {
+  href: string;
+  label?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 text-sm font-semibold text-[#08783f] shadow-sm transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2 active:scale-[0.98]"
+    >
+      <Eye className="h-4 w-4" strokeWidth={2.4} />
+      Detail
     </Link>
   );
 }

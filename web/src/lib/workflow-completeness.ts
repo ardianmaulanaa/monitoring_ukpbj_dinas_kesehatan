@@ -1,4 +1,5 @@
 import type { PaketMetodePengadaan, RupStatus } from "@prisma/client";
+import { isEligibleForEPurchasing } from "@/lib/e-purchasing-eligibility";
 
 type MaybeNumber = number | string | { toString(): string } | null | undefined;
 
@@ -18,6 +19,44 @@ export type CompletionResult<TSection extends string = string> = {
 export type WorkflowValidationError = {
   field?: string;
   message: string;
+};
+
+export const ePurchasingFieldLabels: Record<string, string> = {
+  catatanKatalog: "Catatan",
+  dokumenKontrak: "Dokumen kontrak",
+  hargaNegosiasiKatalog: "Harga nego final",
+  hargaPenawaranKatalog: "Harga penawaran",
+  hargaSatuanKatalog: "Harga tayang satuan",
+  hasilPemeriksaan: "Hasil pemeriksaan",
+  idRupSirup: "ID RUP SIRUP",
+  jenisKatalog: "Platform katalog",
+  jumlahProdukKatalog: "Jumlah produk",
+  linkSirup: "Link SIRUP",
+  metodePengadaan: "Metode final",
+  namaPenyediaKatalog: "Nama penyedia",
+  namaProdukKatalog: "Nama produk",
+  nilaiPembayaran: "Nilai pembayaran",
+  nomorBaPemeriksaan: "Nomor BA pemeriksaan",
+  nomorBast: "Nomor BAST",
+  nomorInvoice: "Nomor invoice",
+  nomorSpkKontrak: "Nomor SPK / kontrak",
+  nomorSuratJalan: "Nomor surat jalan",
+  nomorSuratPesanan: "Nomor surat pesanan",
+  pagu: "Pagu",
+  satuanProdukKatalog: "Satuan produk",
+  statusDokumenPembayaran: "Status dokumen pembayaran",
+  statusNegosiasiKatalog: "Status negosiasi",
+  statusPembayaranEp: "Status pembayaran",
+  statusPemeriksaanEp: "Status pemeriksaan",
+  statusPengirimanEp: "Status pengiriman",
+  statusSirup: "Status SIRUP",
+  statusSuratPesanan: "Status surat pesanan",
+  tanggalAktualKirim: "Tanggal aktual pengiriman",
+  tanggalBast: "Tanggal BAST",
+  tanggalPembayaranEp: "Tanggal pembayaran",
+  tanggalPemeriksaan: "Tanggal pemeriksaan",
+  tanggalSuratPesanan: "Tanggal surat pesanan",
+  tanggalTayangSirup: "Tanggal tayang SIRUP",
 };
 
 export const planningFieldLabels: Record<string, string> = {
@@ -252,24 +291,42 @@ export type EPurchasingCompletenessInput = RupCompletenessInput & {
 };
 
 export function getEPurchasingCompleteness(data: EPurchasingCompletenessInput) {
-  const rupComplete = getRupCompleteness(data).complete &&
-    data.metodePengadaan === "E_PURCHASING" &&
-    data.statusSirup === "SUDAH_TAYANG";
-  const product = section("Produk", [
-    [rupComplete, "rup"],
+  return result({
+    rup: validateRupStage(data),
+    product: validateProductStage(data),
+    provider: validateProviderStage(data),
+    negotiation: validateNegotiationStage(data),
+    contract: validateContractStage(data),
+    delivery: validateDeliveryStage(data),
+    inspection: validateInspectionStage(data),
+    payment: validatePaymentStage(data),
+    documents: validateDocumentStage(data),
+  });
+}
+
+export function validateRupStage(data: EPurchasingCompletenessInput) {
+  return section("RUP", [
+    [isEligibleForEPurchasing(data), "statusSirup"],
+    [filled(data.idRupSirup), "idRupSirup"],
+  ]);
+}
+
+export function validateProductStage(data: EPurchasingCompletenessInput) {
+  return section("Produk", [
     [filled(data.namaProdukKatalog), "namaProdukKatalog"],
     [positive(data.jumlahProdukKatalog), "jumlahProdukKatalog"],
     [filled(data.satuanProdukKatalog), "satuanProdukKatalog"],
     [positive(data.hargaSatuanKatalog), "hargaSatuanKatalog"],
-    [positive(data.totalHargaKatalog), "totalHargaKatalog"],
     [filled(data.jenisKatalog), "jenisKatalog"],
   ]);
-  const provider = section("Penyedia", [
-    [product.complete, "product"],
-    [filled(data.namaPenyediaKatalog), "namaPenyediaKatalog"],
-  ]);
-  const negotiation = section("Negosiasi", [
-    [provider.complete, "provider"],
+}
+
+export function validateProviderStage(data: EPurchasingCompletenessInput) {
+  return section("Penyedia", [[filled(data.namaPenyediaKatalog), "namaPenyediaKatalog"]]);
+}
+
+export function validateNegotiationStage(data: EPurchasingCompletenessInput) {
+  return section("Negosiasi", [
     [positive(data.hargaPenawaranKatalog), "hargaPenawaranKatalog"],
     [positive(data.hargaNegosiasiKatalog), "hargaNegosiasiKatalog"],
     [statusComplete(data.statusNegosiasiKatalog, ["SELESAI"]), "statusNegosiasiKatalog"],
@@ -280,8 +337,10 @@ export function getEPurchasingCompleteness(data: EPurchasingCompletenessInput) {
       "hargaNegosiasiKatalog",
     ],
   ]);
-  const contract = section("Kontrak / Surat Pesanan", [
-    [negotiation.complete, "negotiation"],
+}
+
+export function validateContractStage(data: EPurchasingCompletenessInput) {
+  return section("Kontrak / Surat Pesanan", [
     [statusComplete(data.statusSuratPesanan, ["TERBIT", "DITANDATANGANI"]), "statusSuratPesanan"],
     [
       (filled(data.nomorSuratPesanan) && filled(data.tanggalSuratPesanan)) ||
@@ -289,14 +348,18 @@ export function getEPurchasingCompleteness(data: EPurchasingCompletenessInput) {
       "nomorSuratPesanan",
     ],
   ]);
-  const delivery = section("Pengiriman", [
-    [contract.complete, "contract"],
+}
+
+export function validateDeliveryStage(data: EPurchasingCompletenessInput) {
+  return section("Pengiriman", [
     [statusComplete(data.statusPengirimanEp, ["DITERIMA"]), "statusPengirimanEp"],
     [filled(data.tanggalAktualKirim), "tanggalAktualKirim"],
     [filled(data.nomorSuratJalan), "nomorSuratJalan"],
   ]);
-  const inspection = section("Pemeriksaan / BAST", [
-    [delivery.complete, "delivery"],
+}
+
+export function validateInspectionStage(data: EPurchasingCompletenessInput) {
+  return section("Pemeriksaan / BAST", [
     [statusComplete(data.statusPemeriksaanEp, ["SELESAI"]), "statusPemeriksaanEp"],
     [
       statusComplete(data.hasilPemeriksaan, ["DITERIMA"]) ||
@@ -309,33 +372,97 @@ export function getEPurchasingCompleteness(data: EPurchasingCompletenessInput) {
     [filled(data.nomorBast), "nomorBast"],
     [filled(data.tanggalBast), "tanggalBast"],
   ]);
-  const payment = section("Pembayaran", [
-    [inspection.complete, "inspection"],
+}
+
+export function validatePaymentStage(data: EPurchasingCompletenessInput) {
+  return section("Pembayaran", [
     [statusComplete(data.statusDokumenPembayaran, ["LENGKAP"]), "statusDokumenPembayaran"],
     [statusComplete(data.statusPembayaranEp, ["DIBAYAR"]), "statusPembayaranEp"],
     [positive(data.nilaiPembayaran), "nilaiPembayaran"],
     [filled(data.tanggalPembayaranEp), "tanggalPembayaranEp"],
     [filled(data.nomorInvoice), "nomorInvoice"],
   ]);
-  const documents = section("Dokumen", [
+}
+
+export function validateDocumentStage(data: EPurchasingCompletenessInput) {
+  return section("Dokumen", [
     [filled(data.nomorSuratPesanan) || filled(data.nomorSpkKontrak), "dokumenKontrak"],
     [filled(data.nomorSuratJalan), "nomorSuratJalan"],
     [filled(data.nomorBaPemeriksaan), "nomorBaPemeriksaan"],
     [filled(data.nomorBast), "nomorBast"],
     [filled(data.nomorInvoice), "nomorInvoice"],
   ]);
+}
 
-  return result({
-    rup: section("RUP", [[rupComplete, "rup"]]),
-    product,
-    provider,
-    negotiation,
-    contract,
-    delivery,
-    inspection,
-    payment,
-    documents,
-  });
+export function getFirstIncompleteEPurchasingStage(
+  completion: CompletionResult<EPurchasingStage>,
+) {
+  const orderedStages: EPurchasingStage[] = [
+    "rup",
+    "product",
+    "provider",
+    "negotiation",
+    "contract",
+    "delivery",
+    "inspection",
+    "payment",
+    "documents",
+  ];
+
+  return orderedStages.find((key) => !completion.sections[key].complete) ?? "payment";
+}
+
+export function canEnterEPurchasingStage(
+  completion: CompletionResult<EPurchasingStage>,
+  stage: EPurchasingStage,
+) {
+  const orderedStages: EPurchasingStage[] = [
+    "rup",
+    "product",
+    "provider",
+    "negotiation",
+    "contract",
+    "delivery",
+    "inspection",
+    "payment",
+  ];
+  const stageIndex = orderedStages.indexOf(stage);
+
+  if (stageIndex < 0) {
+    return true;
+  }
+
+  return orderedStages
+    .slice(0, stageIndex)
+    .every((key) => completion.sections[key].complete);
+}
+
+export function formatWorkflowMissingFields(fields: string[]) {
+  return fields.map((field) => ePurchasingFieldLabels[field] ?? field);
+}
+
+export function friendlyIncompleteMessage(stage: string, fields: string[]) {
+  const labels = formatWorkflowMissingFields(fields);
+
+  if (labels.length === 0) {
+    return `${stage} belum lengkap.`;
+  }
+
+  return `${stage} belum lengkap: ${labels.join(", ")}.`;
+}
+
+export function prerequisiteMessage(stage: EPurchasingStage) {
+  const messages: Partial<Record<EPurchasingStage, string>> = {
+    product: "Data RUP belum memenuhi syarat untuk E-Purchasing.",
+    provider: "Lengkapi data produk sebelum melanjutkan ke Penyedia.",
+    negotiation: "Lengkapi data penyedia sebelum melanjutkan ke Negosiasi.",
+    contract: "Selesaikan negosiasi sebelum melanjutkan ke Kontrak / Surat Pesanan.",
+    delivery: "Lengkapi kontrak atau surat pesanan sebelum melanjutkan ke Pengiriman.",
+    inspection: "Lengkapi pengiriman sebelum melanjutkan ke Pemeriksaan / BAST.",
+    payment: "Lengkapi pemeriksaan dan BAST sebelum melanjutkan ke Pembayaran.",
+  };
+
+  return messages[stage] ?? "Tahap sebelumnya belum lengkap.";
 }
 
 export function assertComplete(

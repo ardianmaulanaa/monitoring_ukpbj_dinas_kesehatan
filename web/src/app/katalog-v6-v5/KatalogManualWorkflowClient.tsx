@@ -15,7 +15,14 @@ import {
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { updateKatalogWorkflowAction } from "@/app/katalog-v6-v5/actions";
 import { DetailField } from "@/components/detail/DetailHorizontalSection";
-import { getEPurchasingCompleteness } from "@/lib/workflow-completeness";
+import {
+  canEnterEPurchasingStage,
+  formatWorkflowMissingFields,
+  getEPurchasingCompleteness,
+  getFirstIncompleteEPurchasingStage,
+  prerequisiteMessage,
+  type EPurchasingStage,
+} from "@/lib/workflow-completeness";
 
 type RupSummary = {
   id: string;
@@ -112,7 +119,7 @@ const orderedStageKeys = [
 
 const inputClass =
   "h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100";
-const labelClass = "text-xs font-black uppercase tracking-wide text-slate-500";
+const labelClass = "text-xs font-bold uppercase tracking-[0.04em] text-slate-500";
 const textareaClass =
   "min-h-24 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm font-semibold leading-6 text-slate-700 outline-none transition focus:border-[#08783f] focus:ring-2 focus:ring-emerald-100";
 
@@ -146,7 +153,7 @@ function SubmitButton({
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066a37] disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-bold text-white transition hover:bg-[#066a37] disabled:cursor-not-allowed disabled:opacity-60"
     >
       <Save className="h-4 w-4" />
       {pending ? "Menyimpan..." : children}
@@ -166,9 +173,13 @@ export default function KatalogManualWorkflowClient({
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [productForm, setProductForm] = useState({
+    hargaTayang: initialDraft.hargaSatuanKatalog ?? "",
+    jumlah: initialDraft.jumlahProdukKatalog ?? "1",
+  });
 
-  const jumlah = numberValue(initialDraft.jumlahProdukKatalog) || 1;
-  const hargaTayang = numberValue(initialDraft.hargaSatuanKatalog);
+  const jumlah = numberValue(productForm.jumlah);
+  const hargaTayang = numberValue(productForm.hargaTayang);
   const totalHargaTayang = jumlah * hargaTayang;
   const hargaFinal = numberValue(initialDraft.hargaNegosiasiKatalog);
   const selisihPagu = Math.max(rup.pagu - hargaFinal, 0);
@@ -189,12 +200,15 @@ export default function KatalogManualWorkflowClient({
       }),
     [initialDraft, rup],
   );
-  const currentStage =
-    orderedStageKeys.find((key) => !completeness.sections[key].complete) ??
-    "documents";
-  const missingByStage = Object.values(completeness.sections)
-    .flatMap((item) => item.missingFields.map((field) => `${item.label}: ${field}`))
-    .slice(0, 8);
+  const currentStage = getFirstIncompleteEPurchasingStage(completeness);
+  const workflowPercentage = Math.round(
+    (orderedStageKeys.filter((key) => completeness.sections[key].complete).length /
+      orderedStageKeys.length) *
+      100,
+  );
+  const currentStageMissingFields = formatWorkflowMissingFields(
+    completeness.sections[currentStage].missingFields,
+  );
 
   const progress = useMemo(
     () =>
@@ -217,6 +231,16 @@ export default function KatalogManualWorkflowClient({
     { key: "payment", label: "Pembayaran", icon: WalletCards },
     { key: "documents", label: "Dokumen", icon: ClipboardList },
   ];
+
+  const tabStage: Partial<Record<TabKey, EPurchasingStage>> = {
+    product: "product",
+    provider: "provider",
+    negotiation: "negotiation",
+    contract: "contract",
+    delivery: "delivery",
+    inspection: "inspection",
+    payment: "payment",
+  };
 
   function submit(
     event: FormEvent<HTMLFormElement>,
@@ -248,15 +272,25 @@ export default function KatalogManualWorkflowClient({
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.key;
+            const stage = tabStage[tab.key];
+            const locked = stage ? !canEnterEPurchasingStage(completeness, stage) : false;
 
             return (
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-black transition ${
+                disabled={locked}
+                title={locked && stage ? prerequisiteMessage(stage) : undefined}
+                onClick={() => {
+                  if (!locked) {
+                    setActiveTab(tab.key);
+                  }
+                }}
+                className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-bold transition ${
                   active
                     ? "border-[#08783f] bg-emerald-50 text-[#08783f]"
+                    : locked
+                      ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300"
                     : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                 }`}
               >
@@ -300,18 +334,18 @@ export default function KatalogManualWorkflowClient({
               label="Tahap Saat Ini"
               value={completeness.complete ? "SELESAI" : completeness.sections[currentStage].label}
             />
-            <ReadOnlyField label="Kelengkapan" value={`${completeness.percentage}%`} />
+            <ReadOnlyField label="Kelengkapan" value={`${workflowPercentage}%`} />
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <p className="text-xs font-black uppercase tracking-wide text-[#08783f]">
+            <p className="text-xs font-bold uppercase tracking-[0.04em] text-[#08783f]">
               Progress E-Purchasing
             </p>
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {progress.map((item) => (
                 <div
                   key={item.label}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-black ${
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold ${
                     item.done
                       ? "border-emerald-200 bg-emerald-50 text-[#08783f]"
                       : item.active
@@ -330,14 +364,19 @@ export default function KatalogManualWorkflowClient({
 
           {!completeness.complete ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-xs font-black uppercase tracking-wide text-amber-700">
-                Proses belum dapat dilanjutkan
+              <p className="text-xs font-bold uppercase tracking-[0.04em] text-amber-700">
+                Tahap berikutnya belum terbuka
               </p>
-              <ul className="mt-3 grid gap-2 text-sm font-semibold text-amber-800">
-                {missingByStage.map((item) => (
-                  <li key={item}>- {item}</li>
-                ))}
-              </ul>
+              <p className="mt-2 text-sm font-semibold text-amber-800">
+                {currentStage === "rup"
+                  ? "Data RUP belum memenuhi syarat untuk E-Purchasing."
+                  : `${completeness.sections[currentStage].label} belum lengkap.`}
+              </p>
+              {currentStageMissingFields.length > 0 ? (
+                <p className="mt-1 text-xs font-bold text-amber-700">
+                  Lengkapi: {currentStageMissingFields.join(", ")}.
+                </p>
+              ) : null}
             </div>
           ) : null}
         </section>
@@ -373,14 +412,26 @@ export default function KatalogManualWorkflowClient({
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Jumlah *</span>
-            <input name="jumlah" type="number" min="1" defaultValue={initialDraft.jumlahProdukKatalog ?? "1"} className={inputClass} />
+            <input
+              name="jumlah"
+              type="number"
+              min="1"
+              value={productForm.jumlah}
+              onChange={(event) =>
+                setProductForm((current) => ({
+                  ...current,
+                  jumlah: event.target.value,
+                }))
+              }
+              className={inputClass}
+            />
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Satuan *</span>
             <input name="satuan" defaultValue={initialDraft.satuanProdukKatalog ?? "Unit"} className={inputClass} />
           </label>
           <label className="grid gap-2">
-            <span className={labelClass}>Platform / Versi Katalog</span>
+            <span className={labelClass}>Platform / Versi Katalog *</span>
             <select name="platform" defaultValue={initialDraft.jenisKatalog ?? "Katalog V6"} className={inputClass}>
               <option value="Katalog V6">Katalog V6</option>
               <option value="Katalog V5">Katalog V5</option>
@@ -396,7 +447,19 @@ export default function KatalogManualWorkflowClient({
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Harga Tayang Satuan *</span>
-            <input name="hargaTayang" type="number" min="1" defaultValue={initialDraft.hargaSatuanKatalog ?? ""} className={inputClass} />
+            <input
+              name="hargaTayang"
+              type="number"
+              min="1"
+              value={productForm.hargaTayang}
+              onChange={(event) =>
+                setProductForm((current) => ({
+                  ...current,
+                  hargaTayang: event.target.value,
+                }))
+              }
+              className={inputClass}
+            />
           </label>
           <label className="grid gap-2 sm:col-span-2">
             <span className={labelClass}>Link Produk Katalog</span>
@@ -408,7 +471,7 @@ export default function KatalogManualWorkflowClient({
           </label>
           <div className="rounded-lg bg-slate-50 p-3 sm:col-span-2">
             <p className={labelClass}>Harga Tayang Total</p>
-            <p className="mt-1 text-lg font-black text-[#16227c]">
+            <p className="mt-1 text-lg font-bold text-[#16227c]">
               {rupiah(totalHargaTayang)}
             </p>
           </div>
