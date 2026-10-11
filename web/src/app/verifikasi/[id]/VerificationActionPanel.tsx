@@ -11,6 +11,39 @@ type VerificationActionPanelProps = {
   status: string;
 };
 
+function stageForStatus(status: string) {
+  if (status === "DIAJUKAN" || status === "MENUNGGU_VERIFIKASI_KEPALA_UNIT") {
+    return "kepala_unit" as const;
+  }
+  if (status === "MENUNGGU_VALIDASI_PPK_PPTK") return "ppk_pptk" as const;
+  if (status === "MENUNGGU_PERSETUJUAN_PA_KPA") return "pa_kpa" as const;
+  return null;
+}
+
+const copyByStage = {
+  kepala_unit: {
+    approveButton: "Verifikasi Usulan",
+    body: "Usulan yang telah diverifikasi akan diteruskan kepada PPK/PPTK untuk validasi perencanaan.",
+    eyebrow: "VERIFIKASI KEPALA UNIT",
+    title: "Verifikasi usulan ini?",
+    verb: "Verifikasi",
+  },
+  ppk_pptk: {
+    approveButton: "Validasi Perencanaan",
+    body: "Usulan yang telah divalidasi akan diteruskan kepada PA/KPA untuk persetujuan akhir.",
+    eyebrow: "VALIDASI PERENCANAAN",
+    title: "Validasi perencanaan ini?",
+    verb: "Validasi",
+  },
+  pa_kpa: {
+    approveButton: "Setujui Perencanaan",
+    body: "Usulan yang disetujui PA/KPA akan berubah menjadi Siap RUP dan dapat diproses pada modul SIRUP/RUP.",
+    eyebrow: "PERSETUJUAN PERENCANAAN",
+    title: "Setujui perencanaan ini?",
+    verb: "Setujui",
+  },
+} as const;
+
 export default function VerificationActionPanel({
   canVerify,
   proposalId,
@@ -21,7 +54,9 @@ export default function VerificationActionPanel({
   const [isApproveOpen, setIsApproveOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
-  const canAct = canVerify && status === "DIAJUKAN";
+  const stage = stageForStatus(status);
+  const copy = stage ? copyByStage[stage] : copyByStage.kepala_unit;
+  const canAct = canVerify && Boolean(stage);
 
   async function submitVerification(
     payload:
@@ -55,7 +90,7 @@ export default function VerificationActionPanel({
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div>
         <p className="text-xs font-black uppercase text-[#08783f]">
-          Verifikasi Kepala Unit
+          {copy.eyebrow}
         </p>
         <h2 className="mt-1 text-lg font-black text-[#16227c]">
           Catatan Verifikasi
@@ -115,19 +150,18 @@ export default function VerificationActionPanel({
           className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           <CheckCircle2 className="h-4 w-4" />
-          Setujui Usulan
+          {copy.approveButton}
         </button>
       </div>
 
       <ModalShell
         isOpen={isApproveOpen}
         onClose={() => setIsApproveOpen(false)}
-        eyebrow="Setujui Usulan"
-        title="Setujui Usulan"
+        eyebrow={copy.eyebrow}
+        title={copy.title}
       >
         <p className="text-sm font-semibold leading-6 text-slate-600">
-          Pastikan seluruh data telah diperiksa. Setelah disetujui, usulan akan
-          masuk ke daftar Siap RUP.
+          {copy.body}
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -148,7 +182,7 @@ export default function VerificationActionPanel({
             }
             className="h-10 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white disabled:bg-slate-300"
           >
-            Setujui Usulan
+            {pending ? "Memproses..." : copy.verb}
           </button>
         </div>
       </ModalShell>

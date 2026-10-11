@@ -28,6 +28,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { canAccessPath } from "@/lib/access-control";
 
 type SidebarProps = {
@@ -166,20 +167,7 @@ export default function Sidebar({
     return () => window.clearTimeout(timer);
   }, []);
 
-  // Satu pemilik scroll-lock untuk drawer sidebar. Cleanup selalu mengembalikan
-  // nilai overflow sebelumnya agar tidak menabrak mekanisme modal.
-  useEffect(() => {
-    if (!mounted || !drawerOpen) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [drawerOpen, mounted]);
+  useBodyScrollLock(mounted && drawerOpen);
 
   useEffect(() => {
     if (!drawerOpen) {

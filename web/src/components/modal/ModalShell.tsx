@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 type ModalShellProps = {
   // children adalah isi modal, misalnya form tambah atau detail data.
@@ -25,6 +26,7 @@ export default function ModalShell({
 }: ModalShellProps) {
   const [animationState, setAnimationState] = useState<"opening" | "open" | "closing">("opening");
   const closeTimeoutRef = useRef<number | null>(null);
+  useBodyScrollLock(isOpen);
 
   const requestClose = useCallback(() => {
     if (closeTimeoutRef.current !== null) return;
@@ -52,12 +54,9 @@ export default function ModalShell({
     };
   }, [isOpen]);
 
-  // Saat modal terbuka, body dikunci dan tombol Escape bisa menutup modal.
+  // Saat modal terbuka, tombol Escape bisa menutup modal.
   useEffect(() => {
     if (!isOpen) return;
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") requestClose();
@@ -66,7 +65,6 @@ export default function ModalShell({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, requestClose]);

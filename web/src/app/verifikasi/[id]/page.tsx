@@ -7,7 +7,8 @@ import { formatCurrency } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
 import {
   canAccessProposalUnit,
-  canVerifyProposalUnit,
+  canRunApprovalStage,
+  getApprovalStage,
   planningStatusLabels,
   planningStatusStyles,
 } from "@/lib/planning-workflow";
@@ -74,17 +75,10 @@ export default async function Page({ params }: PageProps) {
 
   if (!canView) redirect("/unauthorized");
 
-  const canVerify = canVerifyProposalUnit({
-    proposalUnit: proposal.unitPengusul,
-    userName: user.name,
-    userRoles: user.roles,
-    userUnit: profile?.unitKerja,
-  }) || canVerifyProposalUnit({
-    proposalUnit: proposal.unitBidang ?? "",
-    userName: user.name,
-    userRoles: user.roles,
-    userUnit: profile?.unitKerja,
-  });
+  const approvalStage = getApprovalStage(proposal.statusUsulan);
+  const canVerify =
+    canRunApprovalStage(user.roles, approvalStage) &&
+    (approvalStage !== "kepala_unit" || canView);
 
   const totalEstimasi = proposal.totalEstimasi ?? proposal.pagu;
 
@@ -139,7 +133,7 @@ export default async function Page({ params }: PageProps) {
           <div className="grid gap-5">
             <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-lg font-black text-[#16227c]">Status</h2>
-              <div className="mt-4 grid gap-3 sm:grid-cols-4">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                 {[
                   { label: "Usulan Dibuat", date: proposal.createdAt, done: true },
                   {
@@ -153,7 +147,17 @@ export default async function Page({ params }: PageProps) {
                         ? "Perlu Revisi"
                         : "Verifikasi Kepala Unit",
                     date: proposal.revisionAt ?? proposal.verifiedAt,
-                    done: proposal.statusUsulan !== "DIAJUKAN",
+                    done: !["DRAFT", "DIAJUKAN", "MENUNGGU_VERIFIKASI_KEPALA_UNIT"].includes(proposal.statusUsulan),
+                  },
+                  {
+                    label: "Validasi PPK / PPTK",
+                    date: null,
+                    done: ["MENUNGGU_PERSETUJUAN_PA_KPA", "SIAP_RUP", "RUP_TAYANG"].includes(proposal.statusUsulan),
+                  },
+                  {
+                    label: "Persetujuan PA / KPA",
+                    date: null,
+                    done: ["SIAP_RUP", "RUP_TAYANG"].includes(proposal.statusUsulan),
                   },
                   {
                     label: "Siap RUP",

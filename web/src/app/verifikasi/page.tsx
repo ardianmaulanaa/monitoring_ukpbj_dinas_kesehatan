@@ -17,6 +17,7 @@ import { formatCurrency } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
 import {
   canViewVerification,
+  headUnitWaitingStatuses,
   planningStatusLabels,
   planningStatusStyles,
   unitScopeTerms,
@@ -43,7 +44,9 @@ function dateLabel(value?: Date | null) {
 
 function statusFilter(value?: string) {
   const map: Record<string, StatusUsulan> = {
-    MENUNGGU: "DIAJUKAN",
+    MENUNGGU_KEPALA_UNIT: "MENUNGGU_VERIFIKASI_KEPALA_UNIT",
+    MENUNGGU_PPK_PPTK: "MENUNGGU_VALIDASI_PPK_PPTK",
+    MENUNGGU_PA_KPA: "MENUNGGU_PERSETUJUAN_PA_KPA",
     PERLU_REVISI: "PERLU_REVISI",
     SIAP_RUP: "SIAP_RUP",
   };
@@ -77,6 +80,27 @@ export default async function Page({ searchParams }: PageProps) {
   const isAdminScope = user.roles.some((role) =>
     ["SUPER_ADMIN", "UKPBJ", "LPSE_ADMIN"].includes(role),
   );
+  const roleWaitingStatuses: StatusUsulan[] = isAdminScope
+    ? [
+        "DIAJUKAN",
+        "MENUNGGU_VERIFIKASI_KEPALA_UNIT",
+        "MENUNGGU_VALIDASI_PPK_PPTK",
+        "MENUNGGU_PERSETUJUAN_PA_KPA",
+      ]
+    : user.roles.some((role) => ["PA", "KPA"].includes(role))
+      ? ["MENUNGGU_PERSETUJUAN_PA_KPA"]
+      : user.roles.some((role) => ["PPK", "PPTK"].includes(role))
+        ? ["MENUNGGU_VALIDASI_PPK_PPTK"]
+        : user.roles.includes("LEADER")
+          ? [...headUnitWaitingStatuses]
+          : [];
+  const processedStatuses: StatusUsulan[] = isAdminScope
+    ? ["SIAP_RUP"]
+    : user.roles.some((role) => ["PA", "KPA"].includes(role))
+      ? ["SIAP_RUP"]
+      : user.roles.some((role) => ["PPK", "PPTK"].includes(role))
+        ? ["MENUNGGU_PERSETUJUAN_PA_KPA", "SIAP_RUP"]
+        : ["MENUNGGU_VALIDASI_PPK_PPTK", "MENUNGGU_PERSETUJUAN_PA_KPA", "SIAP_RUP"];
   const leaderTerms = user.roles.includes("LEADER")
     ? unitScopeTerms(profile?.unitKerja ?? user.name)
     : [];
@@ -93,7 +117,9 @@ export default async function Page({ searchParams }: PageProps) {
       : {};
 
   const baseWhere: Prisma.RencanaUmumPengadaanWhereInput = {
-    statusUsulan: { in: ["DIAJUKAN", "PERLU_REVISI", "SIAP_RUP"] },
+    statusUsulan: {
+      in: [...roleWaitingStatuses, "PERLU_REVISI", ...processedStatuses],
+    },
     ...unitScope,
   };
 
@@ -148,10 +174,16 @@ export default async function Page({ searchParams }: PageProps) {
   const countByStatus = Object.fromEntries(
     counts.map((item) => [item.statusUsulan, item._count._all]),
   );
-  const waitingCount = countByStatus.DIAJUKAN ?? 0;
+  const waitingCount = roleWaitingStatuses.reduce(
+    (total, item) => total + (countByStatus[item] ?? 0),
+    0,
+  );
   const revisionCount = countByStatus.PERLU_REVISI ?? 0;
-  const readyCount = countByStatus.SIAP_RUP ?? 0;
-  const totalCount = waitingCount + revisionCount + readyCount;
+  const doneCount = processedStatuses.reduce(
+    (total, item) => total + (countByStatus[item] ?? 0),
+    0,
+  );
+  const totalCount = waitingCount + revisionCount + doneCount;
 
   return (
     <>
@@ -163,9 +195,9 @@ export default async function Page({ searchParams }: PageProps) {
       <main className="bg-[#f4f7f5] px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
-            ["Menunggu Verifikasi", waitingCount, "border-l-[#1976d2]"],
+            ["Menunggu Saya", waitingCount, "border-l-[#1976d2]"],
             ["Perlu Revisi", revisionCount, "border-l-[#f57c00]"],
-            ["Disetujui / Siap RUP", readyCount, "border-l-[#43a047]"],
+            ["Selesai Diproses", doneCount, "border-l-[#43a047]"],
             ["Total Usulan", totalCount, "border-l-slate-400"],
           ].map(([label, value, tone]) => (
             <div
@@ -204,7 +236,9 @@ export default async function Page({ searchParams }: PageProps) {
                 className="h-10 rounded-lg border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08783f]"
               >
                 <option value="">Semua Status</option>
-                <option value="MENUNGGU">Menunggu Verifikasi</option>
+                <option value="MENUNGGU_KEPALA_UNIT">Menunggu Kepala Unit</option>
+                <option value="MENUNGGU_PPK_PPTK">Menunggu PPK/PPTK</option>
+                <option value="MENUNGGU_PA_KPA">Menunggu PA/KPA</option>
                 <option value="PERLU_REVISI">Perlu Revisi</option>
                 <option value="SIAP_RUP">Siap RUP</option>
               </select>

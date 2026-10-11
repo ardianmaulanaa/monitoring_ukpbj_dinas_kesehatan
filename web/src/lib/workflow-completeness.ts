@@ -14,6 +14,7 @@ export type CompletionResult<TSection extends string = string> = {
   missingFields: string[];
   percentage: number;
   sections: Record<TSection, CompletionSection>;
+  warnings?: WorkflowValidationError[];
 };
 
 export type WorkflowValidationError = {
@@ -76,6 +77,9 @@ export const planningFieldLabels: Record<string, string> = {
   program: "Program",
   satuanKebutuhan: "Satuan",
   spesifikasiAwal: "Spesifikasi Awal",
+  statusDokumenPendukung: "Dokumen Pendukung",
+  statusHps: "Dokumen HPS",
+  statusKak: "Dokumen KAK",
   subKegiatan: "Sub Kegiatan",
   sumberDana: "Sumber Dana",
   tahunAnggaran: "Tahun Anggaran",
@@ -102,8 +106,27 @@ export class WorkflowGuardError extends Error {
   }
 }
 
+export function isEmptyValue(value: unknown) {
+  return value === undefined || value === null || String(value).trim().length === 0;
+}
+
 function filled(value: unknown) {
-  return value !== undefined && value !== null && String(value).trim().length > 0;
+  return !isEmptyValue(value);
+}
+
+export function planningCompletionErrors(fields: string[]) {
+  return fields.map((field) => ({
+    field,
+    message: `${planningFieldLabels[field] ?? field} belum tersedia.`,
+  }));
+}
+
+export function planningIncompleteMessage(fields: string[]) {
+  const messages = planningCompletionErrors(fields).map((item) => item.message);
+
+  return messages.length > 0
+    ? `Usulan belum dapat diverifikasi. Lengkapi data berikut: ${messages.join(" ")}`
+    : "Usulan belum dapat diverifikasi. Lengkapi data wajib terlebih dahulu.";
 }
 
 function positive(value: MaybeNumber) {
@@ -183,15 +206,8 @@ export function getPlanningCompleteness(data: PlanningCompletenessInput) {
       [filled(data.kodeRup), "kodeRup"],
       [filled(data.tahunAnggaran), "tahunAnggaran"],
       [filled(data.unitPengusul), "unitPengusul"],
-      [filled(data.unitBidang), "unitBidang"],
-      [filled(data.ppkPptk), "ppkPptk"],
-      [filled(data.kontakPenanggungJawab), "kontakPenanggungJawab"],
     ]),
     budget: section("Data Anggaran", [
-      [filled(data.program), "program"],
-      [filled(data.kegiatan), "kegiatan"],
-      [filled(data.subKegiatan), "subKegiatan"],
-      [filled(data.kodeRekening), "kodeRekening"],
       [filled(data.sumberDana), "sumberDana"],
       [positive(data.pagu), "pagu"],
     ]),
@@ -200,20 +216,15 @@ export function getPlanningCompleteness(data: PlanningCompletenessInput) {
       [filled(data.uraianKebutuhan), "uraianKebutuhan"],
       [positive(data.jumlahKebutuhan), "jumlahKebutuhan"],
       [filled(data.satuanKebutuhan), "satuanKebutuhan"],
-      [filled(data.spesifikasiAwal), "spesifikasiAwal"],
-      [filled(data.prioritas), "prioritas"],
-      [filled(data.justifikasi), "justifikasi"],
     ]),
     schedule: section("Jadwal", [
       [filled(data.metodePengadaan), "metodePengadaan"],
-      [filled(data.caraPengadaan), "caraPengadaan"],
-      [
-        filled(data.jadwalPemilihan) ||
-          (filled(data.jadwalMulaiRencana) && filled(data.jadwalSelesaiRencana)),
-        "jadwalPemilihan",
-      ],
     ]),
-    documents: section("Dokumen", []),
+    documents: section("Dokumen", [
+      [filled(data.statusKak), "statusKak"],
+      [filled(data.statusHps), "statusHps"],
+      [filled(data.statusDokumenPendukung), "statusDokumenPendukung"],
+    ]),
   });
 }
 
@@ -291,7 +302,7 @@ export type EPurchasingCompletenessInput = RupCompletenessInput & {
 };
 
 export function getEPurchasingCompleteness(data: EPurchasingCompletenessInput) {
-  return result({
+  const completion = result({
     rup: validateRupStage(data),
     product: validateProductStage(data),
     provider: validateProviderStage(data),
@@ -302,6 +313,21 @@ export function getEPurchasingCompleteness(data: EPurchasingCompletenessInput) {
     payment: validatePaymentStage(data),
     documents: validateDocumentStage(data),
   });
+
+  const totalHargaTayang = Number(data.totalHargaKatalog ?? 0);
+  const pagu = Number(data.pagu ?? 0);
+
+  if (totalHargaTayang > 0 && pagu > 0 && totalHargaTayang > pagu) {
+    completion.warnings = [
+      {
+        field: "totalHargaKatalog",
+        message:
+          "Total harga tayang melebihi pagu RUP. Proses tetap dapat dilanjutkan ke tahap Penyedia dan Negosiasi. Pastikan nilai hasil akhir pengadaan tidak melebihi pagu.",
+      },
+    ];
+  }
+
+  return completion;
 }
 
 export function validateRupStage(data: EPurchasingCompletenessInput) {
@@ -439,6 +465,10 @@ export function canEnterEPurchasingStage(
 
 export function formatWorkflowMissingFields(fields: string[]) {
   return fields.map((field) => ePurchasingFieldLabels[field] ?? field);
+}
+
+export function formatPlanningMissingFields(fields: string[]) {
+  return fields.map((field) => planningFieldLabels[field] ?? field);
 }
 
 export function friendlyIncompleteMessage(stage: string, fields: string[]) {

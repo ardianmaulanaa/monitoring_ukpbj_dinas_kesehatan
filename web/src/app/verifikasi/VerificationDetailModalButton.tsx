@@ -13,6 +13,7 @@ type HistoryItem = {
   id: string;
   action: string;
   actorName: string;
+  actorRole?: string | null;
   createdAt: string;
   note: string | null;
 };
@@ -20,6 +21,7 @@ type HistoryItem = {
 type VerificationDetail = PlanningProposalDetail & {
   id: string;
   canVerify: boolean;
+  verificationStage?: "kepala_unit" | "ppk_pptk" | "pa_kpa" | null;
   verificationHistory: HistoryItem[];
   verificationNote: string | null;
 };
@@ -27,6 +29,30 @@ type VerificationDetail = PlanningProposalDetail & {
 function valueOrDash(value?: string | number | null) {
   return value === null || value === undefined || value === "" ? "-" : String(value);
 }
+
+const stageCopy = {
+  kepala_unit: {
+    approveButton: "Verifikasi Usulan",
+    body: "Usulan yang telah diverifikasi akan diteruskan kepada PPK/PPTK untuk validasi perencanaan.",
+    eyebrow: "VERIFIKASI KEPALA UNIT",
+    title: "Verifikasi usulan ini?",
+    verb: "Verifikasi",
+  },
+  ppk_pptk: {
+    approveButton: "Validasi Perencanaan",
+    body: "Usulan yang telah divalidasi akan diteruskan kepada PA/KPA untuk persetujuan akhir.",
+    eyebrow: "VALIDASI PERENCANAAN",
+    title: "Validasi perencanaan ini?",
+    verb: "Validasi",
+  },
+  pa_kpa: {
+    approveButton: "Setujui Perencanaan",
+    body: "Usulan yang disetujui PA/KPA akan berubah menjadi Siap RUP dan dapat diproses pada modul SIRUP/RUP.",
+    eyebrow: "PERSETUJUAN PERENCANAAN",
+    title: "Setujui perencanaan ini?",
+    verb: "Setujui",
+  },
+} as const;
 
 type VerificationDetailModalButtonProps = {
   proposalId: string;
@@ -109,8 +135,9 @@ export default function VerificationDetailModalButton({
     router.refresh();
   }
 
-  const status = detail?.statusUsulan;
-  const canAct = Boolean(detail?.canVerify && status === "DIAJUKAN");
+  const activeStage = detail?.verificationStage ?? null;
+  const copy = activeStage ? stageCopy[activeStage] : stageCopy.kepala_unit;
+  const canAct = Boolean(detail?.canVerify && activeStage);
 
   return (
     <>
@@ -190,7 +217,7 @@ export default function VerificationDetailModalButton({
                         className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#08783f] px-4 text-sm font-black text-white transition hover:bg-[#066532] disabled:cursor-not-allowed disabled:bg-slate-300"
                       >
                         <CheckCircle2 className="h-4 w-4" />
-                        Setujui Usulan
+                        {copy.approveButton}
                       </button>
                     </div>
                   </>
@@ -199,7 +226,7 @@ export default function VerificationDetailModalButton({
                     {detail.statusUsulan === "PERLU_REVISI"
                       ? `Usulan sedang dalam status revisi. Catatan: ${valueOrDash(detail.revisionNote)}`
                       : detail.statusUsulan === "SIAP_RUP" || detail.statusUsulan === "RUP_TAYANG"
-                        ? `Usulan telah disetujui Kepala Unit. Diverifikasi oleh: ${valueOrDash(detail.verifiedBy)}`
+                        ? `Perencanaan telah disetujui. Aktor terakhir: ${valueOrDash(detail.verifiedBy)}`
                         : "Aksi verifikasi tidak tersedia untuk status atau peran saat ini."}
                   </div>
                 )}
@@ -212,12 +239,12 @@ export default function VerificationDetailModalButton({
       <ModalShell
         isOpen={isApproveOpen}
         onClose={() => setIsApproveOpen(false)}
-        eyebrow="Setujui Usulan"
-        title="Setujui usulan ini?"
+        eyebrow={copy.eyebrow}
+        title={copy.title}
         maxWidthClassName="max-w-lg"
       >
         <p className="text-sm font-semibold leading-6 text-slate-600">
-          Usulan yang disetujui akan masuk ke status Siap RUP.
+          {copy.body}
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -233,7 +260,7 @@ export default function VerificationDetailModalButton({
             onClick={() => submit("approve")}
             className="h-10 rounded-lg bg-[#08783f] px-4 text-sm font-black text-white disabled:bg-slate-300"
           >
-            Setujui
+            {pending ? "Memproses..." : copy.verb}
           </button>
         </div>
       </ModalShell>

@@ -2,16 +2,20 @@ import type { StatusUsulan } from "@prisma/client";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import {
+  canRunApprovalStage,
   canVerificationTransition,
-  canVerifyProposalUnit,
   canAccessProposalUnit,
+  getApprovalStage,
+  getPrimaryApprovalRole,
+  nextApprovalStatus,
 } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/response";
 import {
-  getPlanningCompleteness,
-  planningFieldLabels,
+  planningCompletionErrors,
+  planningIncompleteMessage,
 } from "@/lib/workflow-completeness";
+import { validateUsulanCompleteness } from "@/lib/workflow-completeness-server";
 
 const verificationSchema = z.discriminatedUnion("action", [
   z.object({
@@ -62,21 +66,17 @@ function canVerifyProposal({
   proposal,
   user,
   userUnit,
-}: Parameters<typeof canAccessProposal>[0]) {
-  return (
-    canVerifyProposalUnit({
-      proposalUnit: proposal.unitPengusul,
-      userName: user.name,
-      userRoles: user.roles,
-      userUnit,
-    }) ||
-    canVerifyProposalUnit({
-      proposalUnit: proposal.unitBidang ?? "",
-      userName: user.name,
-      userRoles: user.roles,
-      userUnit,
-    })
-  );
+}: Parameters<typeof canAccessProposal>[0] & {
+  proposal: Parameters<typeof canAccessProposal>[0]["proposal"] & {
+    statusUsulan?: StatusUsulan | string;
+  };
+}) {
+  const stage = getApprovalStage(proposal.statusUsulan ?? "");
+
+  if (!canRunApprovalStage(user.roles, stage)) return false;
+  if (stage !== "kepala_unit") return true;
+
+  return canAccessProposal({ proposal, user, userUnit });
 }
 
 export async function GET(
@@ -114,6 +114,7 @@ export async function GET(
     {
       ...proposal,
       canVerify: canVerifyProposal({ proposal, user, userUnit }),
+      verificationStage: getApprovalStage(proposal.statusUsulan),
     },
     "Detail pengajuan berhasil dimuat.",
   );
@@ -193,24 +194,26 @@ export async function PATCH(
     );
   }
 
-  if (proposal.statusUsulan !== "DIAJUKAN") {
+  const stage = getApprovalStage(proposal.statusUsulan);
+
+  if (!stage) {
     return apiError("Status usulan telah berubah. Silakan muat ulang halaman.", 409);
   }
 
-  const nextStatus: StatusUsulan =
-    parsed.data.action === "approve" ? "SIAP_RUP" : "PERLU_REVISI";
+  const nextStatus: StatusUsulan = nextApprovalStatus(stage, parsed.data.action);
 
   if (parsed.data.action === "approve") {
-    const completeness = getPlanningCompleteness(proposal);
+    const completeness = await validateUsulanCompleteness(id);
+
+    if (!completeness) {
+      return apiError("Usulan tidak ditemukan.", 404);
+    }
 
     if (!completeness.complete) {
       return apiError(
-        "Usulan belum memenuhi kelengkapan minimum.",
+        planningIncompleteMessage(completeness.missingFields),
         400,
-        completeness.missingFields.map((field) => ({
-          field,
-          message: `${planningFieldLabels[field] ?? field} belum lengkap.`,
-        })),
+        planningCompletionErrors(completeness.missingFields),
       );
     }
   }
@@ -220,10 +223,17 @@ export async function PATCH(
   }
 
   const now = new Date();
+  const actorRole = getPrimaryApprovalRole(user.roles, stage);
+  const approveAction =
+    stage === "kepala_unit"
+      ? "VERIFY_HEAD_UNIT"
+      : stage === "ppk_pptk"
+        ? "VALIDATE_PPK_PPTK"
+        : "APPROVE_PA_KPA";
 
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.rencanaUmumPengadaan.updateMany({
-      where: { id, statusUsulan: "DIAJUKAN" },
+      where: { id, statusUsulan: proposal.statusUsulan },
       data:
         parsed.data.action === "approve"
           ? {
@@ -251,10 +261,11 @@ export async function PATCH(
       data: {
         action:
           parsed.data.action === "approve"
-            ? "APPROVE_USULAN"
+            ? approveAction
             : "REQUEST_REVISION",
         actorId: user.id,
         actorName: user.name,
+        actorRole,
         newStatus: nextStatus,
         note: parsed.data.note?.trim() || null,
         oldStatus: proposal.statusUsulan,
@@ -280,7 +291,11 @@ export async function PATCH(
   return apiSuccess(
     result,
     parsed.data.action === "approve"
-      ? "Usulan berhasil diverifikasi dan siap diproses ke RUP."
+      ? stage === "kepala_unit"
+        ? "Usulan berhasil diverifikasi dan diteruskan ke PPK/PPTK."
+        : stage === "ppk_pptk"
+          ? "Perencanaan berhasil divalidasi dan diteruskan ke PA/KPA."
+          : "Perencanaan berhasil disetujui dan siap diproses ke RUP."
       : "Usulan dikembalikan untuk revisi.",
   );
 }

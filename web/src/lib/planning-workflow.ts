@@ -3,6 +3,12 @@ import type { RoleCode, StatusUsulan } from "@prisma/client";
 export const USULAN_STATUSES = [
   "DRAFT",
   "DIAJUKAN",
+  "MENUNGGU_VERIFIKASI_KEPALA_UNIT",
+  "DIVERIFIKASI_KEPALA_UNIT",
+  "MENUNGGU_VALIDASI_PPK_PPTK",
+  "DIVALIDASI_PPK_PPTK",
+  "MENUNGGU_PERSETUJUAN_PA_KPA",
+  "DISETUJUI_PA_KPA",
   "PERLU_REVISI",
   "SIAP_RUP",
   "RUP_TAYANG",
@@ -10,6 +16,9 @@ export const USULAN_STATUSES = [
 
 export const verificationQueueStatuses = [
   "DIAJUKAN",
+  "MENUNGGU_VERIFIKASI_KEPALA_UNIT",
+  "MENUNGGU_VALIDASI_PPK_PPTK",
+  "MENUNGGU_PERSETUJUAN_PA_KPA",
   "PERLU_REVISI",
   "SIAP_RUP",
 ] as const satisfies StatusUsulan[];
@@ -38,6 +47,12 @@ export const emptyVerificationChecklist = Object.fromEntries(
 export const planningStatusLabels: Record<string, string> = {
   DRAFT: "DRAFT",
   DIAJUKAN: "DIAJUKAN",
+  MENUNGGU_VERIFIKASI_KEPALA_UNIT: "MENUNGGU VERIFIKASI KEPALA UNIT",
+  DIVERIFIKASI_KEPALA_UNIT: "DIVERIFIKASI KEPALA UNIT",
+  MENUNGGU_VALIDASI_PPK_PPTK: "MENUNGGU VALIDASI PPK / PPTK",
+  DIVALIDASI_PPK_PPTK: "DIVALIDASI PPK / PPTK",
+  MENUNGGU_PERSETUJUAN_PA_KPA: "MENUNGGU PERSETUJUAN PA / KPA",
+  DISETUJUI_PA_KPA: "DISETUJUI PA / KPA",
   PERLU_REVISI: "PERLU REVISI",
   SIAP_RUP: "SIAP RUP",
   RUP_TAYANG: "RUP TAYANG",
@@ -56,6 +71,12 @@ export const planningStatusLabels: Record<string, string> = {
 export const planningStatusStyles: Record<string, string> = {
   DRAFT: "bg-slate-100 text-slate-600",
   DIAJUKAN: "bg-blue-100 text-blue-700",
+  MENUNGGU_VERIFIKASI_KEPALA_UNIT: "bg-blue-100 text-blue-700",
+  DIVERIFIKASI_KEPALA_UNIT: "bg-emerald-100 text-emerald-700",
+  MENUNGGU_VALIDASI_PPK_PPTK: "bg-blue-100 text-blue-700",
+  DIVALIDASI_PPK_PPTK: "bg-emerald-100 text-emerald-700",
+  MENUNGGU_PERSETUJUAN_PA_KPA: "bg-blue-100 text-blue-700",
+  DISETUJUI_PA_KPA: "bg-emerald-100 text-emerald-700",
   PERLU_REVISI: "bg-orange-100 text-orange-700",
   SIAP_RUP: "bg-emerald-100 text-emerald-700",
   RUP_TAYANG: "bg-green-100 text-green-800",
@@ -120,7 +141,7 @@ export function isRevisionStatus(status: StatusUsulan | string) {
 }
 
 export function isReadyRupStatus(status: StatusUsulan | string) {
-  return status === "DISETUJUI" || status === "SIAP_RUP";
+  return status === "DISETUJUI" || status === "DISETUJUI_PA_KPA" || status === "SIAP_RUP";
 }
 
 export function isRupPublishedStatus(status: StatusUsulan | string) {
@@ -129,7 +150,7 @@ export function isRupPublishedStatus(status: StatusUsulan | string) {
 
 export function canEditUsulan(userRoles: RoleCode[], status: StatusUsulan) {
   if (userRoles.includes("SUPER_ADMIN")) return true;
-  if (!userRoles.some((role) => ["OPERATOR", "LEADER"].includes(role))) {
+  if (!userRoles.includes("OPERATOR")) {
     return false;
   }
 
@@ -138,12 +159,20 @@ export function canEditUsulan(userRoles: RoleCode[], status: StatusUsulan) {
 
 export function canViewVerification(userRoles: RoleCode[]) {
   return userRoles.some((role) =>
-    ["SUPER_ADMIN", "LEADER", "UKPBJ", "LPSE_ADMIN"].includes(role),
+    ["SUPER_ADMIN", "LEADER", "PPTK", "PPK", "PA", "KPA", "UKPBJ", "LPSE_ADMIN"].includes(role),
   );
 }
 
-export function canRunVerification(userRoles: RoleCode[]) {
+export function canRunHeadUnitVerification(userRoles: RoleCode[]) {
   return userRoles.some((role) => ["SUPER_ADMIN", "LEADER"].includes(role));
+}
+
+export function canRunPpkPptkValidation(userRoles: RoleCode[]) {
+  return userRoles.some((role) => ["SUPER_ADMIN", "PPK", "PPTK"].includes(role));
+}
+
+export function canRunPaKpaApproval(userRoles: RoleCode[]) {
+  return userRoles.some((role) => ["SUPER_ADMIN", "PA", "KPA"].includes(role));
 }
 
 export function canProcessRup(userRoles: RoleCode[]) {
@@ -165,7 +194,7 @@ export function canAccessProposalUnit({
 }) {
   if (
     userRoles.some((role) =>
-      ["SUPER_ADMIN", "UKPBJ", "LPSE_ADMIN"].includes(role),
+      ["SUPER_ADMIN", "PPTK", "PPK", "PA", "KPA", "UKPBJ", "LPSE_ADMIN"].includes(role),
     )
   ) {
     return true;
@@ -180,11 +209,13 @@ export function canAccessProposalUnit({
 }
 
 export function canVerifyProposalUnit(args: Parameters<typeof canAccessProposalUnit>[0]) {
-  return canRunVerification(args.userRoles) && canAccessProposalUnit(args);
+  return canRunHeadUnitVerification(args.userRoles) && canAccessProposalUnit(args);
 }
 
 export function canSubmitTransition(from: StatusUsulan, to: StatusUsulan) {
   return (
+    (isDraftStatus(from) && to === "MENUNGGU_VERIFIKASI_KEPALA_UNIT") ||
+    (isRevisionStatus(from) && to === "MENUNGGU_VERIFIKASI_KEPALA_UNIT") ||
     (isDraftStatus(from) && to === "DIAJUKAN") ||
     (isRevisionStatus(from) && to === "DIAJUKAN")
   );
@@ -192,7 +223,49 @@ export function canSubmitTransition(from: StatusUsulan, to: StatusUsulan) {
 
 export function canVerificationTransition(from: StatusUsulan, to: StatusUsulan) {
   return (
-    (from === "DIAJUKAN" && to === "PERLU_REVISI") ||
-    (from === "DIAJUKAN" && to === "SIAP_RUP")
+    ((["DIAJUKAN", "MENUNGGU_VERIFIKASI_KEPALA_UNIT"] as StatusUsulan[]).includes(from) &&
+      (to === "PERLU_REVISI" || to === "MENUNGGU_VALIDASI_PPK_PPTK")) ||
+    (from === "MENUNGGU_VALIDASI_PPK_PPTK" &&
+      (to === "PERLU_REVISI" || to === "MENUNGGU_PERSETUJUAN_PA_KPA")) ||
+    (from === "MENUNGGU_PERSETUJUAN_PA_KPA" &&
+      (to === "PERLU_REVISI" || to === "SIAP_RUP"))
   );
+}
+
+export type PlanningApprovalStage = "kepala_unit" | "ppk_pptk" | "pa_kpa";
+
+export const headUnitWaitingStatuses = [
+  "DIAJUKAN",
+  "MENUNGGU_VERIFIKASI_KEPALA_UNIT",
+] as const satisfies StatusUsulan[];
+
+export function getApprovalStage(status: StatusUsulan | string): PlanningApprovalStage | null {
+  if ((headUnitWaitingStatuses as readonly string[]).includes(status)) return "kepala_unit";
+  if (status === "MENUNGGU_VALIDASI_PPK_PPTK") return "ppk_pptk";
+  if (status === "MENUNGGU_PERSETUJUAN_PA_KPA") return "pa_kpa";
+  return null;
+}
+
+export function getPrimaryApprovalRole(userRoles: RoleCode[], stage: PlanningApprovalStage) {
+  if (stage === "kepala_unit" && userRoles.includes("LEADER")) return "LEADER";
+  if (stage === "ppk_pptk" && userRoles.includes("PPK")) return "PPK";
+  if (stage === "ppk_pptk" && userRoles.includes("PPTK")) return "PPTK";
+  if (stage === "pa_kpa" && userRoles.includes("PA")) return "PA";
+  if (stage === "pa_kpa" && userRoles.includes("KPA")) return "KPA";
+  if (userRoles.includes("SUPER_ADMIN")) return "SUPER_ADMIN";
+  return null;
+}
+
+export function canRunApprovalStage(userRoles: RoleCode[], stage: PlanningApprovalStage | null) {
+  if (!stage) return false;
+  if (stage === "kepala_unit") return canRunHeadUnitVerification(userRoles);
+  if (stage === "ppk_pptk") return canRunPpkPptkValidation(userRoles);
+  return canRunPaKpaApproval(userRoles);
+}
+
+export function nextApprovalStatus(stage: PlanningApprovalStage, action: "approve" | "request_revision") {
+  if (action === "request_revision") return "PERLU_REVISI" as const;
+  if (stage === "kepala_unit") return "MENUNGGU_VALIDASI_PPK_PPTK" as const;
+  if (stage === "ppk_pptk") return "MENUNGGU_PERSETUJUAN_PA_KPA" as const;
+  return "SIAP_RUP" as const;
 }

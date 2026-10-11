@@ -22,6 +22,7 @@ import {
 } from "@/components/detail/DetailHorizontalSection";
 import { formatCurrency } from "@/lib/currency";
 import {
+  getApprovalStage,
   isDraftStatus,
   isReadyRupStatus,
   isRevisionStatus,
@@ -86,6 +87,13 @@ export type PlanningProposalDetail = {
   ppkPptk: string | null;
   verifiedAt: string | null;
   verifiedBy: string | null;
+  verificationHistory?: Array<{
+    action: string;
+    actorName: string;
+    actorRole?: string | null;
+    createdAt: string;
+    note: string | null;
+  }>;
   waktuKebutuhan: string | null;
 };
 
@@ -268,36 +276,51 @@ function ProgressCard({
 function getPlanningProgress(status: string) {
   const revision = isRevisionStatus(status);
   const ready = isReadyRupStatus(status) || isRupPublishedStatus(status);
-  const submitted = status === "DIAJUKAN" || revision || ready;
+  const stage = getApprovalStage(status);
+  const submitted = !isDraftStatus(status);
+  const kepalaDone = [
+    "MENUNGGU_VALIDASI_PPK_PPTK",
+    "MENUNGGU_PERSETUJUAN_PA_KPA",
+    "SIAP_RUP",
+    "RUP_TAYANG",
+  ].includes(status);
+  const ppkDone = ["MENUNGGU_PERSETUJUAN_PA_KPA", "SIAP_RUP", "RUP_TAYANG"].includes(status);
+  const paDone = ["SIAP_RUP", "RUP_TAYANG"].includes(status);
 
   return [
     {
-      helper: "Usulan dibuat operator.",
+      helper: "Usulan dibuat oleh Operator / Unit Pengusul.",
       label: "Draft Usulan",
       tone: isDraftStatus(status) ? "active" : "done",
     },
     {
-      helper: submitted ? "Usulan sudah dikirim ke Kepala Unit." : "Belum diajukan.",
+      helper: "Usulan telah diajukan untuk proses verifikasi.",
       label: "Diajukan",
       tone: submitted ? "done" : "pending",
     },
     {
       helper: revision
         ? "Usulan dikembalikan untuk diperbaiki."
-        : ready
-          ? "Verifikasi Kepala Unit selesai."
-          : status === "DIAJUKAN"
-            ? "Menunggu verifikasi Kepala Unit."
-            : "Menunggu pengajuan operator.",
-      label: revision ? "Perlu Revisi" : "Verifikasi Kepala Unit",
-      tone: revision ? "revision" : ready ? "done" : status === "DIAJUKAN" ? "active" : "pending",
+        : "Pemeriksaan awal oleh Kepala Unit.",
+      label: "Verifikasi Kepala Unit",
+      tone: revision ? "revision" : kepalaDone ? "done" : stage === "kepala_unit" ? "active" : "pending",
+    },
+    {
+      helper: "Validasi kelengkapan dan perencanaan pengadaan.",
+      label: "Validasi PPK / PPTK",
+      tone: ppkDone ? "done" : stage === "ppk_pptk" ? "active" : "pending",
+    },
+    {
+      helper: "Penetapan dan persetujuan akhir perencanaan.",
+      label: "Persetujuan PA / KPA",
+      tone: paDone ? "done" : stage === "pa_kpa" ? "active" : "pending",
     },
     {
       helper: isRupPublishedStatus(status)
-        ? "Proses dilanjutkan ke SIRUP/RUP."
+        ? "Paket telah dilanjutkan ke RUP / SiRUP."
         : ready
-          ? "Siap diproses pada modul SIRUP/RUP."
-          : "Menunggu persetujuan Kepala Unit.",
+          ? "Paket siap dilanjutkan ke RUP / SiRUP."
+            : "Menunggu pengajuan operator.",
       label: "Siap RUP",
       tone: ready ? "done" : "pending",
     },
@@ -307,7 +330,7 @@ function getPlanningProgress(status: string) {
 function VerificationSummary({ proposal }: { proposal: PlanningProposalDetail }) {
   const revision = isRevisionStatus(proposal.statusUsulan);
   const ready = isReadyRupStatus(proposal.statusUsulan) || isRupPublishedStatus(proposal.statusUsulan);
-  const waiting = proposal.statusUsulan === "DIAJUKAN";
+  const stage = getApprovalStage(proposal.statusUsulan);
 
   if (revision) {
     return (
@@ -331,18 +354,18 @@ function VerificationSummary({ proposal }: { proposal: PlanningProposalDetail })
           <p className="text-sm font-black text-[#08783f]">DISETUJUI KEPALA UNIT</p>
         </div>
         <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
-          Usulan siap dilanjutkan ke modul SIRUP/RUP.
+          Seluruh hierarchy approval selesai. Paket siap dilanjutkan ke modul SIRUP/RUP.
         </p>
       </div>
     );
   }
 
-  if (waiting) {
+  if (stage) {
     return (
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <p className="text-sm font-black text-blue-800">MENUNGGU VERIFIKASI KEPALA UNIT</p>
+        <p className="text-sm font-black text-blue-800">{statusLabel(proposal.statusUsulan)}</p>
         <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-          Approval Perencanaan hanya melalui Kepala Unit sebelum paket siap RUP.
+          Alur perencanaan berjalan melalui Kepala Unit, PPK/PPTK, lalu PA/KPA sebelum Siap RUP.
         </p>
       </div>
     );
@@ -359,6 +382,32 @@ function VerificationSummary({ proposal }: { proposal: PlanningProposalDetail })
 }
 
 function HistoryPanel({ proposal }: { proposal: PlanningProposalDetail }) {
+  if (proposal.verificationHistory && proposal.verificationHistory.length > 0) {
+    return (
+      <ol className="grid gap-3">
+        {proposal.verificationHistory.map((item) => (
+          <li key={`${item.createdAt}-${item.action}-${item.actorName}`} className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+            <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-black text-[#08783f] ring-1 ring-slate-200">
+              ✓
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-black text-slate-800">{humanize(item.action)}</p>
+              <p className="mt-1 text-xs font-bold text-slate-500">
+                {dateTimeLabel(item.createdAt)} oleh {item.actorName}
+                {item.actorRole ? ` (${item.actorRole.replaceAll("_", " ")})` : ""}
+              </p>
+              {item.note ? (
+                <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-700">
+                  {item.note}
+                </p>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+
   const items = [
     proposal.createdAt
       ? {
@@ -499,7 +548,7 @@ export function PlanningDetailContent({
                 <p className="text-xs font-black uppercase tracking-wide text-[#08783f]">
                   Progress Perencanaan
                 </p>
-                <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                   {progress.map((item) => (
                     <ProgressCard
                       key={item.label}
@@ -608,13 +657,13 @@ export function PlanningDetailContent({
                   <DetailField label="Status Verifikasi" value={statusLabel(proposal.statusUsulan)} />
                   <DetailField
                     label={isRevisionStatus(proposal.statusUsulan) ? "Direvisi Oleh" : "Verifier"}
-                    value={proposal.revisionBy ?? proposal.verifiedBy ?? "Kepala Unit"}
+                    value={proposal.revisionBy ?? proposal.verifiedBy ?? "-"}
                   />
                   <DetailField
                     label="Tanggal Verifikasi"
                     value={dateTimeLabel(proposal.revisionAt ?? proposal.verifiedAt)}
                   />
-                  <DetailField label="Alur" value="Operator -> Kepala Unit -> Siap RUP" />
+                  <DetailField label="Alur" value="Operator / Unit Pengusul -> Kepala Unit -> PPK/PPTK -> PA/KPA -> Siap RUP" />
                   <DetailField
                     className="md:col-span-2 lg:col-span-4"
                     label={isRevisionStatus(proposal.statusUsulan) ? "Catatan Revisi" : "Catatan Verifikasi"}

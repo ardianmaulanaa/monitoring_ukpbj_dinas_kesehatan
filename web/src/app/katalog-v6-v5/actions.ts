@@ -283,13 +283,6 @@ export async function updateKatalogWorkflowAction(
     };
     const completion = getEPurchasingCompleteness(candidate);
 
-    if (totalHarga > pagu) {
-      return {
-        ok: false,
-        message: "Total harga tayang tidak boleh melebihi pagu RUP.",
-      };
-    }
-
     if (!completion.sections.product.complete) {
       return {
         ok: false,
@@ -396,6 +389,13 @@ export async function updateKatalogWorkflowAction(
   }
 
   if (parsed.data.step === "contract") {
+    if (Number(existing.hargaNegosiasiKatalog ?? 0) > pagu) {
+      return {
+        ok: false,
+        message: "Nilai hasil negosiasi masih melebihi pagu RUP.",
+      };
+    }
+
     const candidate = {
       ...existing,
       nomorSpkKontrak: optionalText(parsed.data.nomorSpkKontrak),

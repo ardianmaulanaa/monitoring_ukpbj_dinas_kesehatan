@@ -33,6 +33,7 @@ import { canDeletePlanningProposal } from "@/lib/permissions";
 
 import {
   canEditUsulan,
+  getApprovalStage,
   isDraftStatus,
   isReadyRupStatus,
   isRevisionStatus,
@@ -191,7 +192,7 @@ export default async function Page({ searchParams }: PageProps) {
   ).length;
 
   const reviewCount = rupData.filter(
-    (item) => item.statusUsulan === "DIAJUKAN",
+    (item) => Boolean(getApprovalStage(item.statusUsulan)),
   ).length;
 
   const revisionCount = rupData.filter((item) =>

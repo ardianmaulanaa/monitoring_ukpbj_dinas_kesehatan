@@ -343,7 +343,14 @@ function getProcurementStage(row: RupRow): (typeof procurementStages)[number]["k
   }
 
   if (
-    ["DIAJUKAN", "PERLU_REVISI", "SIAP_RUP"].includes(row.statusUsulan) ||
+    [
+      "DIAJUKAN",
+      "MENUNGGU_VERIFIKASI_KEPALA_UNIT",
+      "MENUNGGU_VALIDASI_PPK_PPTK",
+      "MENUNGGU_PERSETUJUAN_PA_KPA",
+      "PERLU_REVISI",
+      "SIAP_RUP",
+    ].includes(row.statusUsulan) ||
     ["PROSES_VERIFIKASI", "MENUNGGU_PPTK", "MENUNGGU_PPK", "MENUNGGU_KPA_PA"].includes(
       row.statusSirup,
     )
@@ -559,8 +566,10 @@ function buildAttentionItems(rows: RupRow[]) {
   const items: DashboardAttention[] = [
     {
       label: "Usulan menunggu verifikasi",
-      count: countRows(rows, (row) => row.statusUsulan === "DIAJUKAN"),
-      href: "/verifikasi?status=DIAJUKAN",
+      count: countRows(rows, (row) =>
+        ["DIAJUKAN", "MENUNGGU_VERIFIKASI_KEPALA_UNIT"].includes(row.statusUsulan),
+      ),
+      href: "/verifikasi?status=MENUNGGU_KEPALA_UNIT",
       tone: "blue",
     },
     {

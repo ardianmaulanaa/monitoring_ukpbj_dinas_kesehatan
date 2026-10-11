@@ -270,7 +270,7 @@ function rupMutationData(parsedData: z.infer<typeof createRupSchema>) {
     statusSirup: data.statusSirup,
     statusUsulan:
       mode === "planning" && submitIntent === "submit"
-        ? ("DIAJUKAN" as StatusUsulan)
+        ? ("MENUNGGU_VERIFIKASI_KEPALA_UNIT" as StatusUsulan)
         : mode === "planning"
           ? ("DRAFT" as StatusUsulan)
           : undefined,
@@ -363,6 +363,7 @@ async function appendUsulanHistory({
   action,
   actorId,
   actorName,
+  actorRole,
   newStatus,
   note,
   oldStatus,
@@ -371,6 +372,7 @@ async function appendUsulanHistory({
   action: string;
   actorId?: string | null;
   actorName: string;
+  actorRole?: string | null;
   newStatus?: StatusUsulan | null;
   note?: string | null;
   oldStatus?: StatusUsulan | null;
@@ -381,6 +383,7 @@ async function appendUsulanHistory({
       action,
       actorId: actorId ?? null,
       actorName,
+      actorRole: actorRole ?? null,
       newStatus: newStatus ?? null,
       note: note ?? null,
       oldStatus: oldStatus ?? null,
@@ -507,6 +510,7 @@ export async function POST(request: Request) {
             : "CREATE_USULAN",
         actorId: user?.id,
         actorName: user?.name ?? "Sistem",
+        actorRole: user?.roles[0] ?? null,
         newStatus: rup.statusUsulan,
         note: planningPayload.catatan,
         proposalId: rup.id,
@@ -583,7 +587,7 @@ export async function PUT(request: Request) {
       planningPayload.mode === "planning" && planningPayload.submitIntent === "draft"
         ? "DRAFT"
         : planningPayload.mode === "planning" && planningPayload.submitIntent === "submit"
-          ? "DIAJUKAN"
+          ? "MENUNGGU_VERIFIKASI_KEPALA_UNIT"
           : existing.statusUsulan;
 
     const canEditWorkflow =
@@ -663,6 +667,7 @@ export async function PUT(request: Request) {
             : "UPDATE_USULAN",
         actorId: user.id,
         actorName: user.name,
+        actorRole: user.roles[0] ?? null,
         newStatus: rup.statusUsulan,
         note: planningPayload.catatan,
         oldStatus: existing.statusUsulan,

@@ -181,6 +181,10 @@ export default function KatalogManualWorkflowClient({
   const jumlah = numberValue(productForm.jumlah);
   const hargaTayang = numberValue(productForm.hargaTayang);
   const totalHargaTayang = jumlah * hargaTayang;
+  const productPriceAboveBudget = totalHargaTayang > rup.pagu && totalHargaTayang > 0;
+  const savedPriceAboveBudget =
+    numberValue(initialDraft.totalHargaKatalog) > rup.pagu &&
+    numberValue(initialDraft.totalHargaKatalog) > 0;
   const hargaFinal = numberValue(initialDraft.hargaNegosiasiKatalog);
   const selisihPagu = Math.max(rup.pagu - hargaFinal, 0);
   const completeness = useMemo(
@@ -475,6 +479,11 @@ export default function KatalogManualWorkflowClient({
               {rupiah(totalHargaTayang)}
             </p>
           </div>
+          {productPriceAboveBudget || savedPriceAboveBudget ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold leading-6 text-amber-800 sm:col-span-2">
+              Total harga tayang melebihi pagu RUP. Proses tetap dapat dilanjutkan ke tahap Penyedia dan Negosiasi. Pastikan nilai hasil akhir pengadaan tidak melebihi pagu.
+            </div>
+          ) : null}
           <div className="sm:col-span-2">
             <SubmitButton pending={isPending}>Simpan Produk</SubmitButton>
           </div>

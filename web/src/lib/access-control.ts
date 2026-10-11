@@ -60,7 +60,7 @@ const routeAccess: { prefix: string; roles: AppRoleCode[] }[] = [
   { prefix: "/notifications", roles: allRoles },
   { prefix: "/profile", roles: allRoles },
   { prefix: "/perencanaan", roles: planningRoles },
-  { prefix: "/verifikasi", roles: ["SUPER_ADMIN", "LEADER", "UKPBJ", "LPSE_ADMIN"] },
+  { prefix: "/verifikasi", roles: ["SUPER_ADMIN", "LEADER", "PPTK", "PPK", "PA", "KPA", "UKPBJ", "LPSE_ADMIN"] },
   { prefix: "/sirup-rup", roles: planningRoles },
   { prefix: "/e-purchasing", roles: procurementRoles },
   { prefix: "/katalog-v6-v5", roles: procurementRoles },

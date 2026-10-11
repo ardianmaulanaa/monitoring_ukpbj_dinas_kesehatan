@@ -55,13 +55,12 @@ export async function getNotificationSummary(): Promise<NotificationSummary> {
   ] = await Promise.all([
     prisma.rencanaUmumPengadaan.count({
       where: {
-        statusSirup: {
+        statusUsulan: {
           in: [
-            "PROSES_VERIFIKASI",
-            "MENUNGGU_PPTK",
-            "MENUNGGU_PPK",
-            "MENUNGGU_KPA_PA",
-            "REVISI_PAGU",
+            "MENUNGGU_VERIFIKASI_KEPALA_UNIT",
+            "MENUNGGU_VALIDASI_PPK_PPTK",
+            "MENUNGGU_PERSETUJUAN_PA_KPA",
+            "PERLU_REVISI",
           ],
         },
       },
@@ -98,9 +97,9 @@ export async function getNotificationSummary(): Promise<NotificationSummary> {
   const items = [
     buildItem(
       "rup-menunggu",
-      "Pengajuan RUP perlu diproses",
-      "Ada RUP dalam verifikasi, revisi, atau menunggu persetujuan.",
-      "/sirup-rup",
+      "Usulan perencanaan perlu diproses",
+      "Ada usulan dalam verifikasi, validasi, persetujuan, atau revisi.",
+      "/verifikasi",
       rupMenunggu,
       "warning",
     ),
