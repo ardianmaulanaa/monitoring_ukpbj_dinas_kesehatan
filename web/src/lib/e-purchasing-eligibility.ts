@@ -50,3 +50,45 @@ export function isEligibleForEPurchasing(data: {
     )
   );
 }
+
+export const ePurchasingStartedWhere: Prisma.RencanaUmumPengadaanWhereInput = {
+  OR: [
+    { statusTransaksiKatalog: { not: null } },
+    { namaProdukKatalog: { not: null } },
+    { namaPenyediaKatalog: { not: null } },
+    { hargaNegosiasiKatalog: { not: null } },
+    { nomorSuratPesanan: { not: null } },
+    { nomorSpkKontrak: { not: null } },
+    { statusPengirimanEp: { not: null } },
+    { nomorBast: { not: null } },
+    { statusPembayaranEp: { not: null } },
+  ],
+};
+
+export const ePurchasingCompletedWhere: Prisma.RencanaUmumPengadaanWhereInput = {
+  OR: [
+    { statusTransaksiKatalog: "SELESAI" },
+    { statusPembayaranEp: "DIBAYAR" },
+  ],
+};
+
+export function buildEPurchasingSummaryWhere(
+  eligibleWhere: Prisma.RencanaUmumPengadaanWhereInput,
+) {
+  return {
+    total: eligibleWhere,
+    ready: {
+      AND: [eligibleWhere, { NOT: ePurchasingStartedWhere }],
+    } satisfies Prisma.RencanaUmumPengadaanWhereInput,
+    inProgress: {
+      AND: [
+        eligibleWhere,
+        ePurchasingStartedWhere,
+        { NOT: ePurchasingCompletedWhere },
+      ],
+    } satisfies Prisma.RencanaUmumPengadaanWhereInput,
+    completed: {
+      AND: [eligibleWhere, ePurchasingCompletedWhere],
+    } satisfies Prisma.RencanaUmumPengadaanWhereInput,
+  };
+}

@@ -70,7 +70,10 @@ import ProcurementCompactCard, {
   CompactDetailLink,
   CompactManageLink,
 } from "@/components/procurement/ProcurementCompactCard";
-import { buildEPurchasingEligibilityWhere } from "@/lib/e-purchasing-eligibility";
+import {
+  buildEPurchasingEligibilityWhere,
+  buildEPurchasingSummaryWhere,
+} from "@/lib/e-purchasing-eligibility";
 
 export const dynamic = "force-dynamic";
 
@@ -3134,8 +3137,20 @@ async function KatalogWorkflowView({
   });
 
   const eligibleRupWhere = buildEPurchasingEligibilityWhere();
+  const summaryWhere = buildEPurchasingSummaryWhere(rupWhere);
 
-  const [rupRows, years, sourceFunds, units, existingPackages] =
+  const [
+    rupRows,
+    years,
+    sourceFunds,
+    units,
+    existingPackages,
+    totalEligibleCount,
+    readyCount,
+    processCount,
+    doneCount,
+    paguAggregation,
+  ] =
     await Promise.all([
       prisma.rencanaUmumPengadaan.findMany({
         where: rupWhere,
@@ -3162,6 +3177,14 @@ async function KatalogWorkflowView({
         orderBy: { createdAt: "desc" },
         take: 300,
       }),
+      prisma.rencanaUmumPengadaan.count({ where: summaryWhere.total }),
+      prisma.rencanaUmumPengadaan.count({ where: summaryWhere.ready }),
+      prisma.rencanaUmumPengadaan.count({ where: summaryWhere.inProgress }),
+      prisma.rencanaUmumPengadaan.count({ where: summaryWhere.completed }),
+      prisma.rencanaUmumPengadaan.aggregate({
+        where: summaryWhere.total,
+        _sum: { pagu: true },
+      }),
     ]);
 
   // Pada schema file saat ini belum terlihat foreign-key langsung RUP -> Paket.
@@ -3179,21 +3202,14 @@ async function KatalogWorkflowView({
       `${normalizeUnit(item.namaPaket)}::${normalizeUnit(item.unitPengusul)}`,
     );
 
-  const totalPagu = rupRows.reduce(
-    (sum, item) => sum + decimalNumber(item.pagu),
-    0,
-  );
+  const totalPagu = decimalNumber(paguAggregation._sum.pagu);
 
+  // PaketPengadaan is still used for supplementary detail fields in the list.
+  // Summary classification above intentionally uses the persisted RUP workflow.
   const linkedRows = rupRows.map((rup) => ({
     rup,
     paket: getLinkedPackage(rup),
   }));
-
-  const readyCount = linkedRows.filter(({ paket }) => !paket).length;
-  const doneCount = linkedRows.filter(({ paket }) =>
-    paket?.statusPaket?.toUpperCase().includes("SELESAI"),
-  ).length;
-  const processCount = Math.max(rupRows.length - readyCount - doneCount, 0);
   const sourceFundStats = Array.from(
     rupRows
       .reduce((map, item) => {
@@ -3380,7 +3396,7 @@ async function KatalogWorkflowView({
           {[
             {
               label: "Paket E-Purchasing",
-              value: rupRows.length.toLocaleString("id-ID"),
+              value: totalEligibleCount.toLocaleString("id-ID"),
               helper: "RUP eligible metode E-Purchasing",
               tone: "border-l-[#1976d2]",
             },

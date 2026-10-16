@@ -408,11 +408,11 @@ export default function KatalogManualWorkflowClient({
         >
           <label className="grid gap-2">
             <span className={labelClass}>Nama Produk *</span>
-            <input name="namaProduk" defaultValue={initialDraft.namaProdukKatalog ?? ""} className={inputClass} />
+            <input name="namaProduk" maxLength={220} defaultValue={initialDraft.namaProdukKatalog ?? ""} className={inputClass} />
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Merk / Tipe</span>
-            <input name="merk" defaultValue={initialDraft.merekTipeKatalog ?? ""} className={inputClass} />
+            <input name="merk" maxLength={160} defaultValue={initialDraft.merekTipeKatalog ?? ""} className={inputClass} />
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Jumlah *</span>
@@ -432,7 +432,7 @@ export default function KatalogManualWorkflowClient({
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Satuan *</span>
-            <input name="satuan" defaultValue={initialDraft.satuanProdukKatalog ?? "Unit"} className={inputClass} />
+            <input name="satuan" maxLength={60} defaultValue={initialDraft.satuanProdukKatalog ?? "Unit"} className={inputClass} />
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Platform / Versi Katalog *</span>
@@ -443,11 +443,11 @@ export default function KatalogManualWorkflowClient({
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Etalase / Kategori</span>
-            <input name="etalase" defaultValue={initialDraft.etalaseKatalog ?? ""} className={inputClass} />
+            <input name="etalase" maxLength={160} defaultValue={initialDraft.etalaseKatalog ?? ""} className={inputClass} />
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Kategori Produk</span>
-            <input name="kategori" defaultValue={initialDraft.kategoriProdukKatalog ?? ""} className={inputClass} placeholder="TKDN / Import / Non-TKDN" />
+            <input name="kategori" maxLength={120} defaultValue={initialDraft.kategoriProdukKatalog ?? ""} className={inputClass} placeholder="TKDN / Import / Non-TKDN" />
           </label>
           <label className="grid gap-2">
             <span className={labelClass}>Harga Tayang Satuan *</span>
@@ -467,7 +467,7 @@ export default function KatalogManualWorkflowClient({
           </label>
           <label className="grid gap-2 sm:col-span-2">
             <span className={labelClass}>Link Produk Katalog</span>
-            <input name="linkProduk" type="url" defaultValue={initialDraft.linkProdukKatalog ?? ""} className={inputClass} />
+            <input name="linkProduk" type="url" maxLength={255} defaultValue={initialDraft.linkProdukKatalog ?? ""} className={inputClass} />
           </label>
           <label className="grid gap-2 sm:col-span-2">
             <span className={labelClass}>Spesifikasi Katalog</span>

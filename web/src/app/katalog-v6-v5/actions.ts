@@ -26,7 +26,14 @@ export type KatalogWorkflowState = {
 
 const executableRoles = ["SUPER_ADMIN", "PPK", "PROCUREMENT_OFFICER"] as const;
 
-const text = z.string().trim().optional();
+const optionalString = (label: string, maxLength: number) =>
+  z
+    .string()
+    .trim()
+    .max(maxLength, `${label} maksimal ${maxLength} karakter.`)
+    .optional();
+
+const text = optionalString("Teks", 10_000);
 const positiveNumber = (label: string) =>
   z.coerce
     .number({ message: `${label} harus berupa angka.` })
@@ -36,15 +43,27 @@ const katalogWorkflowSchema = z.discriminatedUnion("step", [
   z.object({
     step: z.literal("product"),
     id: z.string().uuid(),
-    namaProduk: z.string().trim().min(1, "Nama produk wajib diisi."),
-    merk: text,
+    namaProduk: z
+      .string()
+      .trim()
+      .min(1, "Nama produk wajib diisi.")
+      .max(220, "Nama produk maksimal 220 karakter."),
+    merk: optionalString("Merk / tipe", 160),
     jumlah: positiveNumber("Jumlah produk"),
-    satuan: z.string().trim().min(1, "Satuan wajib diisi."),
+    satuan: z
+      .string()
+      .trim()
+      .min(1, "Satuan wajib diisi.")
+      .max(60, "Satuan maksimal 60 karakter."),
     spesifikasi: text,
-    etalase: text,
-    platform: text,
-    kategori: text,
-    linkProduk: text,
+    etalase: optionalString("Etalase / kategori", 160),
+    platform: z
+      .string()
+      .trim()
+      .min(1, "Platform / versi katalog wajib diisi.")
+      .max(80, "Platform / versi katalog maksimal 80 karakter."),
+    kategori: optionalString("Kategori produk", 120),
+    linkProduk: optionalString("Link produk katalog", 255),
     hargaTayang: positiveNumber("Harga tayang satuan"),
   }),
   z.object({
@@ -290,23 +309,49 @@ export async function updateKatalogWorkflowAction(
       };
     }
 
-    await prisma.rencanaUmumPengadaan.update({
-      where: { id: parsed.data.id },
-      data: {
-        namaProdukKatalog: parsed.data.namaProduk,
-        merekTipeKatalog: optionalText(parsed.data.merk),
-        jumlahProdukKatalog: String(parsed.data.jumlah),
-        satuanProdukKatalog: parsed.data.satuan,
-        spesifikasiProdukKatalog: optionalText(parsed.data.spesifikasi),
-        etalaseKatalog: optionalText(parsed.data.etalase),
-        jenisKatalog: optionalText(parsed.data.platform),
-        kategoriProdukKatalog: optionalText(parsed.data.kategori),
-        linkProdukKatalog: optionalText(parsed.data.linkProduk),
-        hargaSatuanKatalog: decimal(parsed.data.hargaTayang),
-        totalHargaKatalog: decimal(totalHarga),
-        statusTransaksiKatalog: statusAfterStep(parsed.data.step),
-      },
-    });
+    try {
+      await prisma.rencanaUmumPengadaan.update({
+        where: { id: parsed.data.id },
+        data: {
+          namaProdukKatalog: parsed.data.namaProduk,
+          merekTipeKatalog: optionalText(parsed.data.merk),
+          jumlahProdukKatalog: String(parsed.data.jumlah),
+          satuanProdukKatalog: parsed.data.satuan,
+          spesifikasiProdukKatalog: optionalText(parsed.data.spesifikasi),
+          etalaseKatalog: optionalText(parsed.data.etalase),
+          jenisKatalog: optionalText(parsed.data.platform),
+          kategoriProdukKatalog: optionalText(parsed.data.kategori),
+          linkProdukKatalog: optionalText(parsed.data.linkProduk),
+          hargaSatuanKatalog: decimal(parsed.data.hargaTayang),
+          totalHargaKatalog: decimal(totalHarga),
+          statusTransaksiKatalog: statusAfterStep(parsed.data.step),
+        },
+      });
+    } catch (error) {
+      console.error("Failed to save E-Purchasing product", {
+        code:
+          error instanceof Prisma.PrismaClientKnownRequestError
+            ? error.code
+            : "UNKNOWN",
+        rupId: parsed.data.id,
+      });
+
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2000"
+      ) {
+        return {
+          ok: false,
+          message:
+            "Salah satu data produk melebihi batas panjang yang diperbolehkan.",
+        };
+      }
+
+      return {
+        ok: false,
+        message: "Data produk belum dapat disimpan. Silakan periksa isian dan coba lagi.",
+      };
+    }
   }
 
   if (parsed.data.step === "provider") {
