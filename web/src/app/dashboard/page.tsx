@@ -1,245 +1,132 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
-
 import {
+  AlertTriangle,
+  BadgeCheck,
   CircleDollarSign,
-  ClipboardList,
+  ClipboardCheck,
+  FileSignature,
   Landmark,
-  PackageCheck,
-  RotateCcw,
-  Send,
-  ShieldCheck,
-  WalletCards,
 } from "lucide-react";
-
 import AppHeader from "@/components/appheader/AppHeader";
-
-import { formatCurrency } from "@/lib/currency";
-
+import {
+  DashboardDonutChart,
+  DashboardMonthlyPackageChart,
+  DashboardTrendChart,
+} from "@/components/dashboard/DashboardCharts";
 import { getDashboardData } from "@/lib/dashboard-data";
-
 import type {
   DashboardBreakdown,
   DashboardFilters,
 } from "@/lib/dashboard-data";
 
-const chartPalette = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-];
-
-function formatCompactCurrency(value: number) {
-  if (value >= 1_000_000_000) {
-    return `Rp ${(value / 1_000_000_000).toLocaleString("id-ID", {
-      maximumFractionDigits: 1,
-    })} M`;
-  }
-
-  if (value >= 1_000_000) {
-    return `Rp ${(value / 1_000_000).toLocaleString("id-ID", {
-      maximumFractionDigits: 1,
-    })} jt`;
-  }
-
-  return formatCurrency(value);
-}
-
-function numberLabel(value: number) {
-  return value.toLocaleString("id-ID");
-}
-
-function selectValue(value?: string | number) {
-  return value === undefined || value === null ? "" : String(value);
-}
-
-function parseFilters(
-  searchParams: Record<string, string | string[] | undefined>,
-) {
-  const pick = (key: string) => {
-    const value = searchParams[key];
-
-    return Array.isArray(value) ? value[0] : value;
-  };
-
-  const tahun = Number(pick("tahunAnggaran"));
-
+function parseFilters(params: Record<string, string | string[] | undefined>) {
+  const value = (key: string) =>
+    Array.isArray(params[key]) ? params[key]?.[0] : params[key];
+  const year = Number(value("tahunAnggaran"));
   return {
-    ...(Number.isFinite(tahun) && tahun > 0 ? { tahunAnggaran: tahun } : {}),
-
-    ...(pick("unit") ? { unit: pick("unit") } : {}),
-
-    ...(pick("sumberDana") ? { sumberDana: pick("sumberDana") } : {}),
-
-    ...(pick("metodePengadaan")
-      ? { metodePengadaan: pick("metodePengadaan") }
-      : {}),
-
-    ...(pick("statusPaket") ? { statusPaket: pick("statusPaket") } : {}),
+    ...(Number.isFinite(year) && year > 0 ? { tahunAnggaran: year } : {}),
+    ...(value("unit") ? { unit: value("unit") } : {}),
+    ...(value("sumberDana") ? { sumberDana: value("sumberDana") } : {}),
   } satisfies DashboardFilters;
 }
 
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-500">
-      {message}
-    </div>
-  );
+function money(value: number) {
+  if (value >= 1_000_000_000)
+    return `Rp ${(value / 1_000_000_000).toLocaleString("id-ID", { maximumFractionDigits: 2 })} M`;
+  if (value >= 1_000_000)
+    return `Rp ${(value / 1_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} Jt`;
+  if (value >= 1_000)
+    return `Rp ${(value / 1_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} Rb`;
+  return `Rp ${value.toLocaleString("id-ID")}`;
 }
 
-function Panel({
-  children,
+function percent(value: number) {
+  return `${value.toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`;
+}
+function count(value: number) {
+  return value.toLocaleString("id-ID");
+}
 
+function Card({
+  children,
   className = "",
 }: {
-  children: React.ReactNode;
-
+  children: ReactNode;
   className?: string;
 }) {
   return (
     <section
-      className={`rounded-lg border border-slate-200 bg-white shadow-sm ${className}`}
+      className={`rounded-2xl border border-[#dee9e2] bg-white shadow-[0_1px_2px_rgba(20,45,37,0.04)] ${className}`}
     >
       {children}
     </section>
   );
 }
 
-function PanelHeader({
-  eyebrow,
-
-  title,
-
+function KpiCard({
+  label,
   value,
+  helper,
+  progress,
+  color,
+  icon: Icon,
 }: {
-  eyebrow: string;
-
-  title: string;
-
-  value?: string;
+  label: string;
+  value: string;
+  helper: string;
+  progress: number | null;
+  color: string;
+  icon: typeof Landmark;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
-      <div>
-        <p className="text-[11px] font-bold uppercase text-[#08783f]">
-          {eyebrow}
+    <Card className="group flex min-h-40 min-w-0 flex-col p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[#bfe5cf] hover:shadow-[0_8px_24px_rgba(20,45,37,0.07)]">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#64796f]">
+          {label}
         </p>
-
-        <h2 className="mt-1 text-lg font-bold text-slate-950">{title}</h2>
+        <Icon className="h-4 w-4 shrink-0 opacity-80" style={{ color }} />
       </div>
+      <p
+        className="mt-3 truncate text-[clamp(1.35rem,1.8vw,1.75rem)] font-black tracking-tight text-[#142d25]"
+        title={value}
+      >
+        {value}
+      </p>
+      <p className="mt-1 min-h-8 text-xs leading-4 text-[#64796f]">{helper}</p>
+      <div
+        className="mt-auto h-1.5 overflow-hidden rounded-full bg-[#e9efeb]"
+        aria-label={
+          progress === null
+            ? "Data progres belum tersedia"
+            : `Progres ${progress}%`
+        }
+      >
+        {progress !== null ? (
+          <div
+            className="h-full rounded-full transition-[width] duration-500"
+            style={{
+              width: `${Math.min(Math.max(progress, 0), 100)}%`,
+              backgroundColor: color,
+            }}
+          />
+        ) : null}
+      </div>
+    </Card>
+  );
+}
 
-      {value ? (
-        <p className="text-sm font-bold text-slate-500">{value}</p>
+function Heading({ children, badge }: { children: ReactNode; badge?: string }) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <h2 className="text-lg font-black text-[#142d25]">{children}</h2>
+      {badge ? (
+        <span className="rounded-full bg-[#e8f7ee] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#087f4f]">
+          {badge}
+        </span>
       ) : null}
     </div>
   );
-}
-
-function VerticalBar({
-  value,
-  max,
-  color = "var(--chart-1)",
-  title,
-}: {
-  value: number;
-  max: number;
-  color?: string;
-  title: string;
-}) {
-  const height = max > 0 ? Math.max((value / max) * 100, value > 0 ? 8 : 0) : 0;
-
-  return (
-    <div
-      className="mx-auto w-full min-w-[12px] max-w-[28px] rounded-t-lg transition-[height] duration-500"
-      style={{ height: `${height}%`, backgroundColor: color }}
-      title={title}
-    />
-  );
-}
-
-function VerticalBreakdownBars({
-  items,
-  valueLabel,
-}: {
-  items: DashboardBreakdown[];
-  valueLabel: (item: DashboardBreakdown) => string;
-}) {
-  const max = Math.max(...items.map((item) => item.amount), 1);
-  const minWidth = Math.max(items.length * 112, 420);
-
-  return (
-    <div className="overflow-x-auto pb-1">
-      <div
-        className="grid h-72 items-end gap-4"
-        style={{
-          minWidth,
-          gridTemplateColumns: `repeat(${Math.max(items.length, 1)}, minmax(72px, 1fr))`,
-        }}
-      >
-        {items.map((item, index) => {
-          const height =
-            max > 0
-              ? Math.max((item.amount / max) * 100, item.amount > 0 ? 8 : 0)
-              : 0;
-
-          return (
-            <div
-              key={item.label}
-              className="flex h-full min-w-0 flex-col justify-end"
-            >
-              <div className="flex min-h-0 flex-1 items-end justify-center">
-                <div
-                  className="w-full max-w-[76px] rounded-t-xl transition-[height] duration-500"
-                  style={{
-                    height: `${height}%`,
-                    backgroundColor: chartPalette[index % chartPalette.length],
-                  }}
-                  title={`${item.label}: ${formatCurrency(item.amount)} · ${numberLabel(item.count)} paket`}
-                />
-              </div>
-              <div className="pt-3 text-center">
-                <p
-                  className="truncate text-xs font-bold text-slate-700"
-                  title={item.label}
-                >
-                  {item.label}
-                </p>
-                <p className="mt-1 whitespace-nowrap text-[11px] font-bold text-slate-500">
-                  {valueLabel(item)}
-                </p>
-                <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
-                  {numberLabel(item.count)} paket
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function donutGradient(items: DashboardBreakdown[]) {
-  let cursor = 0;
-
-  const totalPercent = items.reduce((sum, item) => sum + item.percent, 0);
-
-  if (items.length === 0 || totalPercent === 0) return "#e2e8f0 0 100%";
-
-  return items
-
-    .map((item, index) => {
-      const start = cursor;
-
-      const size = item.percent || 0;
-
-      cursor += size;
-
-      return `${chartPalette[index % chartPalette.length]} ${start}% ${cursor}%`;
-    })
-
-    .join(", ");
 }
 
 export default async function Page({
@@ -247,639 +134,220 @@ export default async function Page({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = (await searchParams) ?? {};
-
-  const dashboard = await getDashboardData(parseFilters(params));
-
-  const { summary } = dashboard;
-
-  const maxFinancial = Math.max(
-    ...dashboard.monthlyFinancials.map((item) =>
-      Math.max(item.pagu, item.kontrak, item.realisasi),
-    ),
-
-    1,
+  const dashboard = await getDashboardData(
+    parseFilters((await searchParams) ?? {}),
   );
-
-  const totalMethods = dashboard.methods.reduce(
-    (sum, item) => sum + item.count,
-    0,
-  );
-
-  const stageCount = (key: string) =>
-    dashboard.stages.find((item) => item.key === key)?.count ?? 0;
-
-  const statusCards = [
-    {
-      label: "Verifikasi",
-
-      value: stageCount("verification"),
-
-      helper: "Menunggu telaah",
-
-      href: "/verifikasi",
-
-      icon: ShieldCheck,
-
-      color: "text-[#08783f]",
-    },
-
-    {
-      label: "Siap RUP",
-
-      value: stageCount("rup"),
-
-      helper: "Siap tayang",
-
-      href: "/sirup-rup",
-
-      icon: ClipboardList,
-
-      color: "text-sky-600",
-    },
-
-    {
-      label: "Negosiasi",
-
-      value: stageCount("selection"),
-
-      helper: "Pemilihan penyedia",
-
-      href: "/e-purchasing",
-
-      icon: Send,
-
-      color: "text-amber-600",
-    },
-
-    {
-      label: "Pembayaran",
-
-      value: stageCount("payment"),
-
-      helper: "Dokumen realisasi",
-
-      href: "/realisasi-belanja",
-
-      icon: WalletCards,
-
-      color: "text-emerald-600",
-    },
+  const { summary, efficiency, procurementSummary } = dashboard;
+  const stageGroups = [
+    { label: "Perencanaan", keys: ["planning", "rup"] },
+    { label: "Verifikasi / Persiapan", keys: ["verification"] },
+    { label: "Pemilihan", keys: ["selection"] },
+    { label: "Kontrak", keys: ["contract"] },
+    { label: "Pelaksanaan", keys: ["delivery", "bast", "payment"] },
+    { label: "Selesai", keys: ["done"] },
   ];
-
-  const headlineMetrics = [
+  const stageItems: DashboardBreakdown[] = stageGroups.map((group) => {
+    const stageCount = dashboard.stages
+      .filter((stage) => group.keys.includes(stage.key))
+      .reduce((sum, stage) => sum + stage.count, 0);
+    return {
+      label: group.label,
+      count: stageCount,
+      amount: stageCount,
+      percent:
+        summary.totalPaket > 0
+          ? Number(((stageCount / summary.totalPaket) * 100).toFixed(1))
+          : 0,
+    };
+  });
+  const fundingNames = ["APBD", "BLUD", "DBHCHT"];
+  const fundingCards = fundingNames.map(
+    (name) =>
+      dashboard.sourceFunds.find(
+        (item) => item.label.trim().toUpperCase() === name,
+      ) ?? { label: name, count: 0, amount: 0, percent: 0 },
+  );
+  const kpis = [
     {
-      label: "Total Pagu",
-
-      value: formatCompactCurrency(summary.totalPagu),
-
-      helper: `${numberLabel(summary.totalPaket)} paket TA ${summary.tahunAnggaran}`,
-
+      label: "Total Pagu RUP",
+      value: money(summary.totalPagu),
+      helper: `${count(summary.totalPaket)} paket direncanakan`,
+      progress: null,
+      color: "#087f4f",
       icon: Landmark,
     },
-
     {
-      label: "Nilai Kontrak",
-
-      value: formatCompactCurrency(summary.totalNilaiKontrak),
-
-      helper: `${summary.realisasiKontrakPercent.toLocaleString("id-ID")}% dari pagu`,
-
-      icon: PackageCheck,
-    },
-
-    {
-      label: "Realisasi",
-
-      value: formatCompactCurrency(summary.totalRealisasi),
-
-      helper: `Serapan ${summary.realisasiPercent.toLocaleString("id-ID")}%`,
-
+      label: "Total Realisasi",
+      value: money(summary.totalRealisasi),
+      helper: `${percent(summary.realisasiPercent)} dari pagu`,
+      progress: summary.realisasiPercent,
+      color: "#16834c",
       icon: CircleDollarSign,
     },
     {
-      label: "Efisiensi",
-      value: formatCompactCurrency(dashboard.efficiency.totalSaving),
-      helper:
-        dashboard.efficiency.eligibleCount > 0
-          ? `${dashboard.efficiency.savingRate.toLocaleString("id-ID")}% · ${numberLabel(dashboard.efficiency.eligibleCount)} paket`
-          : "Belum ada harga final valid",
-      icon: WalletCards,
+      label: "Nilai Kontrak",
+      value: money(summary.totalNilaiKontrak),
+      helper: `${count(procurementSummary.contractedPackages)} paket bernilai final`,
+      progress: summary.realisasiKontrakPercent,
+      color: "#28674e",
+      icon: FileSignature,
+    },
+    {
+      label: "Efisiensi Pengadaan",
+      value: efficiency.eligibleCount
+        ? money(efficiency.totalSaving)
+        : "Belum tersedia",
+      helper: efficiency.eligibleCount
+        ? `${percent(efficiency.savingRate)} dari ${count(efficiency.eligibleCount)} paket valid`
+        : "Belum ada pagu dan nilai final pembanding",
+      progress: efficiency.eligibleCount ? efficiency.savingRate : null,
+      color: "#2f8069",
+      icon: BadgeCheck,
+    },
+    {
+      label: "Paket Selesai",
+      value: count(summary.paketSelesai),
+      helper: `${percent(summary.selesaiPercent)} dari seluruh paket`,
+      progress: summary.selesaiPercent,
+      color: "#16834c",
+      icon: ClipboardCheck,
+    },
+    {
+      label: "Paket Berisiko",
+      value: count(summary.paketBermasalah),
+      helper: "Revisi, kendala, gagal, atau batal tercatat",
+      progress: summary.totalPaket
+        ? (summary.paketBermasalah / summary.totalPaket) * 100
+        : 0,
+      color: "#c24141",
+      icon: AlertTriangle,
     },
   ];
 
   return (
     <>
-      <AppHeader title="Dashboard Utama" />
+      <AppHeader title="Dashboard Pengadaan" />
+      <main className="dashboard-command min-h-dvh bg-[#f6f9f7] text-[#253d34]">
+        <div className="mx-auto max-w-[1800px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+          <Card className="min-w-0 overflow-visible p-5 sm:p-6">
+            <h1 className="text-base font-black text-[#142d25] sm:text-lg">
+              Jumlah Paket per Bulan
+            </h1>
+            <p className="mb-4 mt-1 text-xs text-[#64796f] sm:text-sm">
+              Berdasarkan tanggal paket dimasukkan ke sistem.
+            </p>
+            <DashboardMonthlyPackageChart data={dashboard.monthlyPackages} />
+          </Card>
 
-      <main className="bg-[#f4f7f5]">
-        <div className="px-4 py-5 sm:px-6 lg:px-8">
-          <form className="mb-5 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm xl:flex-row xl:items-center">
-            <div className="flex min-w-0 flex-1 flex-col gap-3 md:grid md:grid-cols-5">
-              <select
-                name="tahunAnggaran"
-                defaultValue={selectValue(dashboard.filters.tahunAnggaran)}
-                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
-              >
-                {dashboard.filterOptions.years.map((year) => (
-                  <option key={year} value={year}>
-                    Tahun {year}
-                  </option>
-                ))}
-              </select>
+          <section className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+            {kpis.map((item) => (
+              <KpiCard key={item.label} {...item} />
+            ))}
+          </section>
 
-              <select
-                name="unit"
-                defaultValue={selectValue(dashboard.filters.unit)}
-                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
-              >
-                <option value="">Semua Unit</option>
-
-                {dashboard.filterOptions.units.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                name="sumberDana"
-                defaultValue={selectValue(dashboard.filters.sumberDana)}
-                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
-              >
-                <option value="">Semua Sumber Dana</option>
-
-                {dashboard.filterOptions.sources.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                name="metodePengadaan"
-                defaultValue={selectValue(dashboard.filters.metodePengadaan)}
-                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
-              >
-                <option value="">Semua Metode</option>
-
-                {dashboard.filterOptions.methods.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                name="statusPaket"
-                defaultValue={selectValue(dashboard.filters.statusPaket)}
-                className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-[#08783f]"
-              >
-                <option value="">Semua Status</option>
-
-                {dashboard.filterOptions.statuses.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
+          <section className="mt-8">
+            <Heading>Ringkasan Pengadaan</Heading>
+            <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+              <Card className="min-w-0 p-5">
+                <h3 className="mb-1 text-sm font-black text-[#142d25]">
+                  Distribusi Pagu Berdasarkan Sumber Dana
+                </h3>
+                <p className="mb-4 text-xs text-[#64796f]">
+                  Proporsi pagu paket dalam cakupan filter aktif.
+                </p>
+                <DashboardDonutChart
+                  items={dashboard.sourceFunds}
+                  valueKind="amount"
+                />
+              </Card>
+              <Card className="min-w-0 p-5">
+                <h3 className="mb-1 text-sm font-black text-[#142d25]">
+                  Tren Pagu dan Realisasi Bulanan
+                </h3>
+                <p className="mb-4 text-xs text-[#64796f]">
+                  Kumulatif berdasarkan tanggal pencatatan dan pembayaran yang
+                  valid.
+                </p>
+                <DashboardTrendChart data={dashboard.monthlyRealization} />
+              </Card>
+              <Card className="min-w-0 p-5 xl:col-span-2 2xl:col-span-1">
+                <h3 className="mb-1 text-sm font-black text-[#142d25]">
+                  Distribusi Paket Berdasarkan Tahap Pengadaan
+                </h3>
+                <p className="mb-4 text-xs text-[#64796f]">
+                  Satu paket hanya muncul pada tahap terkini.
+                </p>
+                <DashboardDonutChart items={stageItems} valueKind="count" />
+              </Card>
             </div>
+          </section>
 
-            <div className="flex gap-2 xl:ml-auto">
-              <button
-                type="submit"
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-[#08783f] px-4 text-sm font-bold text-white shadow-sm xl:flex-none"
-              >
-                Filter
-              </button>
-
-              <Link
-                href="/dashboard"
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-slate-500 shadow-sm"
-                aria-label="Reset filter"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Link>
-            </div>
-          </form>
-
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {statusCards.map((card) => {
-              const Icon = card.icon;
-
+          <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+            {fundingCards.map((item) => {
+              const realization =
+                dashboard.sourceRealizations.find(
+                  (source) => source.label === item.label,
+                )?.amount ?? 0;
+              const rate =
+                item.amount > 0 ? (realization / item.amount) * 100 : 0;
               return (
-                <Link
-                  key={card.label}
-                  href={card.href}
-                  className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-[#08783f]/40 hover:shadow-md"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-slate-100 bg-slate-50">
-                      <span className={`text-2xl font-bold ${card.color}`}>
-                        {numberLabel(card.value)}
-                      </span>
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-bold text-slate-900">
-                        {card.label}
-                      </p>
-
-                      <p className="mt-1 truncate text-xs font-semibold text-slate-500">
-                        {card.helper}
-                      </p>
-                    </div>
-
-                    <Icon className="ml-auto h-5 w-5 shrink-0 text-slate-300" />
-                  </div>
-                </Link>
+                <Card key={item.label} className="p-5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#64796f]">
+                    {item.label}
+                  </p>
+                  <p className="mt-2 text-xl font-black text-[#087f4f]">
+                    {money(item.amount)}
+                  </p>
+                  <p className="mt-1 text-xs text-[#64796f]">
+                    {count(item.count)} paket · realisasi {percent(rate)}
+                  </p>
+                </Card>
               );
             })}
-          </section>
-
-          <section className="mt-5 grid gap-5 xl:grid-cols-[2fr_1fr]">
-            <Panel>
-              <PanelHeader
-                eyebrow="Ringkasan Nilai"
-                title="Pagu, Kontrak, dan Realisasi"
-                value={`TA ${summary.tahunAnggaran}`}
-              />
-
-              <div className="p-5">
-                <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-                  {headlineMetrics.map((item) => {
-                    const Icon = item.icon;
-
-                    return (
-                      <div
-                        key={item.label}
-                        className="rounded-lg bg-slate-50 p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="text-xs font-bold uppercase text-slate-400">
-                            {item.label}
-                          </p>
-
-                          <Icon className="h-5 w-5 text-[#08783f]" />
-                        </div>
-
-                        <p className="mt-2 text-2xl font-bold text-slate-950">
-                          {item.value}
-                        </p>
-
-                        <p className="mt-1 text-xs font-semibold text-slate-500">
-                          {item.helper}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-5 overflow-x-auto rounded-xl border border-slate-100 bg-slate-50">
-                  <div
-                    className="grid h-96 min-w-[960px] grid-cols-12 items-end gap-3 px-5 pb-5 pt-7"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(to top, rgba(148,163,184,0.16) 1px, transparent 1px)",
-                      backgroundSize: "100% 25%",
-                    }}
-                  >
-                    {dashboard.monthlyFinancials.map((item) => (
-                      <div
-                        key={item.month}
-                        className="flex h-full min-w-0 flex-col justify-end gap-2"
-                      >
-                        <div className="flex min-h-0 flex-1 items-end justify-center gap-1.5">
-                          <VerticalBar
-                            value={item.pagu}
-                            max={maxFinancial}
-                            color="var(--chart-1)"
-                            title={`Pagu ${item.month}: ${formatCurrency(item.pagu)}`}
-                          />
-                          <VerticalBar
-                            value={item.kontrak}
-                            max={maxFinancial}
-                            color="var(--chart-2)"
-                            title={`Nilai kontrak ${item.month}: ${formatCurrency(item.kontrak)}`}
-                          />
-                          <VerticalBar
-                            value={item.realisasi}
-                            max={maxFinancial}
-                            color="var(--chart-4)"
-                            title={`Realisasi ${item.month}: ${formatCurrency(item.realisasi)}`}
-                          />
-                        </div>
-                        <span className="text-center text-[11px] font-bold text-slate-500">
-                          {item.month}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-4 text-xs font-bold text-slate-600">
-                  <span>
-                    <span className="text-[#08783f]">■</span> Pagu
-                  </span>
-
-                  <span>
-                    <span className="text-[#16227c]">■</span> Nilai Kontrak
-                  </span>
-
-                  <span>
-                    <span className="text-[#159fbe]">■</span> Realisasi
-                  </span>
-                </div>
-              </div>
-            </Panel>
-
-            <Panel>
-              <PanelHeader
-                eyebrow="Sumber Dana"
-                title="Distribusi Pagu"
-                value={formatCompactCurrency(summary.totalPagu)}
-              />
-
-              <div className="p-5">
-                {dashboard.sourceFunds.length > 0 ? (
-                  <VerticalBreakdownBars
-                    items={dashboard.sourceFunds}
-                    valueLabel={(item) => formatCompactCurrency(item.amount)}
-                  />
-                ) : (
-                  <EmptyState message="Belum ada data sumber dana." />
-                )}
-              </div>
-            </Panel>
-          </section>
-
-          <section className="mt-5 grid gap-5 xl:grid-cols-3">
-            <Panel>
-              <PanelHeader eyebrow="Per Unit" title="Sebaran Nilai Pagu" />
-
-              <div className="p-5">
-                {dashboard.unitBreakdown.length > 0 ? (
-                  <VerticalBreakdownBars
-                    items={dashboard.unitBreakdown}
-                    valueLabel={(item) => `${item.percent}%`}
-                  />
-                ) : (
-                  <EmptyState message="Belum ada data unit." />
-                )}
-              </div>
-            </Panel>
-
-            <Panel>
-              <PanelHeader
-                eyebrow="Metode Pengadaan"
-                title="Komposisi Metode"
-                value={`${numberLabel(totalMethods)} paket`}
-              />
-
-              <div className="p-5">
-                {dashboard.methods.length > 0 ? (
-                  <>
-                    <div
-                      className="mx-auto flex h-52 w-52 items-center justify-center rounded-full"
-                      style={{
-                        background: `conic-gradient(${donutGradient(dashboard.methods)})`,
-                      }}
-                    >
-                      <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white text-center shadow-inner">
-                        <p className="text-2xl font-bold text-slate-950">
-                          {numberLabel(totalMethods)}
-                        </p>
-
-                        <p className="mt-1 text-xs font-bold uppercase text-slate-400">
-                          Paket
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                      {dashboard.methods.slice(0, 6).map((item, index) => (
-                        <div
-                          key={item.label}
-                          className="flex items-start gap-3"
-                        >
-                          <span
-                            className="mt-1 h-3 w-3 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor:
-                                chartPalette[index % chartPalette.length],
-                            }}
-                          />
-
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-bold text-slate-800">
-                              {item.percent}% - {item.label}
-                            </p>
-
-                            <p className="mt-1 text-xs font-semibold text-slate-500">
-                              {numberLabel(item.count)} paket ·{" "}
-                              {formatCompactCurrency(item.amount)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <EmptyState message="Belum ada data metode pengadaan." />
-                )}
-              </div>
-            </Panel>
-
-            <Panel>
-              <PanelHeader
-                eyebrow="Aktivitas / User"
-                title="Transaksi Pengguna"
-              />
-
-              <div className="p-5">
-                {dashboard.activityActors.length > 0 ? (
-                  <div className="space-y-5">
-                    {dashboard.activityActors.map((item, index) => (
-                      <div
-                        key={item.label}
-                        className="grid grid-cols-[minmax(0,96px)_1fr_42px] items-center gap-3"
-                      >
-                        <p className="truncate text-sm font-bold text-slate-700">
-                          {item.label}
-                        </p>
-
-                        <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${item.percent}%`,
-
-                              backgroundColor:
-                                chartPalette[index % chartPalette.length],
-                            }}
-                            title={`${item.label}: ${numberLabel(item.count)} aktivitas`}
-                          />
-                        </div>
-
-                        <p className="text-right text-sm font-bold text-slate-900">
-                          {numberLabel(item.count)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState message="Belum ada aktivitas pengguna yang dapat ditampilkan." />
-                )}
-              </div>
-            </Panel>
-          </section>
-
-          <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr_1fr]">
-            <Panel>
-              <PanelHeader
-                eyebrow="Perlu Tindakan"
-                title="Tindak Lanjut Prioritas"
-              />
-
-              <div className="space-y-3 p-5">
-                {dashboard.attentionItems.length > 0 ? (
-                  dashboard.attentionItems.slice(0, 4).map((item) => {
-                    const content = (
-                      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-slate-800">
-                            {item.label}
-                          </p>
-
-                          <p className="mt-1 text-xs font-semibold text-slate-500">
-                            Perlu diproses
-                          </p>
-                        </div>
-
-                        <p className="text-xl font-bold text-[#08783f]">
-                          {numberLabel(item.count)}
-                        </p>
-                      </div>
-                    );
-
-                    return item.href ? (
-                      <Link key={item.label} href={item.href}>
-                        {content}
-                      </Link>
-                    ) : (
-                      <div key={item.label}>{content}</div>
-                    );
-                  })
-                ) : (
-                  <EmptyState message="Tidak ada paket yang memerlukan perhatian saat ini." />
-                )}
-              </div>
-            </Panel>
-
-            <Panel>
-              <PanelHeader eyebrow="Efisiensi" title="Pagu vs Nilai Final" />
-
-              <div className="p-5">
-                {dashboard.efficiency.eligibleCount > 0 ? (
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                    <div className="rounded-lg bg-slate-50 p-4">
-                      <p className="text-xs font-bold uppercase text-slate-400">
-                        Pagu
-                      </p>
-
-                      <p className="mt-2 text-xl font-bold text-slate-950">
-                        {formatCompactCurrency(dashboard.efficiency.totalPagu)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-slate-50 p-4">
-                      <p className="text-xs font-bold uppercase text-slate-400">
-                        Nilai Final
-                      </p>
-
-                      <p className="mt-2 text-xl font-bold text-slate-950">
-                        {formatCompactCurrency(dashboard.efficiency.totalFinal)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-emerald-50 p-4">
-                      <p className="text-xs font-bold uppercase text-emerald-700">
-                        Efisiensi
-                      </p>
-
-                      <p className="mt-2 text-xl font-bold text-emerald-700">
-                        {formatCompactCurrency(
-                          dashboard.efficiency.totalSaving,
-                        )}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-emerald-50 p-4">
-                      <p className="text-xs font-bold uppercase text-emerald-700">
-                        Saving Rate
-                      </p>
-
-                      <p className="mt-2 text-xl font-bold text-emerald-700">
-                        {dashboard.efficiency.savingRate.toLocaleString(
-                          "id-ID",
-                        )}
-                        %
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <EmptyState message="Belum ada harga final valid untuk menghitung efisiensi." />
-                )}
-              </div>
-            </Panel>
-
-            <Panel>
-              <PanelHeader
-                eyebrow="Aktivitas Terbaru"
-                title="Pergerakan Terakhir"
-              />
-
-              <div className="divide-y divide-slate-100 px-5 py-2">
-                {dashboard.activities.length > 0 ? (
-                  dashboard.activities.slice(0, 5).map((item, index) => {
-                    const content = (
-                      <div className="grid grid-cols-[48px_minmax(0,1fr)] gap-3 py-3">
-                        <p className="text-sm font-bold text-slate-500">
-                          {item.time}
-                        </p>
-
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-slate-900">
-                            {item.title}
-                          </p>
-
-                          <p className="mt-1 truncate text-xs font-semibold text-slate-500">
-                            {item.description}
-                          </p>
-                        </div>
-                      </div>
-                    );
-
-                    return item.href ? (
-                      <Link
-                        key={`${item.time}-${item.title}-${index}`}
-                        href={item.href}
-                      >
-                        {content}
-                      </Link>
-                    ) : (
-                      <div key={`${item.time}-${item.title}-${index}`}>
-                        {content}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="py-5">
-                    <EmptyState message="Belum ada aktivitas terbaru yang dapat ditampilkan." />
-                  </div>
-                )}
-              </div>
-            </Panel>
+            <Link href="/e-purchasing">
+              <Card className="h-full p-5 transition hover:border-[#bfe5cf] hover:bg-[#f8fbf9]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#64796f]">
+                  E-Purchasing
+                </p>
+                <p className="mt-2 text-xl font-black text-[#087f4f]">
+                  {count(procurementSummary.ePurchasing.total)} paket
+                </p>
+                <p className="mt-1 text-xs leading-5 text-[#64796f]">
+                  {money(procurementSummary.ePurchasing.amount)}
+                  <br />
+                  Siap {procurementSummary.ePurchasing.ready} · Proses{" "}
+                  {procurementSummary.ePurchasing.active} · Selesai{" "}
+                  {procurementSummary.ePurchasing.done}
+                </p>
+              </Card>
+            </Link>
+            <Link href="/tender-non-tender">
+              <Card className="h-full p-5 transition hover:border-[#bfe5cf] hover:bg-[#f8fbf9]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#64796f]">
+                  Tender / Non Tender
+                </p>
+                <p className="mt-2 text-xl font-black text-[#28674e]">
+                  {count(procurementSummary.tenderNonTender.total)} paket
+                </p>
+                <p className="mt-1 text-xs leading-5 text-[#64796f]">
+                  {money(procurementSummary.tenderNonTender.amount)}
+                  <br />
+                  Proses {procurementSummary.tenderNonTender.active} · Selesai{" "}
+                  {procurementSummary.tenderNonTender.done}
+                </p>
+              </Card>
+            </Link>
+            <Card className="p-5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#64796f]">
+                Paket Gagal / Batal
+              </p>
+              <p className="mt-2 text-xl font-black text-[#c24141]">
+                {count(procurementSummary.failedOrCancelled)}
+              </p>
+              <p className="mt-1 text-xs text-[#64796f]">
+                Berdasarkan kendala dan status workflow aktual
+              </p>
+            </Card>
           </section>
         </div>
       </main>

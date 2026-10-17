@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import type { PaketMetodePengadaan, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
@@ -45,6 +44,11 @@ export type DashboardMonthlyRealization = {
   month: string;
   pagu: number;
   realisasi: number;
+};
+
+export type DashboardMonthlyPackage = {
+  month: string;
+  count: number;
 };
 
 export type DashboardRecentPackage = {
@@ -135,6 +139,7 @@ export type DashboardData = {
   monthlyFinancials: DashboardMonthlyFinancial[];
   unitBreakdown: DashboardBreakdown[];
   sourceFunds: DashboardBreakdown[];
+  sourceRealizations: DashboardBreakdown[];
   methods: DashboardBreakdown[];
   statuses: DashboardBreakdown[];
   efficiency: {
@@ -143,6 +148,12 @@ export type DashboardData = {
     totalFinal: number;
     totalSaving: number;
     savingRate: number;
+  };
+  procurementSummary: {
+    contractedPackages: number;
+    ePurchasing: { total: number; amount: number; ready: number; active: number; done: number };
+    tenderNonTender: { total: number; amount: number; active: number; done: number };
+    failedOrCancelled: number;
   };
   deadlines: DashboardDeadline[];
   activities: DashboardActivity[];
@@ -156,6 +167,7 @@ export type DashboardData = {
     tone: "amber" | "green" | "red";
   }[];
   recentPackages: DashboardRecentPackage[];
+  monthlyPackages: DashboardMonthlyPackage[];
   monthlyRealization: DashboardMonthlyRealization[];
   timeline: DashboardTimelineItem[];
   auditReadiness: DashboardAuditReadiness;
@@ -236,13 +248,25 @@ function validAmount(value: unknown) {
   return amount > 0 ? amount : null;
 }
 
-function getFinalValue(row: RupRow) {
+function getNegotiatedFinalValue(row: RupRow) {
+  return validAmount(row.hargaNegosiasiKatalog);
+}
+
+function hasContractRecord(row: RupRow) {
   return (
-    validAmount(row.hargaNegosiasiKatalog) ??
-    validAmount(row.hargaPenawaranKatalog) ??
-    validAmount(row.nilaiPembayaran) ??
-    null
+    isFilled(row.nomorSpkKontrak) ||
+    isFilled(row.tanggalKontrakEp) ||
+    isFilled(row.nomorSuratPesanan) ||
+    isFilled(row.tanggalSuratPesanan) ||
+    textIncludes(row.statusSuratPesanan, ["TERBIT", "DITANDATANGANI"])
   );
+}
+
+function getContractValue(row: RupRow) {
+  // Schema belum memiliki field nilai kontrak tersendiri. Business rules
+  // menetapkan harga negosiasi sebagai nilai final kontrak/SP, tetapi nilai
+  // baru dikategorikan sebagai kontrak ketika bukti kontrak/SP sudah ada.
+  return hasContractRecord(row) ? getNegotiatedFinalValue(row) : null;
 }
 
 function parseLooseDate(value?: string | Date | null) {
@@ -287,8 +311,7 @@ function formatDateLabel(value: Date) {
 function getProcurementStage(row: RupRow): (typeof procurementStages)[number]["key"] {
   if (
     textIncludes(row.statusTransaksiKatalog, ["SELESAI"]) ||
-    textIncludes(row.statusPembayaranEp, ["LUNAS", "SELESAI"]) ||
-    isFilled(row.tanggalPembayaranEp)
+    textIncludes(row.statusPembayaranEp, ["DIBAYAR"])
   ) {
     return "done";
   }
@@ -528,6 +551,30 @@ function buildBreakdown(
   })).sort((a, b) => b.amount - a.amount || b.count - a.count);
 }
 
+function buildValueBreakdown(
+  rows: RupRow[],
+  getLabel: (row: RupRow) => string,
+  getValue: (row: RupRow) => number,
+) {
+  const breakdown = new Map<string, { count: number; amount: number }>();
+
+  for (const row of rows) {
+    const label = getLabel(row) || "-";
+    const current = breakdown.get(label) ?? { count: 0, amount: 0 };
+    current.count += 1;
+    current.amount += getValue(row);
+    breakdown.set(label, current);
+  }
+
+  const total = Array.from(breakdown.values()).reduce((sum, item) => sum + item.amount, 0);
+  return Array.from(breakdown, ([label, item]) => ({
+    label,
+    count: item.count,
+    amount: item.amount,
+    percent: total > 0 ? Number(((item.amount / total) * 100).toFixed(1)) : 0,
+  })).sort((a, b) => b.amount - a.amount || b.count - a.count);
+}
+
 function buildStatusBreakdown(rows: RupRow[]) {
   const total = rows.length;
   const breakdown = new Map<string, { count: number; amount: number }>();
@@ -653,10 +700,28 @@ function buildMonthlyFinancials(rows: RupRow[]) {
   }));
 
   for (const row of rows) {
-    const monthIndex = (row.createdAt ?? row.updatedAt).getMonth();
-    values[monthIndex].pagu += toNumber(row.pagu);
-    values[monthIndex].kontrak += getFinalValue(row) ?? 0;
-    values[monthIndex].realisasi += toNumber(row.nilaiPembayaran);
+    const paguDate = row.createdAt ?? row.updatedAt;
+    values[paguDate.getMonth()].pagu += toNumber(row.pagu);
+
+    const contractDate = parseLooseDate(row.tanggalKontrakEp ?? row.tanggalSuratPesanan);
+    if (contractDate && contractDate.getFullYear() === row.tahunAnggaran) {
+      values[contractDate.getMonth()].kontrak += getContractValue(row) ?? 0;
+    }
+
+    const paymentDate = parseLooseDate(row.tanggalPembayaranEp);
+    if (paymentDate && paymentDate.getFullYear() === row.tahunAnggaran) {
+      values[paymentDate.getMonth()].realisasi += toNumber(row.nilaiPembayaran);
+    }
+  }
+
+  return values;
+}
+
+function buildMonthlyPackages(rows: RupRow[]): DashboardMonthlyPackage[] {
+  const values = monthLabels.map((month) => ({ month, count: 0 }));
+
+  for (const row of rows) {
+    values[row.createdAt.getMonth()].count += 1;
   }
 
   return values;
@@ -666,7 +731,7 @@ function buildEfficiency(rows: RupRow[]) {
   const eligibleRows = rows
     .map((row) => ({
       pagu: toNumber(row.pagu),
-      finalValue: getFinalValue(row),
+      finalValue: getNegotiatedFinalValue(row),
     }))
     .filter((row): row is { pagu: number; finalValue: number } =>
       Boolean(row.pagu > 0 && row.finalValue && row.finalValue > 0),
@@ -1005,7 +1070,7 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
     0,
   );
   const totalNilaiKontrak = rows.reduce(
-    (sum, row) => sum + (getFinalValue(row) ?? 0),
+    (sum, row) => sum + (getContractValue(row) ?? 0),
     0,
   );
   const totalRealisasi = rows.reduce(
@@ -1038,6 +1103,14 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
   const paketTenderNonTender = countRows(rows, (row) =>
     ["TENDER", "NON_TENDER"].includes(row.metodePengadaan),
   );
+  const contractedPackages = countRows(rows, (row) => getContractValue(row) !== null);
+  const ePurchasingRows = rows.filter((row) => row.metodePengadaan === "E_PURCHASING");
+  const tenderRows = rows.filter((row) =>
+    ["TENDER", "NON_TENDER"].includes(row.metodePengadaan),
+  );
+  const isDone = (row: RupRow) => getProcurementStage(row) === "done";
+  const isStarted = (row: RupRow) =>
+    !["planning", "verification", "rup"].includes(getProcurementStage(row));
   const paketTerlambat = countRows(rows, (row) => {
     const due = parseLooseDate(row.tanggalRencanaKirim);
     return Boolean(due && due < new Date() && !isFilled(row.tanggalAktualKirim));
@@ -1086,6 +1159,11 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
     monthlyFinancials,
     unitBreakdown: buildUnitBreakdown(rows, totalPagu),
     sourceFunds: buildBreakdown(rows, (row) => row.sumberDana, totalPagu),
+    sourceRealizations: buildValueBreakdown(
+      rows,
+      (row) => row.sumberDana,
+      (row) => toNumber(row.nilaiPembayaran),
+    ),
     methods: buildBreakdown(
       rows,
       (row) =>
@@ -1096,12 +1174,35 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
     ),
     statuses: buildStatusBreakdown(rows),
     efficiency: buildEfficiency(rows),
+    procurementSummary: {
+      contractedPackages,
+      ePurchasing: {
+        total: ePurchasingRows.length,
+        amount: ePurchasingRows.reduce((sum, row) => sum + toNumber(row.pagu), 0),
+        ready: countRows(ePurchasingRows, (row) => !isStarted(row)),
+        active: countRows(ePurchasingRows, (row) => isStarted(row) && !isDone(row)),
+        done: countRows(ePurchasingRows, isDone),
+      },
+      tenderNonTender: {
+        total: tenderRows.length,
+        amount: tenderRows.reduce((sum, row) => sum + toNumber(row.pagu), 0),
+        active: countRows(tenderRows, (row) => isStarted(row) && !isDone(row)),
+        done: countRows(tenderRows, isDone),
+      },
+      failedOrCancelled: countRows(
+        rows,
+        (row) =>
+          textIncludes(row.kendala, ["GAGAL", "BATAL"]) ||
+          textIncludes(row.statusTransaksiKatalog, ["GAGAL", "BATAL"]),
+      ),
+    },
     deadlines,
     activities,
     activityActors,
     categories,
     priorities: buildPriorities(attentionItems),
     recentPackages: buildRecentPackages(rows),
+    monthlyPackages: buildMonthlyPackages(rows),
     monthlyRealization: buildMonthlyRealization(monthlyFinancials),
     timeline,
     auditReadiness,
@@ -1110,17 +1211,7 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
 
 export async function getDashboardData(filters: DashboardFilters = {}) {
   const tahunAnggaran = filters.tahunAnggaran ?? (await resolveDefaultYear());
-  const cacheKey = JSON.stringify({
-    tahunAnggaran,
-    unit: filters.unit ?? "",
-    sumberDana: filters.sumberDana ?? "",
-    metodePengadaan: filters.metodePengadaan ?? "",
-    statusPaket: filters.statusPaket ?? "",
-  });
-
-  return unstable_cache(
-    () => computeDashboardData({ ...filters, tahunAnggaran }),
-    ["dashboard-data", cacheKey],
-    { revalidate: 300, tags: ["dashboard-data"] },
-  )();
+  // Route dashboard bersifat dinamis. Membaca agregasi langsung mencegah KPI
+  // tertahan cache setelah workflow berhasil disimpan dari modul lain.
+  return computeDashboardData({ ...filters, tahunAnggaran });
 }
