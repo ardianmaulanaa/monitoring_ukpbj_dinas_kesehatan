@@ -1,4 +1,4 @@
-import { KontrakStatus, PaketStatus, RupStatus } from "@prisma/client";
+import { KontrakStatus, PaketStatus, RupStatus, StatusUsulan } from "@prisma/client";
 import { apiSuccess } from "@/lib/response";
 import { prisma } from "@/lib/prisma";
 import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
@@ -72,6 +72,11 @@ export async function GET() {
     label: humanize(value),
   }));
 
+  const proposalStatuses = Object.values(StatusUsulan).map((value) => ({
+    value,
+    label: humanize(value),
+  }));
+
   return apiSuccess(
     {
       years,
@@ -82,6 +87,7 @@ export async function GET() {
       units,
       packageStatuses,
       rupStatuses,
+      proposalStatuses,
     },
     "Opsi filter berhasil diambil.",
   );

@@ -746,6 +746,9 @@ html {
   top: 4.75rem !important;
   width: auto !important;
   max-width: none !important;
+  max-height: calc(100dvh - 5.75rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .app-filter-form {
@@ -769,6 +772,7 @@ html {
     right: 0 !important;
     top: 3rem !important;
     width: min(22rem, calc(100vw - 2rem)) !important;
+    max-height: calc(100dvh - 4rem);
   }
 
   .app-filter-form {

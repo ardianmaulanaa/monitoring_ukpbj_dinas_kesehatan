@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Workflow pengadaan SIMUKPBJ</title>
+  <desc id="desc">Usulan diverifikasi tiga tingkat, masuk RUP, bercabang menurut metode; E-Purchasing dilanjutkan hingga pembayaran dan selesai.</desc>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#64796f"/></marker></defs>
+  <rect width="1200" height="760" fill="#f6f9f7"/>
+  <style>.t{font:700 25px system-ui;fill:#142d25}.s{font:13px system-ui;fill:#64796f}.n{fill:#fff;stroke:#bfe5cf;stroke-width:2}.g{fill:#e8f7ee;stroke:#087f4f;stroke-width:2}.w{fill:#fff7e6;stroke:#b77916;stroke-width:2}.x{fill:#fdecec;stroke:#c24141;stroke-width:2}.l{font:700 14px system-ui;fill:#253d34;text-anchor:middle}.e{stroke:#64796f;stroke-width:2;fill:none;marker-end:url(#a)}</style>
+  <text x="50" y="48" class="t">Workflow Pengadaan SIMUKPBJ</text><text x="50" y="72" class="s">Snapshot implementasi 2026-10-17 — detail authoritative: WORKFLOW.md</text>
+  <g><rect x="40" y="110" width="150" height="60" rx="12" class="n"/><text x="115" y="145" class="l">Draft Usulan</text>
+  <rect x="235" y="110" width="180" height="60" rx="12" class="g"/><text x="325" y="136" class="l">Verifikasi</text><text x="325" y="155" class="l">Kepala Unit</text>
+  <rect x="460" y="110" width="180" height="60" rx="12" class="g"/><text x="550" y="136" class="l">Validasi</text><text x="550" y="155" class="l">PPK / PPTK</text>
+  <rect x="685" y="110" width="180" height="60" rx="12" class="g"/><text x="775" y="136" class="l">Persetujuan</text><text x="775" y="155" class="l">PA / KPA</text>
+  <rect x="910" y="110" width="150" height="60" rx="12" class="g"/><text x="985" y="145" class="l">SIAP RUP</text>
+  <path d="M190 140H235M415 140H460M640 140H685M865 140H910" class="e"/>
+  <rect x="440" y="210" width="220" height="55" rx="12" class="x"/><text x="550" y="243" class="l">PERLU REVISI → Operator</text>
+  <path d="M325 170V237H440M550 170V210M775 170V237H660" class="e"/></g>
+  <rect x="900" y="220" width="170" height="60" rx="12" class="g"/><text x="985" y="255" class="l">RUP TAYANG</text><path d="M985 170V220" class="e"/>
+  <text x="50" y="330" class="t">Cabang Metode</text>
+  <rect x="60" y="370" width="300" height="320" rx="16" class="n"/><text x="210" y="405" class="l">E-Purchasing (implemented detail)</text>
+  <text x="210" y="445" class="l">Produk → Penyedia → Negosiasi</text><text x="210" y="485" class="l">Kontrak / Surat Pesanan</text><text x="210" y="525" class="l">Pengiriman</text><text x="210" y="565" class="l">Pemeriksaan / BAST</text><text x="210" y="605" class="l">Pembayaran</text><rect x="125" y="630" width="170" height="42" rx="10" class="g"/><text x="210" y="657" class="l">SELESAI / DIBAYAR</text>
+  <rect x="450" y="370" width="300" height="320" rx="16" class="n"/><text x="600" y="405" class="l">Tender / Non-Tender</text><text x="600" y="455" class="s" text-anchor="middle">Route dan paket umum tersedia.</text><text x="600" y="480" class="s" text-anchor="middle">State machine khusus belum sedetail</text><text x="600" y="505" class="s" text-anchor="middle">E-Purchasing (PARTIAL).</text>
+  <rect x="840" y="370" width="300" height="320" rx="16" class="n"/><text x="990" y="405" class="l">Model Pelaksanaan Umum</text><text x="990" y="455" class="l">Kontrak</text><text x="990" y="495" class="l">Progres / Timeline</text><text x="990" y="535" class="l">Serah Terima</text><text x="990" y="575" class="l">Realisasi Belanja</text><text x="990" y="615" class="l">Risiko / Audit</text>
+  <path d="M985 280V320H210V370M985 320H600V370M985 320H990V370" class="e"/>
+</svg>

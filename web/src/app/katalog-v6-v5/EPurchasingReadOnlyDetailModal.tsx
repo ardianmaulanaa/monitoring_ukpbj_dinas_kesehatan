@@ -22,6 +22,7 @@ import {
 } from "@/components/detail/DetailHorizontalSection";
 import type { EPurchasingDraft } from "@/app/katalog-v6-v5/KatalogManualWorkflowClient";
 import { formatCurrency } from "@/lib/currency";
+import { kategoriBarangLabel } from "@/lib/kategori-barang";
 import {
   getEPurchasingCompleteness,
   getFirstIncompleteEPurchasingStage,
@@ -34,6 +35,8 @@ type EPurchasingReadOnlyDetailModalProps = {
     id: string;
     idRupSirup?: string | null;
     kodeRup: string;
+    jenisBelanja?: string | null;
+    kategoriBarang?: string | null;
     linkSirup?: string | null;
     lokasiPaket?: string | null;
     namaPaket: string;
@@ -298,6 +301,10 @@ export default function EPurchasingReadOnlyDetailModal({
         {activeTab === "overview" ? (
           <FieldGrid>
             <DetailField label="Kode RUP" value={rup.kodeRup} />
+            <DetailField label="Jenis Belanja" value={rup.jenisBelanja} />
+            {rup.jenisBelanja?.toLowerCase() === "barang" ? (
+              <DetailField label="Kategori Barang" value={kategoriBarangLabel(rup.kategoriBarang)} />
+            ) : null}
             <DetailField label="Unit" value={rup.unitPengusul} />
             <DetailField label="Tahun Anggaran" value={`TA ${rup.tahunAnggaran}`} />
             <DetailField label="Pagu" value={rupiah(rup.pagu)} />

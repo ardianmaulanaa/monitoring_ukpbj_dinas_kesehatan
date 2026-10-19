@@ -24,7 +24,6 @@ import {
   FileCheck2,
   FolderOpen,
   Handshake,
-  Eye,
   Landmark,
   ListChecks,
   MessageSquareText,
@@ -37,6 +36,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { kategoriBarangFilter, kategoriBarangLabel } from "@/lib/kategori-barang";
 import { getDashboardData, type DashboardData } from "@/lib/dashboard-data";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -54,22 +54,15 @@ import UnitManagementPanel, {
 } from "@/app/pengaturan/UnitManagementPanel";
 import AppHeader from "@/components/appheader/AppHeader";
 import {
-  DataCardBadge,
-  DataCardCurrency,
   DataCardEmpty,
   DataCardField,
   DataCardRow,
-  DataCardTextLong,
-  DataCardTextShort,
 } from "@/components/data-card/DataCardList";
 import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
 import GenericInputModalButton from "@/components/button/shared/GenericInputModalButton";
 import EPurchasingDetailModal from "@/app/katalog-v6-v5/EPurchasingDetailModal";
 import EPurchasingReadOnlyDetailModal from "@/app/katalog-v6-v5/EPurchasingReadOnlyDetailModal";
-import ProcurementCompactCard, {
-  CompactDetailLink,
-  CompactManageLink,
-} from "@/components/procurement/ProcurementCompactCard";
+import EPurchasingCompactCard from "@/app/katalog-v6-v5/EPurchasingCompactCard";
 import {
   buildEPurchasingEligibilityWhere,
   buildEPurchasingSummaryWhere,
@@ -3096,6 +3089,7 @@ async function KatalogWorkflowView({
   const tahunAnggaran = getParam(searchParams, "tahunAnggaran") ?? "";
   const sumberDana = getParam(searchParams, "sumberDana") ?? "";
   const unitPengusul = getParam(searchParams, "unitPengusul") ?? "";
+  const kategoriBarang = getParam(searchParams, "kategoriBarang") ?? "";
   const detailId = getParam(searchParams, "detailId") ?? "";
   const processId = getParam(searchParams, "processId") ?? "";
   const activeModal = processId
@@ -3109,6 +3103,7 @@ async function KatalogWorkflowView({
   if (tahunAnggaran) modalBaseParams.set("tahunAnggaran", tahunAnggaran);
   if (sumberDana) modalBaseParams.set("sumberDana", sumberDana);
   if (unitPengusul) modalBaseParams.set("unitPengusul", unitPengusul);
+  if (kategoriBarang) modalBaseParams.set("kategoriBarang", kategoriBarang);
 
   const modalBaseQuery = modalBaseParams.toString();
   const modalBasePath = modalBaseQuery
@@ -3125,6 +3120,7 @@ async function KatalogWorkflowView({
     ...(tahunAnggaran ? { tahunAnggaran: Number(tahunAnggaran) } : {}),
     ...(sumberDana ? { sumberDana } : {}),
     ...(unitPengusul ? { unitPengusul } : {}),
+    ...kategoriBarangFilter(kategoriBarang),
     ...(q
       ? {
           OR: [
@@ -3304,6 +3300,8 @@ async function KatalogWorkflowView({
     id: selectedRup.id,
     idRupSirup: selectedRup.idRupSirup,
     kodeRup: selectedRup.kodeRup,
+    jenisBelanja: selectedRup.jenisBelanja,
+    kategoriBarang: selectedRup.kategoriBarang,
     linkSirup: selectedRup.linkSirup,
     namaPaket: selectedRup.namaPaket,
     unitPengusul: selectedRup.unitPengusul,
@@ -3540,6 +3538,7 @@ async function KatalogWorkflowView({
                 "Unit",
                 "Sumber Dana",
                 "Jenis Belanja",
+                "Kategori Barang",
                 "Pagu",
                 "PP/PPK",
                 "Penyedia",
@@ -3553,6 +3552,9 @@ async function KatalogWorkflowView({
                 rup.unitPengusul,
                 rup.sumberDana,
                 rup.jenisBelanja || "-",
+                rup.jenisBelanja?.toLowerCase() === "barang"
+                  ? kategoriBarangLabel(rup.kategoriBarang)
+                  : "-",
                 formatCompactCurrency(decimalNumber(rup.pagu)),
                 rup.ppkPptk || "-",
                 rup.namaPenyediaKatalog || "-",
@@ -3567,172 +3569,32 @@ async function KatalogWorkflowView({
             />
           </div>
 
-          <div className="bg-slate-50/50 p-4 sm:p-5">
+          <div className="min-w-0 bg-slate-50/50 p-4 sm:p-5">
             {linkedRows.length > 0 ? (
-              <>
-                <div className="space-y-3 md:hidden">
-                  {linkedRows.map(({ rup, paket }) => {
-                    const tahap = rup.statusTransaksiKatalog || "PERSIAPAN";
-                    const status =
-                      rup.statusTransaksiKatalog ||
-                      katalogProcessLabel(paket?.statusPaket);
-
-                    return (
-                      <ProcurementCompactCard
-                        key={rup.id}
-                        icon={ShoppingCart}
-                        title={rup.namaPaket}
-                        codeLabel={`RUP ${rup.idRupSirup || rup.kodeRup}`}
-                        sourceFund={rup.sumberDana}
-                        sourceFundClassName={sourceFundClass(rup.sumberDana)}
-                        status={status}
-                        statusClassName={katalogProcessStyle(
-                          rup.statusTransaksiKatalog || paket?.statusPaket,
-                        )}
-                        rows={[
-                          {
-                            label: "Pagu",
-                            value: formatCompactCurrency(
-                              decimalNumber(rup.pagu),
-                            ),
-                          },
-                          { label: "Tahap", value: tahap },
-                          {
-                            label: "Unit",
-                            value: rup.unitPengusul,
-                            hideWhenEmpty: true,
-                          },
-                        ]}
-                        actions={
-                          <div className="grid gap-2">
-                            <CompactDetailLink
-                              href={modalHref("detail", rup.id)}
-                              label={`Detail E-Purchasing untuk ${rup.namaPaket}`}
-                            />
-                            <CompactManageLink
-                              href={modalHref("process", rup.id)}
-                              label={`Proses E-Purchasing untuk ${rup.namaPaket}`}
-                            />
-                          </div>
-                        }
-                      />
-                    );
-                  })}
-                </div>
-
-                <div className="-mx-1 hidden max-w-full overflow-x-auto px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin] md:block">
-                  <div className="space-y-3">
+              <div className="min-w-0 space-y-3">
                     {linkedRows.map(({ rup, paket }) => {
                       const tahap = rup.statusTransaksiKatalog || "PERSIAPAN";
                       const status =
                         rup.statusTransaksiKatalog ||
                         katalogProcessLabel(paket?.statusPaket);
-                      const hargaFinal = rup.hargaNegosiasiKatalog
-                        ? formatCompactCurrency(
-                            decimalNumber(rup.hargaNegosiasiKatalog),
-                          )
-                        : "-";
-
                       return (
-                        <DataCardRow
+                        <EPurchasingCompactCard
                           key={rup.id}
-                          icon={<ShoppingCart className="h-5 w-5" strokeWidth={2.4} />}
-                          minWidth="2360px"
-                          columns="56px 130px minmax(290px,1.45fr) 150px 150px 170px 150px minmax(210px,1fr) 170px 150px 160px minmax(190px,auto)"
-                          actions={
-                            <div className="flex flex-col gap-2 xl:flex-row">
-                              <Link
-                                href={modalHref("detail", rup.id)}
-                                aria-label={`Detail E-Purchasing untuk ${rup.namaPaket}`}
-                                className="inline-flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-emerald-200 bg-white px-4 text-sm font-semibold text-[#08783f] transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
-                              >
-                                <Eye className="h-4 w-4" strokeWidth={2.4} />
-                                Detail
-                              </Link>
-                              <Link
-                                href={modalHref("process", rup.id)}
-                                aria-label={`Proses E-Purchasing untuk ${rup.namaPaket}`}
-                                className="inline-flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#08783f] px-4 text-sm font-semibold text-white transition hover:bg-[#066b38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
-                              >
-                                Proses E-Purchasing
-                                <ArrowUpRight className="h-4 w-4" strokeWidth={2.5} />
-                              </Link>
-                            </div>
-                          }
-                        >
-                          <DataCardField label="Kode RUP" valueClassName="font-mono text-xs font-bold text-slate-700">
-                            <DataCardTextShort title={rup.kodeRup}>
-                              {rup.kodeRup}
-                            </DataCardTextShort>
-                          </DataCardField>
-                          <DataCardField label="Nama Paket" valueClassName="font-bold text-[#16227c]">
-                            <DataCardTextLong title={rup.namaPaket}>
-                              {rup.namaPaket}
-                            </DataCardTextLong>
-                            <DataCardTextShort
-                              className="mt-1 text-xs font-bold text-slate-500"
-                              title={rup.unitPengusul}
-                            >
-                              Unit: {rup.unitPengusul}
-                            </DataCardTextShort>
-                          </DataCardField>
-                          <DataCardField label="Sumber Dana">
-                            <DataCardBadge
-                              className={sourceFundClass(rup.sumberDana)}
-                              title={rup.sumberDana}
-                            >
-                              {rup.sumberDana}
-                            </DataCardBadge>
-                          </DataCardField>
-                          <DataCardField label="Jenis Belanja">
-                            <DataCardBadge
-                              className="bg-slate-100 text-slate-600"
-                              title={rup.jenisBelanja || "-"}
-                            >
-                              {rup.jenisBelanja || "-"}
-                            </DataCardBadge>
-                          </DataCardField>
-                          <DataCardField label="Pagu" valueClassName="font-bold text-slate-800">
-                            <DataCardCurrency>
-                              {formatCompactCurrency(decimalNumber(rup.pagu))}
-                            </DataCardCurrency>
-                          </DataCardField>
-                          <DataCardField label="PP/PPK">
-                            <DataCardTextLong title={rup.ppkPptk || "-"}>
-                              {rup.ppkPptk || "-"}
-                            </DataCardTextLong>
-                          </DataCardField>
-                          <DataCardField label="Penyedia">
-                            <DataCardTextLong title={rup.namaPenyediaKatalog || "-"}>
-                              {rup.namaPenyediaKatalog || "-"}
-                            </DataCardTextLong>
-                          </DataCardField>
-                          <DataCardField label="Harga Final" valueClassName="font-bold text-slate-700">
-                            <DataCardCurrency>{hargaFinal}</DataCardCurrency>
-                          </DataCardField>
-                          <DataCardField label="Tahap" valueClassName="font-bold uppercase text-slate-700">
-                            <DataCardTextShort title={tahap}>{tahap}</DataCardTextShort>
-                          </DataCardField>
-                          <DataCardField label="Status">
-                            <DataCardBadge
-                              className={katalogProcessStyle(
-                                rup.statusTransaksiKatalog || paket?.statusPaket,
-                              )}
-                              title={status}
-                            >
-                              {status}
-                            </DataCardBadge>
-                          </DataCardField>
-                        </DataCardRow>
+                          code={rup.idRupSirup || rup.kodeRup}
+                          title={rup.namaPaket}
+                          unit={rup.unitPengusul || "-"}
+                          budget={formatCurrency(decimalNumber(rup.pagu))}
+                          status={status}
+                          statusClassName={katalogProcessStyle(rup.statusTransaksiKatalog || paket?.statusPaket)}
+                          provider={rup.namaPenyediaKatalog || "-"}
+                          finalPrice={rup.hargaNegosiasiKatalog ? formatCurrency(decimalNumber(rup.hargaNegosiasiKatalog)) : "-"}
+                          stage={tahap}
+                          detailHref={modalHref("detail", rup.id)}
+                          processHref={modalHref("process", rup.id)}
+                        />
                       );
                     })}
-                  </div>
-                </div>
-                <div className="mt-1 hidden items-center justify-end gap-2 text-xs font-bold text-slate-400 md:flex 2xl:hidden">
-                  <span>Geser horizontal untuk melihat seluruh data dan aksi</span>
-                  <span aria-hidden="true">→</span>
-                </div>
-              </>
+              </div>
             ) : (
               <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-4 text-center text-sm font-semibold text-slate-400">
                 Belum ada paket eligible dengan metode E-Purchasing.

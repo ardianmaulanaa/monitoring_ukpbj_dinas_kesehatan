@@ -10,6 +10,7 @@ import KatalogManualWorkflowClient, {
   type EPurchasingDraft,
 } from "@/app/katalog-v6-v5/KatalogManualWorkflowClient";
 import { formatCurrency } from "@/lib/currency";
+import { kategoriBarangLabel } from "@/lib/kategori-barang";
 
 type EPurchasingDetailModalProps = {
   basePath?: string;
@@ -18,6 +19,8 @@ type EPurchasingDetailModalProps = {
     id: string;
     idRupSirup?: string | null;
     kodeRup: string;
+    jenisBelanja?: string | null;
+    kategoriBarang?: string | null;
     linkSirup?: string | null;
     lokasiPaket?: string | null;
     namaPaket: string;
@@ -72,6 +75,10 @@ export default function EPurchasingDetailModal({
             { label: "Pagu", value: formatCurrency(rup.pagu) },
             { label: "Metode", value: rup.metodePengadaan.replaceAll("_", " ") },
             { label: "Sumber Dana", value: rup.sumberDana },
+            { label: "Jenis Belanja", value: rup.jenisBelanja ?? "-" },
+            ...(rup.jenisBelanja?.toLowerCase() === "barang"
+              ? [{ label: "Kategori Barang", value: kategoriBarangLabel(rup.kategoriBarang) }]
+              : []),
           ]}
         />
       </div>

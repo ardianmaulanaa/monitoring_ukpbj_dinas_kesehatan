@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { validatePlanningSubmission } from "@/lib/workflow-completeness";
+import { KATEGORI_BARANG_OPTIONS } from "@/lib/kategori-barang";
 import {
   Building2,
   CalendarDays,
@@ -179,6 +180,9 @@ export default function RupForm({
   const [hargaSatuan, setHargaSatuan] = useState(
     onlyDigits(String(initialData?.estimasiHargaSatuan ?? "")),
   );
+  const [jenisBelanja, setJenisBelanja] = useState(
+    String(initialData?.jenisBelanja ?? "Barang"),
+  );
   const unitPengusulValue = String(
     initialData?.unitPengusul ?? (isPlanning ? "" : defaultUnitPengusul ?? ""),
   );
@@ -265,6 +269,8 @@ export default function RupForm({
       estimasiHargaSatuan: hargaSatuan,
       totalEstimasi: String(totalEstimasi),
       pagu: isPlanning ? String(totalEstimasi) : String(payload.pagu ?? pagu),
+      kategoriBarang:
+        jenisBelanja === "Barang" ? String(payload.kategoriBarang ?? "") : null,
     };
 
     if (isPlanning && clickedIntent === "submit") {
@@ -541,7 +547,8 @@ export default function RupForm({
               <select
                 name="jenisBelanja"
                 className={inputClass}
-                defaultValue={String(initialData?.jenisBelanja ?? "Barang")}
+                value={jenisBelanja}
+                onChange={(event) => setJenisBelanja(event.target.value)}
               >
                 <option value="Barang">Barang</option>
                 <option value="Jasa">Jasa</option>
@@ -549,6 +556,18 @@ export default function RupForm({
                 <option value="Pegawai">Pegawai</option>
               </select>
             </label>
+
+            {jenisBelanja === "Barang" ? (
+              <label className="grid min-w-0 gap-2">
+                <span className={labelClass}>Kategori Barang</span>
+                <select name="kategoriBarang" className={inputClass} defaultValue={String(initialData?.kategoriBarang ?? "")}>
+                  <option value="">Belum dikategorikan</option>
+                  {KATEGORI_BARANG_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
             <label className="grid min-w-0 gap-2">
               <span className={labelClass}>Sumber Dana</span>
@@ -1154,7 +1173,8 @@ export default function RupForm({
             name="jenisBelanja"
             required={!isPlanning}
             className={inputClass}
-            defaultValue={String(initialData?.jenisBelanja ?? "Barang")}
+            value={jenisBelanja}
+            onChange={(event) => setJenisBelanja(event.target.value)}
           >
             <option value="Barang">Barang</option>
             <option value="Jasa">Jasa</option>
@@ -1162,6 +1182,18 @@ export default function RupForm({
             <option value="Pegawai">Pegawai</option>
           </select>
         </label>
+
+        {jenisBelanja === "Barang" ? (
+          <label className="grid min-w-0 gap-2">
+            <span className={labelClass}>Kategori Barang</span>
+            <select name="kategoriBarang" className={inputClass} defaultValue={String(initialData?.kategoriBarang ?? "")}>
+              <option value="">Belum dikategorikan</option>
+              {KATEGORI_BARANG_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
 
         <label className="grid min-w-0 gap-2">
           <span className={labelClass}>Sumber Dana</span>

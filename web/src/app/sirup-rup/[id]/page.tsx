@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import AppHeader from "@/components/appheader/AppHeader";
 import { formatCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
+import { kategoriBarangLabel } from "@/lib/kategori-barang";
 
 type RupDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -27,6 +28,9 @@ export default async function Page({ params }: RupDetailPageProps) {
     ["Kode RUP", rup.kodeRup],
     ["Nama Paket", rup.namaPaket],
     ["Jenis Belanja", rup.jenisBelanja || "-"],
+    ...(rup.jenisBelanja?.toLowerCase() === "barang"
+      ? [["Kategori Barang", kategoriBarangLabel(rup.kategoriBarang)]]
+      : []),
     ["Unit Pengusul", rup.unitPengusul],
     ["Sumber Dana", rup.sumberDana],
     ["Pagu", formatCurrency(rup.pagu.toString())],

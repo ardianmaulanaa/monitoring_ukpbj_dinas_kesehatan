@@ -348,6 +348,7 @@ model RencanaUmumPengadaan {
   kodeRup                  String               @unique @map("kode_rup") @db.VarChar(80)
   namaPaket                String               @map("nama_paket") @db.VarChar(220)
   jenisBelanja             String?              @map("jenis_belanja") @db.VarChar(120)
+  kategoriBarang           String?              @map("kategori_barang") @db.VarChar(40)
   unitPengusul             String               @map("unit_pengusul") @db.VarChar(160)
   unitBidang               String?              @map("unit_bidang") @db.VarChar(160)
   ppkPptk                  String?              @map("ppk_pptk") @db.VarChar(160)

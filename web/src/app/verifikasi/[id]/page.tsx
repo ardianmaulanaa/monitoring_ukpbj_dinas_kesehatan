@@ -5,6 +5,7 @@ import AppHeader from "@/components/appheader/AppHeader";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
+import { kategoriBarangLabel } from "@/lib/kategori-barang";
 import {
   canAccessProposalUnit,
   canRunApprovalStage,
@@ -197,6 +198,10 @@ export default async function Page({ params }: PageProps) {
                   ["Tahun Anggaran", proposal.tahunAnggaran],
                   ["Unit Pengusul / OPD", proposal.unitPengusul],
                   ["Unit / Bidang", proposal.unitBidang],
+                  ["Jenis Belanja", proposal.jenisBelanja],
+                  ...(proposal.jenisBelanja?.toLowerCase() === "barang"
+                    ? [["Kategori Barang", kategoriBarangLabel(proposal.kategoriBarang)]]
+                    : []),
                   ["Nama PPK / PPTK", proposal.ppkPptk],
                   ["Kontak Penanggung Jawab", proposal.kontakPenanggungJawab],
                   ["Tanggal Dibuat", formatDateTime(proposal.createdAt)],

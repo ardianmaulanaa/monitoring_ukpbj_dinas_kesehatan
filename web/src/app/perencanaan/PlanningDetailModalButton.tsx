@@ -21,6 +21,7 @@ import {
   DetailStatusBadge,
 } from "@/components/detail/DetailHorizontalSection";
 import { formatCurrency } from "@/lib/currency";
+import { kategoriBarangLabel } from "@/lib/kategori-barang";
 import {
   getApprovalStage,
   isDraftStatus,
@@ -50,6 +51,7 @@ export type PlanningProposalDetail = {
   kegiatan: string | null;
   kendala: string | null;
   jenisBelanja: string | null;
+  kategoriBarang: string | null;
   linkSirup: string | null;
   lokasiPaket: string | null;
   metodePengadaan: string;
@@ -582,6 +584,10 @@ export function PlanningDetailContent({
                 <DetailField className="md:col-span-2" label="Kegiatan" value={proposal.kegiatan} />
                 <DetailField className="md:col-span-2" label="Sub Kegiatan" value={proposal.subKegiatan} />
                 <DetailField label="Kode Rekening" value={proposal.kodeRekening} />
+                <DetailField label="Jenis Belanja" value={proposal.jenisBelanja} />
+                {proposal.jenisBelanja?.toLowerCase() === "barang" ? (
+                  <DetailField label="Kategori Barang" value={kategoriBarangLabel(proposal.kategoriBarang)} />
+                ) : null}
                 <DetailField label="Sumber Dana" value={proposal.sumberDana} />
                 <DetailField
                   label="Pagu"

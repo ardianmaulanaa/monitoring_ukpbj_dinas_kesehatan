@@ -4,6 +4,10 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Button, Select } from "@/components/ui";
+import {
+  KATEGORI_BARANG_BELUM_DIKATEGORIKAN,
+  KATEGORI_BARANG_OPTIONS,
+} from "@/lib/kategori-barang";
 
 type FilterOption = {
   value: string;
@@ -16,6 +20,7 @@ type FilterOptionsPayload = {
   units: FilterOption[];
   packageStatuses: FilterOption[];
   rupStatuses: FilterOption[];
+  proposalStatuses: FilterOption[];
 };
 
 const emptyOptions: FilterOptionsPayload = {
@@ -24,10 +29,13 @@ const emptyOptions: FilterOptionsPayload = {
   units: [],
   packageStatuses: [],
   rupStatuses: [],
+  proposalStatuses: [],
 };
 
-function isRupFilterPage(pathname: string) {
-  return pathname.includes("/sirup-rup") || pathname.includes("/perencanaan");
+function supportsKategoriBarang(pathname: string) {
+  return ["/perencanaan", "/verifikasi", "/sirup-rup", "/e-purchasing"].some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
 }
 
 export default function GlobalFilterPanel() {
@@ -57,7 +65,19 @@ export default function GlobalFilterPanel() {
   }, []);
 
   const paramNames = useMemo(() => {
-    if (isRupFilterPage(pathname)) {
+    if (pathname.includes("/verifikasi")) {
+      return {
+        unit: "unit",
+        status: "status",
+        statuses: options.proposalStatuses,
+      };
+    }
+
+    if (
+      pathname.includes("/sirup-rup") ||
+      pathname.includes("/perencanaan") ||
+      pathname.includes("/e-purchasing")
+    ) {
       return {
         unit: "unitPengusul",
         status: "statusSirup",
@@ -70,13 +90,19 @@ export default function GlobalFilterPanel() {
       status: "statusPaket",
       statuses: options.packageStatuses,
     };
-  }, [options.packageStatuses, options.rupStatuses, pathname]);
+  }, [
+    options.packageStatuses,
+    options.proposalStatuses,
+    options.rupStatuses,
+    pathname,
+  ]);
 
   const q = searchParams.get("q") ?? "";
   const tahunAnggaran = searchParams.get("tahunAnggaran") ?? "";
   const sumberDana = searchParams.get("sumberDana") ?? "";
   const unit = searchParams.get(paramNames.unit) ?? "";
   const status = searchParams.get(paramNames.status) ?? "";
+  const kategoriBarang = searchParams.get("kategoriBarang") ?? "";
 
   return (
     <form action={pathname} className="app-filter-form space-y-3">
@@ -129,6 +155,24 @@ export default function GlobalFilterPanel() {
           </option>
         ))}
       </Select>
+
+      {supportsKategoriBarang(pathname) ? (
+        <Select
+          label="Kategori Barang"
+          name="kategoriBarang"
+          defaultValue={kategoriBarang}
+        >
+          <option value="">Semua Kategori</option>
+          {KATEGORI_BARANG_OPTIONS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+          <option value={KATEGORI_BARANG_BELUM_DIKATEGORIKAN}>
+            Belum Dikategorikan
+          </option>
+        </Select>
+      ) : null}
 
       <Select
         label="Status"

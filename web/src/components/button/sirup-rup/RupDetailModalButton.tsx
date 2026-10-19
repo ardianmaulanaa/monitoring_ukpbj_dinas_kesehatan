@@ -22,6 +22,7 @@ import {
   DetailStatusBadge,
 } from "@/components/detail/DetailHorizontalSection";
 import { formatCurrency } from "@/lib/currency";
+import { kategoriBarangLabel } from "@/lib/kategori-barang";
 import {
   updateRupRevisionAction,
   type RupRevisionState,
@@ -53,6 +54,7 @@ export type RupDetailItem = {
   jadwalSelesaiRencana?: string | null;
   kodeRup: string;
   jenisBelanja?: string | null;
+  kategoriBarang?: string | null;
   jumlahKebutuhan?: string | null;
   justifikasi?: string | null;
   kegiatan?: string | null;
@@ -566,6 +568,10 @@ export default function RupDetailModalButton({
                 <DetailField className="md:col-span-2" label="Kegiatan" value={item.kegiatan} />
                 <DetailField className="md:col-span-2" label="Sub Kegiatan" value={item.subKegiatan} />
                 <DetailField label="Kode Rekening" value={item.kodeRekening} />
+                <DetailField label="Jenis Belanja" value={item.jenisBelanja} />
+                {item.jenisBelanja?.toLowerCase() === "barang" ? (
+                  <DetailField label="Kategori Barang" value={kategoriBarangLabel(item.kategoriBarang)} />
+                ) : null}
                 <DetailField label="Sumber Dana" value={item.sumberDana} />
                 <DetailField
                   label="Pagu Awal"

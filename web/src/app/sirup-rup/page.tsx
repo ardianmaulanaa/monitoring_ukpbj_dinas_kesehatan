@@ -2,19 +2,12 @@ import { BarChart3, ClipboardList, Landmark, PieChart } from "lucide-react";
 
 import AppHeader from "@/components/appheader/AppHeader";
 
-import {
-  DataCardBadge,
-  DataCardCurrency,
-  DataCardEmpty,
-  DataCardField,
-  DataCardRow,
-  DataCardTextLong,
-  DataCardTextShort,
-} from "@/components/data-card/DataCardList";
+import { DataCardEmpty } from "@/components/data-card/DataCardList";
 
 import { getCurrentUser } from "@/lib/auth";
 
 import { formatCurrency } from "@/lib/currency";
+import { kategoriBarangFilter, kategoriBarangLabel } from "@/lib/kategori-barang";
 
 import { prisma } from "@/lib/prisma";
 
@@ -29,7 +22,7 @@ import ImportRupModalButton from "@/components/button/sirup-rup/ImportRupModalBu
 import RupDetailModalButton from "@/components/button/sirup-rup/RupDetailModalButton";
 
 import { canProcessRup } from "@/lib/planning-workflow";
-import ProcurementCompactCard from "@/components/procurement/ProcurementCompactCard";
+import SirupRupCompactCard from "./SirupRupCompactCard";
 
 type RupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -232,6 +225,8 @@ export default async function Page({ searchParams }: RupPageProps) {
 
   const statusSirup = getParam(params, "statusSirup");
 
+  const kategoriBarang = getParam(params, "kategoriBarang");
+
   const where = {
     ...(q
       ? {
@@ -254,6 +249,8 @@ export default async function Page({ searchParams }: RupPageProps) {
     ...(sumberDana ? { sumberDana } : {}),
 
     ...(unitPengusul ? { unitPengusul } : {}),
+
+    ...kategoriBarangFilter(kategoriBarang),
 
     ...(statusSirup === "SIAP_RUP"
       ? { statusUsulan: "SIAP_RUP" as const }
@@ -605,13 +602,13 @@ export default async function Page({ searchParams }: RupPageProps) {
             <div className="bg-slate-50/50 p-4 sm:p-5">
               {rupData.length > 0 ? (
                 <>
-                  <div className="space-y-3 md:hidden">
+                  <div className="w-full max-w-full min-w-0 space-y-3">
                     {rupData.map((item) => (
-                      <ProcurementCompactCard
+                      <SirupRupCompactCard
                         key={item.id}
                         icon={ClipboardList}
                         title={item.namaPaket}
-                        codeLabel={`USUL / RUP ${item.idRupSirup || item.kodeRup}`}
+                        codeLabel={`Kode Usulan ${item.kodeRup || "-"}`}
                         sourceFund={normalizeFundingSource(item.sumberDana)}
                         sourceFundClassName={sourceFundClass(item.sumberDana)}
                         status={
@@ -630,17 +627,27 @@ export default async function Page({ searchParams }: RupPageProps) {
                             ),
                           },
                           {
-                            label: "Metode",
+                            label: "Unit Pengusul",
+                            value: item.unitPengusul,
+                          },
+                          {
+                            label: "Metode Final",
                             value: methodLabel(item.metodePengadaan),
                           },
                           {
-                            label: "Unit",
-                            value: item.unitPengusul,
-                            hideWhenEmpty: true,
+                            label: "Lokasi",
+                            value: item.lokasiPaket || "-",
                           },
+                          {
+                            label: "Jenis Belanja",
+                            value: item.jenisBelanja || "-",
+                          },
+                          ...(item.jenisBelanja?.toLowerCase() === "barang"
+                            ? [{ label: "Kategori Barang", value: kategoriBarangLabel(item.kategoriBarang) }]
+                            : []),
                         ]}
                         actions={
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <RupDetailModalButton
                               item={{
                                 catatan: item.catatan,
@@ -674,6 +681,7 @@ export default async function Page({ searchParams }: RupPageProps) {
                                   item.statusTransaksiKatalog,
                                 catatanKatalog: item.catatanKatalog,
                                 jenisBelanja: item.jenisBelanja,
+                                kategoriBarang: item.kategoriBarang,
                                 jumlahKebutuhan:
                                   item.jumlahKebutuhan?.toString() ?? null,
                                 justifikasi: item.justifikasi,
@@ -740,13 +748,14 @@ export default async function Page({ searchParams }: RupPageProps) {
                             />
 
                             {canManageRup ? (
-                              <CompleteSirupModalButton
-                                label={
-                                  item.statusUsulan === "SIAP_RUP"
-                                    ? "Proses RUP"
-                                    : "Edit"
-                                }
-                                item={{
+                              <>
+                                <CompleteSirupModalButton
+                                  label={
+                                    item.statusUsulan === "SIAP_RUP"
+                                      ? "Proses RUP"
+                                      : "Edit SIRUP/RUP"
+                                  }
+                                  item={{
                                   id: item.id,
                                   kodeRup: item.kodeRup,
                                   idRupSirup: item.idRupSirup,
@@ -791,8 +800,13 @@ export default async function Page({ searchParams }: RupPageProps) {
                                   tahunAnggaran: item.tahunAnggaran,
                                   statusSirup: item.statusSirup,
                                   catatan: item.catatan,
-                                }}
-                              />
+                                  }}
+                                />
+                                <DeleteRupButton
+                                  id={item.id}
+                                  namaPaket={item.namaPaket}
+                                />
+                              </>
                             ) : null}
                           </div>
                         }
@@ -800,389 +814,6 @@ export default async function Page({ searchParams }: RupPageProps) {
                     ))}
                   </div>
 
-                  <div className="-mx-1 hidden max-w-full overflow-x-auto overflow-y-hidden px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin] md:block">
-                    <div className="min-w-full space-y-3">
-                      {rupData.map((item) => (
-                        <DataCardRow
-                          key={item.id}
-                          minWidth="2780px"
-                          className="xl:min-w-[2780px]"
-                          icon={
-                            <ClipboardList
-                              className="h-5 w-5"
-                              strokeWidth={2.4}
-                            />
-                          }
-                          columns="56px 140px 130px minmax(300px,1.45fr) minmax(220px,1fr) 150px minmax(170px,0.9fr) 150px 190px 170px 160px 170px minmax(420px,auto)"
-                          actions={
-                            <div className="flex min-w-max flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
-                              <RupDetailModalButton
-                                item={{
-                                  catatan: item.catatan,
-                                  caraPengadaan: item.caraPengadaan,
-                                  createdAt: item.createdAt.toISOString(),
-                                  id: item.id,
-
-                                  kodeRup: item.kodeRup,
-
-                                  idRupSirup: item.idRupSirup,
-
-                                  jenisKatalog: item.jenisKatalog,
-
-                                  etalaseKatalog: item.etalaseKatalog,
-
-                                  namaProdukKatalog: item.namaProdukKatalog,
-
-                                  spesifikasiProdukKatalog:
-                                    item.spesifikasiProdukKatalog,
-
-                                  merekTipeKatalog: item.merekTipeKatalog,
-
-                                  jumlahProdukKatalog: item.jumlahProdukKatalog,
-
-                                  satuanProdukKatalog: item.satuanProdukKatalog,
-
-                                  hargaSatuanKatalog:
-                                    item.hargaSatuanKatalog?.toString() ?? null,
-
-                                  totalHargaKatalog:
-                                    item.totalHargaKatalog?.toString() ?? null,
-
-                                  namaPenyediaKatalog: item.namaPenyediaKatalog,
-
-                                  statusNegosiasiKatalog:
-                                    item.statusNegosiasiKatalog,
-
-                                  hargaNegosiasiKatalog:
-                                    item.hargaNegosiasiKatalog?.toString() ??
-                                    null,
-
-                                  nomorSuratPesanan: item.nomorSuratPesanan,
-
-                                  tanggalSuratPesanan: item.tanggalSuratPesanan,
-
-                                  statusTransaksiKatalog:
-                                    item.statusTransaksiKatalog,
-
-                                  catatanKatalog: item.catatanKatalog,
-
-                                  kegiatan: item.kegiatan,
-
-                                  kekuranganDokumen: item.kekuranganDokumen,
-
-                                  kendala: item.kendala,
-
-                                  kodeRekening: item.kodeRekening,
-
-                                  kontakPenanggungJawab:
-                                    item.kontakPenanggungJawab,
-
-                                  namaPaket: item.namaPaket,
-
-                                  unitPengusul: item.unitPengusul,
-
-                                  lokasiPaket: item.lokasiPaket,
-
-                                  jenisBelanja: item.jenisBelanja,
-
-                                  jumlahKebutuhan:
-                                    item.jumlahKebutuhan?.toString() ?? null,
-
-                                  justifikasi: item.justifikasi,
-
-                                  outputDiharapkan: item.outputDiharapkan,
-
-                                  sumberDana: normalizeFundingSource(
-                                    item.sumberDana,
-                                  ),
-
-                                  pagu: item.pagu.toString(),
-
-                                  picTindakLanjut: item.picTindakLanjut,
-
-                                  ppkPptk: item.ppkPptk,
-
-                                  prioritas: item.prioritas,
-
-                                  program: item.program,
-
-                                  satuanKebutuhan: item.satuanKebutuhan,
-
-                                  spesifikasiAwal: item.spesifikasiAwal,
-
-                                  statusDokumenPendukung:
-                                    item.statusDokumenPendukung,
-
-                                  statusHps: item.statusHps,
-
-                                  statusKak: item.statusKak,
-
-                                  statusRancanganKontrak:
-                                    item.statusRancanganKontrak,
-
-                                  subKegiatan: item.subKegiatan,
-
-                                  metodePengadaan: item.metodePengadaan,
-
-                                  jadwalPemilihan: item.jadwalPemilihan,
-
-                                  jadwalMulaiRencana: item.jadwalMulaiRencana,
-
-                                  jadwalSelesaiRencana:
-                                    item.jadwalSelesaiRencana,
-
-                                  tanggalInputSirup: item.tanggalInputSirup,
-
-                                  tanggalTayangSirup: item.tanggalTayangSirup,
-
-                                  linkSirup: item.linkSirup,
-
-                                  tahunAnggaran: item.tahunAnggaran,
-
-                                  statusSirup: item.statusSirup,
-
-                                  tindakLanjut: item.tindakLanjut,
-
-                                  unitBidang: item.unitBidang,
-
-                                  updatedAt: item.updatedAt.toISOString(),
-
-                                  uraianBelanja: item.uraianBelanja,
-
-                                  uraianKebutuhan: item.uraianKebutuhan,
-
-                                  volumeKebutuhan: item.volumeKebutuhan,
-
-                                  waktuKebutuhan: item.waktuKebutuhan,
-                                }}
-                                statusLabel={
-                                  statusLabels[item.statusSirup] ??
-                                  labelize(item.statusSirup)
-                                }
-                                statusStyle={
-                                  statusStyles[item.statusSirup] ??
-                                  "bg-slate-100 text-slate-600"
-                                }
-                                canEditRevision={
-                                  currentUser?.roles.includes("SUPER_ADMIN") ||
-                                  normalizeUnit(
-                                    currentUserProfile?.unitKerja,
-                                  ) === normalizeUnit(item.unitPengusul) ||
-                                  normalizeUnit(currentUser?.name) ===
-                                    normalizeUnit(item.unitPengusul)
-                                }
-                              />
-
-                              {canManageRup ? (
-                                <>
-                                  <CompleteSirupModalButton
-                                    label={
-                                      item.statusUsulan === "SIAP_RUP"
-                                        ? "Proses RUP"
-                                        : "Edit SIRUP/RUP"
-                                    }
-                                    item={{
-                                      id: item.id,
-
-                                      kodeRup: item.kodeRup,
-
-                                      idRupSirup: item.idRupSirup,
-
-                                      jenisKatalog: item.jenisKatalog,
-
-                                      etalaseKatalog: item.etalaseKatalog,
-
-                                      namaProdukKatalog: item.namaProdukKatalog,
-
-                                      spesifikasiProdukKatalog:
-                                        item.spesifikasiProdukKatalog,
-
-                                      merekTipeKatalog: item.merekTipeKatalog,
-
-                                      jumlahProdukKatalog:
-                                        item.jumlahProdukKatalog,
-
-                                      satuanProdukKatalog:
-                                        item.satuanProdukKatalog,
-
-                                      hargaSatuanKatalog:
-                                        item.hargaSatuanKatalog?.toString() ??
-                                        null,
-
-                                      totalHargaKatalog:
-                                        item.totalHargaKatalog?.toString() ??
-                                        null,
-
-                                      namaPenyediaKatalog:
-                                        item.namaPenyediaKatalog,
-
-                                      statusNegosiasiKatalog:
-                                        item.statusNegosiasiKatalog,
-
-                                      hargaNegosiasiKatalog:
-                                        item.hargaNegosiasiKatalog?.toString() ??
-                                        null,
-
-                                      nomorSuratPesanan: item.nomorSuratPesanan,
-
-                                      tanggalSuratPesanan:
-                                        item.tanggalSuratPesanan,
-
-                                      statusTransaksiKatalog:
-                                        item.statusTransaksiKatalog,
-
-                                      catatanKatalog: item.catatanKatalog,
-
-                                      namaPaket: item.namaPaket,
-
-                                      unitPengusul: item.unitPengusul,
-
-                                      sumberDana: item.sumberDana,
-
-                                      pagu: item.pagu.toString(),
-
-                                      metodePengadaan: item.metodePengadaan,
-
-                                      jadwalPemilihan: item.jadwalPemilihan,
-
-                                      tanggalInputSirup: item.tanggalInputSirup,
-
-                                      tanggalTayangSirup:
-                                        item.tanggalTayangSirup,
-
-                                      linkSirup: item.linkSirup,
-
-                                      tahunAnggaran: item.tahunAnggaran,
-
-                                      statusSirup: item.statusSirup,
-
-                                      catatan: item.catatan,
-                                    }}
-                                  />
-
-                                  <DeleteRupButton
-                                    id={item.id}
-                                    namaPaket={item.namaPaket}
-                                  />
-                                </>
-                              ) : null}
-                            </div>
-                          }
-                        >
-                          <DataCardField
-                            label="Kode Usulan"
-                            valueClassName="font-mono text-xs font-black text-slate-600"
-                          >
-                            <DataCardTextShort title={item.kodeRup}>
-                              {item.kodeRup}
-                            </DataCardTextShort>
-                          </DataCardField>
-
-                          <DataCardField
-                            label="ID RUP SIRUP"
-                            valueClassName="font-mono text-xs font-black text-slate-600"
-                          >
-                            <DataCardTextShort title={item.idRupSirup || "-"}>
-                              {item.idRupSirup || "-"}
-                            </DataCardTextShort>
-                          </DataCardField>
-
-                          <DataCardField
-                            label="Nama Paket"
-                            valueClassName="font-black text-[#16227c]"
-                          >
-                            <DataCardTextLong title={item.namaPaket}>
-                              {item.namaPaket}
-                            </DataCardTextLong>
-
-                            <DataCardTextShort
-                              className="mt-1 text-xs font-bold text-slate-500"
-                              title={item.unitPengusul}
-                            >
-                              Unit: {item.unitPengusul}
-                            </DataCardTextShort>
-                          </DataCardField>
-
-                          <DataCardField label="Unit Pengusul">
-                            <DataCardTextLong title={item.unitPengusul}>
-                              {item.unitPengusul}
-                            </DataCardTextLong>
-                          </DataCardField>
-
-                          <DataCardField label="Jenis Belanja">
-                            <DataCardBadge
-                              className="bg-slate-100 text-slate-600"
-                              title={item.jenisBelanja || "-"}
-                            >
-                              {item.jenisBelanja || "-"}
-                            </DataCardBadge>
-                          </DataCardField>
-
-                          <DataCardField label="Lokasi Paket">
-                            <DataCardTextLong title={item.lokasiPaket || "-"}>
-                              {item.lokasiPaket || "-"}
-                            </DataCardTextLong>
-                          </DataCardField>
-
-                          <DataCardField label="Sumber Dana">
-                            <DataCardBadge
-                              className={sourceFundClass(item.sumberDana)}
-                              title={normalizeFundingSource(item.sumberDana)}
-                            >
-                              {normalizeFundingSource(item.sumberDana)}
-                            </DataCardBadge>
-                          </DataCardField>
-
-                          <DataCardField
-                            label="Pagu"
-                            valueClassName="whitespace-nowrap font-black text-slate-800"
-                          >
-                            <DataCardCurrency>
-                              {formatCurrency(item.pagu.toString())}
-                            </DataCardCurrency>
-                          </DataCardField>
-
-                          <DataCardField
-                            label="Metode Final"
-                            valueClassName="whitespace-nowrap"
-                          >
-                            <DataCardTextShort title={methodLabel(item.metodePengadaan)}>
-                              {methodLabel(item.metodePengadaan)}
-                            </DataCardTextShort>
-                          </DataCardField>
-
-                          <DataCardField
-                            label="Tanggal Tayang"
-                            valueClassName="whitespace-nowrap"
-                          >
-                            <DataCardTextShort title={item.tanggalTayangSirup || "-"}>
-                              {item.tanggalTayangSirup || "-"}
-                            </DataCardTextShort>
-                          </DataCardField>
-
-                          <DataCardField
-                            label="Status SIRUP"
-                            valueClassName="whitespace-nowrap"
-                          >
-                            <DataCardBadge
-                              className={statusStyles[item.statusSirup]}
-                              title={labelize(item.statusSirup)}
-                            >
-                              {labelize(item.statusSirup)}
-                            </DataCardBadge>
-                          </DataCardField>
-                        </DataCardRow>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-1 hidden items-center justify-end gap-2 text-xs font-bold text-slate-400 md:flex 2xl:hidden">
-                    <span>
-                      Geser horizontal untuk melihat seluruh data dan aksi
-                    </span>
-
-                    <span aria-hidden="true">→</span>
-                  </div>
                 </>
               ) : (
                 <DataCardEmpty>

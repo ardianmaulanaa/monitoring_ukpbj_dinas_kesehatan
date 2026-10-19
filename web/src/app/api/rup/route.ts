@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { canDeletePlanningProposal } from "@/lib/permissions";
 import { canEditUsulan, canSubmitTransition } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
+import { normalizeKategoriBarang } from "@/lib/kategori-barang";
 import { apiError, apiSuccess } from "@/lib/response";
 import {
   planningFieldLabels,
@@ -60,6 +61,7 @@ const createRupSchema = z
   kodeRup: z.string().trim().optional(),
   namaPaket: z.string().trim().optional(),
   jenisBelanja: z.string().trim().optional(),
+  kategoriBarang: z.enum(["BMHP", "BAHAN_KIMIA", "REAGEN", "ATK"]).optional().nullable(),
   unitPengusul: z.string().trim().optional(),
   unitBidang: z.string().trim().optional(),
   ppkPptk: z.string().trim().optional(),
@@ -188,6 +190,7 @@ function rupMutationData(parsedData: z.infer<typeof createRupSchema>) {
     submitIntent,
     pagu,
     kodeRup,
+    kategoriBarang,
     unitBidang,
     ppkPptk,
     kontakPenanggungJawab,
@@ -255,6 +258,7 @@ function rupMutationData(parsedData: z.infer<typeof createRupSchema>) {
   return {
     ...data,
     kodeRup: kodeRup || "",
+    kategoriBarang: normalizeKategoriBarang(data.jenisBelanja, kategoriBarang),
     namaPaket: requiredText(
       data.namaPaket,
       isPlanningDraft ? "Draft usulan perencanaan" : "Paket belum diberi nama",

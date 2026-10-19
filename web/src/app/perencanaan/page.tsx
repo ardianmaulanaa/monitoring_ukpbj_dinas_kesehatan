@@ -21,7 +21,7 @@ import DeleteRupButton from "@/components/button/sirup-rup/DeleteRupButton";
 import EditRupModalButton from "@/components/button/sirup-rup/EditRupModalButton";
 
 import PlanningDetailModalButton from "@/app/perencanaan/PlanningDetailModalButton";
-import ProcurementCompactCard from "@/components/procurement/ProcurementCompactCard";
+import PlanningCompactCard from "./PlanningCompactCard";
 
 import { getCurrentUser } from "@/lib/auth";
 
@@ -44,6 +44,7 @@ import {
 import { prisma } from "@/lib/prisma";
 
 import { getActiveSumberDanaOptions } from "@/lib/sumber-dana";
+import { kategoriBarangFilter, kategoriBarangLabel } from "@/lib/kategori-barang";
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -135,6 +136,8 @@ export default async function Page({ searchParams }: PageProps) {
 
   const unitPengusul = getParam(resolvedSearchParams, "unitPengusul");
 
+  const kategoriBarang = getParam(resolvedSearchParams, "kategoriBarang");
+
   const statusUsulan =
     getParam(resolvedSearchParams, "statusUsulan") ??
     getParam(resolvedSearchParams, "statusSirup");
@@ -157,6 +160,8 @@ export default async function Page({ searchParams }: PageProps) {
     ...(sumberDana ? { sumberDana } : {}),
 
     ...(unitPengusul ? { unitPengusul } : {}),
+
+    ...kategoriBarangFilter(kategoriBarang),
 
     ...(statusUsulan ? { statusUsulan: statusUsulan as StatusUsulan } : {}),
   };
@@ -297,17 +302,15 @@ export default async function Page({ searchParams }: PageProps) {
 
             <div className="bg-slate-50/50 p-4 sm:p-5">
               {rupData.length > 0 ? (
-                <div className="space-y-3 md:hidden">
+                <div className="space-y-3">
                   {rupData.map((item) => (
-                    <ProcurementCompactCard
+                    <PlanningCompactCard
                       key={item.id}
                       icon={FileSearch}
                       title={item.namaPaket}
                       codeLabel={item.kodeRup}
-                      sourceFund={
-                        item.prioritas ? humanize(item.prioritas) : "Prioritas"
-                      }
-                      sourceFundClassName={priorityClass(item.prioritas)}
+                      unit={item.unitPengusul}
+                      total={formatCurrency((item.totalEstimasi ?? item.pagu).toString())}
                       status={
                         planningStatusLabels[item.statusUsulan] ??
                         humanize(item.statusUsulan)
@@ -316,22 +319,26 @@ export default async function Page({ searchParams }: PageProps) {
                         planningStatusStyles[item.statusUsulan] ??
                         "bg-slate-100 text-slate-600"
                       }
-                      rows={[
+                      metadata={[
                         {
-                          label: "Total Estimasi",
-                          value: formatCurrency(
-                            (item.totalEstimasi ?? item.pagu).toString(),
-                          ),
+                          label: "Jumlah Kebutuhan",
+                          value: `${item.jumlahKebutuhan?.toString() ?? item.volumeKebutuhan ?? "-"} ${item.satuanKebutuhan ?? ""}`.trim(),
                         },
                         {
-                          label: "Unit",
-                          value: item.unitPengusul,
-                          hideWhenEmpty: true,
+                          label: "Prioritas",
+                          value: item.prioritas ? humanize(item.prioritas) : "-",
                         },
                         {
-                          label: "Tahun",
+                          label: "Tanggal Pengajuan",
+                          value: item.createdAt.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
+                        },
+                        {
+                          label: "Tahun Anggaran",
                           value: item.tahunAnggaran,
                         },
+                        ...(item.jenisBelanja?.toLowerCase() === "barang"
+                          ? [{ label: "Kategori Barang", value: kategoriBarangLabel(item.kategoriBarang) }]
+                          : []),
                       ]}
                       actions={
                         <div className="grid grid-cols-2 gap-2">
@@ -342,6 +349,7 @@ export default async function Page({ searchParams }: PageProps) {
                               kodeRup: item.kodeRup,
                               namaPaket: item.namaPaket,
                               jenisBelanja: item.jenisBelanja,
+                              kategoriBarang: item.kategoriBarang,
                               lokasiPaket: item.lokasiPaket,
                               unitPengusul: item.unitPengusul,
                               program: item.program,
@@ -412,6 +420,7 @@ export default async function Page({ searchParams }: PageProps) {
                                 kodeRup: item.kodeRup,
                                 namaPaket: item.namaPaket,
                                 jenisBelanja: item.jenisBelanja,
+                                kategoriBarang: item.kategoriBarang,
                                 lokasiPaket: item.lokasiPaket,
                                 unitBidang: item.unitBidang,
                                 ppkPptk: item.ppkPptk,
@@ -472,9 +481,21 @@ export default async function Page({ searchParams }: PageProps) {
                     />
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <DataCardEmpty>
+                  <div>
+                    <FileSearch className="mx-auto h-14 w-14 text-slate-300" />
+                    <p className="mt-4 text-base font-black text-slate-700">
+                      Belum ada usulan perencanaan
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-500">
+                      Tambahkan usulan kebutuhan, KAK, HPS, sumber dana, dan jadwal pemilihan.
+                    </p>
+                  </div>
+                </DataCardEmpty>
+              )}
 
-              <div className="mb-3 hidden items-center justify-between gap-3 md:flex xl:hidden">
+              {false ? <div className="hidden">
                 <p className="text-xs font-bold text-slate-500">
                   Geser ke kanan untuk melihat seluruh kolom dan tombol aksi.
                 </p>
@@ -482,9 +503,10 @@ export default async function Page({ searchParams }: PageProps) {
                 <span className="shrink-0 rounded-full bg-white px-3 py-1 text-[11px] font-black text-[#08783f] shadow-sm ring-1 ring-slate-200">
                   Geser →
                 </span>
-              </div>
+              </div> : null}
 
-              <div className={`-mx-1 max-w-full overflow-x-auto overflow-y-hidden px-1 pb-3 overscroll-x-contain [scrollbar-color:#94a3b8_transparent] [scrollbar-gutter:stable] [scrollbar-width:thin] ${rupData.length > 0 ? "hidden md:block" : ""}`}>
+              {false ? (
+              <div className="hidden">
                 <div className="min-w-full space-y-3">
                   {rupData.length > 0 ? (
                     rupData.map((item) => (
@@ -510,6 +532,7 @@ export default async function Page({ searchParams }: PageProps) {
                                 namaPaket: item.namaPaket,
 
                                 jenisBelanja: item.jenisBelanja,
+                                kategoriBarang: item.kategoriBarang,
 
                                 lokasiPaket: item.lokasiPaket,
 
@@ -646,6 +669,7 @@ export default async function Page({ searchParams }: PageProps) {
                                   namaPaket: item.namaPaket,
 
                                   jenisBelanja: item.jenisBelanja,
+                                  kategoriBarang: item.kategoriBarang,
 
                                   lokasiPaket: item.lokasiPaket,
 
@@ -873,6 +897,7 @@ export default async function Page({ searchParams }: PageProps) {
                   )}
                 </div>
               </div>
+              ) : null}
             </div>
           </div>
         </section>

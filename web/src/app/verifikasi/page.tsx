@@ -11,7 +11,7 @@ import {
   DataCardTextShort,
 } from "@/components/data-card/DataCardList";
 import VerificationDetailModalButton from "@/app/verifikasi/VerificationDetailModalButton";
-import ProcurementCompactCard from "@/components/procurement/ProcurementCompactCard";
+import VerificationCompactCard from "./VerificationCompactCard";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
@@ -23,6 +23,7 @@ import {
   unitScopeTerms,
 } from "@/lib/planning-workflow";
 import { prisma } from "@/lib/prisma";
+import { kategoriBarangFilter } from "@/lib/kategori-barang";
 import type { Prisma, StatusUsulan } from "@prisma/client";
 
 type PageProps = {
@@ -51,7 +52,11 @@ function statusFilter(value?: string) {
     SIAP_RUP: "SIAP_RUP",
   };
 
-  return value ? map[value] : undefined;
+  if (!value) return undefined;
+  if (Object.values(map).includes(value as StatusUsulan)) {
+    return value as StatusUsulan;
+  }
+  return map[value];
 }
 
 function priorityClass(value: string | null) {
@@ -74,8 +79,10 @@ export default async function Page({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const q = getParam(params, "q")?.trim();
   const tahunAnggaran = getParam(params, "tahunAnggaran");
+  const sumberDana = getParam(params, "sumberDana");
   const unit = getParam(params, "unit")?.trim();
   const prioritas = getParam(params, "prioritas")?.trim();
+  const kategoriBarang = getParam(params, "kategoriBarang");
   const status = statusFilter(getParam(params, "status"));
   const isAdminScope = user.roles.some((role) =>
     ["SUPER_ADMIN", "UKPBJ", "LPSE_ADMIN"].includes(role),
@@ -140,10 +147,12 @@ export default async function Page({ searchParams }: PageProps) {
     ],
     ...(status ? { statusUsulan: status } : {}),
     ...(tahunAnggaran ? { tahunAnggaran: Number(tahunAnggaran) } : {}),
+    ...(sumberDana ? { sumberDana } : {}),
     ...(unit && (isAdminScope || leaderTerms.includes(unit.toLowerCase()))
       ? { unitPengusul: unit }
       : {}),
     ...(prioritas ? { prioritas } : {}),
+    ...kategoriBarangFilter(kategoriBarang),
   };
 
   const [rows, counts, units, years] = await Promise.all([
@@ -223,17 +232,17 @@ export default async function Page({ searchParams }: PageProps) {
               </h1>
             </div>
 
-            <form className="grid gap-2 lg:grid-cols-[220px_160px_180px_160px_150px]">
+            <form className="grid min-w-0 w-full gap-2 sm:grid-cols-2 xl:w-auto xl:grid-cols-[minmax(180px,220px)_minmax(140px,160px)_minmax(160px,180px)_minmax(130px,160px)_minmax(120px,150px)]">
               <input
                 name="q"
                 defaultValue={q ?? ""}
                 placeholder="Cari kode atau nama usulan..."
-                className="h-10 rounded-lg border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08783f]"
+                className="h-10 min-w-0 rounded-lg border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08783f]"
               />
               <select
                 name="status"
                 defaultValue={getParam(params, "status") ?? ""}
-                className="h-10 rounded-lg border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08783f]"
+                className="h-10 min-w-0 rounded-lg border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08783f]"
               >
                 <option value="">Semua Status</option>
                 <option value="MENUNGGU_KEPALA_UNIT">Menunggu Kepala Unit</option>
@@ -245,7 +254,7 @@ export default async function Page({ searchParams }: PageProps) {
               <select
                 name="unit"
                 defaultValue={unit ?? ""}
-                className="h-10 rounded-lg border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08783f]"
+                className="h-10 min-w-0 rounded-lg border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08783f]"
               >
                 <option value="">Semua Unit</option>
                 {units.map((item) => (
@@ -257,7 +266,7 @@ export default async function Page({ searchParams }: PageProps) {
               <select
                 name="tahunAnggaran"
                 defaultValue={tahunAnggaran ?? ""}
-                className="h-10 rounded-lg border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08783f]"
+                className="h-10 min-w-0 rounded-lg border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08783f]"
               >
                 <option value="">Semua Tahun</option>
                 {years.map((item) => (
@@ -276,15 +285,15 @@ export default async function Page({ searchParams }: PageProps) {
           <div className="bg-slate-50/50 p-4 sm:p-5">
             {rows.length > 0 ? (
               <>
-                <div className="space-y-3 md:hidden">
+                <div className="space-y-3">
                   {rows.map((item) => (
-                    <ProcurementCompactCard
+                    <VerificationCompactCard
                       key={item.id}
                       icon={ClipboardCheck}
                       title={item.namaPaket}
-                      codeLabel={item.kodeRup}
-                      sourceFund={item.prioritas ?? "Prioritas"}
-                      sourceFundClassName={priorityClass(item.prioritas)}
+                      code={item.kodeRup}
+                      unit={item.unitPengusul}
+                      total={formatCurrency((item.totalEstimasi ?? item.pagu).toString())}
                       status={
                         planningStatusLabels[item.statusUsulan] ??
                         item.statusUsulan
@@ -293,17 +302,18 @@ export default async function Page({ searchParams }: PageProps) {
                         planningStatusStyles[item.statusUsulan] ??
                         "bg-slate-100 text-slate-600"
                       }
-                      rows={[
+                      metadata={[
                         {
-                          label: "Estimasi",
-                          value: formatCurrency(
-                            (item.totalEstimasi ?? item.pagu).toString(),
-                          ),
+                          label: "Tahun Anggaran",
+                          value: item.tahunAnggaran,
                         },
                         {
-                          label: "Unit",
-                          value: item.unitPengusul,
-                          hideWhenEmpty: true,
+                          label: "Prioritas",
+                          value: item.prioritas ?? "-",
+                        },
+                        {
+                          label: "Tanggal Pengajuan",
+                          value: dateLabel(item.submittedAt ?? item.createdAt),
                         },
                       ]}
                       actions={
@@ -313,6 +323,7 @@ export default async function Page({ searchParams }: PageProps) {
                   ))}
                 </div>
 
+                {false ? <>
                 <div className="-mx-1 hidden max-w-full overflow-x-auto px-1 pb-3 [scrollbar-color:#94a3b8_transparent] [scrollbar-width:thin] md:block">
                   <div className="space-y-3">
                     {rows.map((item) => (
@@ -380,6 +391,7 @@ export default async function Page({ searchParams }: PageProps) {
                   <span>Geser horizontal untuk melihat seluruh data dan aksi</span>
                   <span aria-hidden="true">→</span>
                 </div>
+                </> : null}
               </>
             ) : (
               <DataCardEmpty>
