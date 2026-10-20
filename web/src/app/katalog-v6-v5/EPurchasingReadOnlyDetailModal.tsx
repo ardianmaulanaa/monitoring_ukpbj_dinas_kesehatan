@@ -395,7 +395,7 @@ export default function EPurchasingReadOnlyDetailModal({
             <DetailField label="Tanggal Rencana" value={dateLabel(draft.tanggalRencanaKirim)} />
             <DetailField label="Tanggal Aktual" value={dateLabel(draft.tanggalAktualKirim)} />
             <DetailField label="Nomor Surat Jalan" value={draft.nomorSuratJalan} />
-            <DetailField className="lg:col-span-2" label="Catatan" value={draft.catatanKatalog} />
+            <DetailField className="lg:col-span-2" label="Catatan Pengiriman" value={draft.catatanPengiriman} />
           </FieldGrid>
         ) : null}
 
@@ -410,6 +410,7 @@ export default function EPurchasingReadOnlyDetailModal({
             <DetailField label="Hasil Pemeriksaan" value={humanize(draft.hasilPemeriksaan)} />
             <DetailField label="Nomor BAST" value={draft.nomorBast} />
             <DetailField label="Tanggal BAST" value={dateLabel(draft.tanggalBast)} />
+            <DetailField className="lg:col-span-2" label="Catatan Pemeriksaan" value={draft.catatanPemeriksaan} />
           </FieldGrid>
         ) : null}
 
@@ -421,6 +422,7 @@ export default function EPurchasingReadOnlyDetailModal({
             <DetailField label="Invoice" value={draft.nomorInvoice} />
             <DetailField label="Faktur" value={draft.nomorFaktur} />
             <DetailField label="Tanggal Pembayaran" value={dateLabel(draft.tanggalPembayaranEp)} />
+            <DetailField className="lg:col-span-2" label="Keterangan Pembayaran" value={draft.catatanPembayaran} />
           </FieldGrid>
         ) : null}
 

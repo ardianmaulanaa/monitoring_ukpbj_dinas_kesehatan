@@ -213,6 +213,9 @@ export async function updateKatalogWorkflowAction(
     select: {
       id: true,
       catatanKatalog: true,
+      catatanPembayaran: true,
+      catatanPemeriksaan: true,
+      catatanPengiriman: true,
       hargaNegosiasiKatalog: true,
       hargaPenawaranKatalog: true,
       hargaSatuanKatalog: true,
@@ -502,7 +505,7 @@ export async function updateKatalogWorkflowAction(
         tanggalAktualKirim: optionalText(parsed.data.tanggalAktualKirim),
         nomorSuratJalan: optionalText(parsed.data.nomorSuratJalan),
         statusTransaksiKatalog: statusAfterStep(parsed.data.step),
-        catatanKatalog: optionalText(parsed.data.catatan),
+        catatanPengiriman: optionalText(parsed.data.catatan),
       },
     });
   }
@@ -510,7 +513,7 @@ export async function updateKatalogWorkflowAction(
   if (parsed.data.step === "inspection") {
     const candidate = {
       ...existing,
-      catatanKatalog: optionalText(parsed.data.catatan),
+      catatanPemeriksaan: optionalText(parsed.data.catatan),
       hasilPemeriksaan: optionalText(parsed.data.hasilPemeriksaan),
       nomorBaPemeriksaan: optionalText(parsed.data.nomorBaPemeriksaan),
       nomorBast: optionalText(parsed.data.nomorBast),
@@ -543,7 +546,7 @@ export async function updateKatalogWorkflowAction(
         nomorBast: optionalText(parsed.data.nomorBast),
         tanggalBast: optionalText(parsed.data.tanggalBast),
         statusTransaksiKatalog: statusAfterStep(parsed.data.step),
-        catatanKatalog: optionalText(parsed.data.catatan),
+        catatanPemeriksaan: optionalText(parsed.data.catatan),
       },
     });
   }
@@ -582,7 +585,7 @@ export async function updateKatalogWorkflowAction(
           parsed.data.statusPembayaran === "DIBAYAR"
             ? "SELESAI"
             : statusAfterStep(parsed.data.step),
-        catatanKatalog: optionalText(parsed.data.catatan),
+        catatanPembayaran: optionalText(parsed.data.catatan),
       },
     });
   }
@@ -606,6 +609,9 @@ export async function updateKatalogWorkflowAction(
         tanggalSuratPesanan: null,
         statusTransaksiKatalog: null,
         catatanKatalog: null,
+        catatanPengiriman: null,
+        catatanPemeriksaan: null,
+        catatanPembayaran: null,
       },
     });
   }

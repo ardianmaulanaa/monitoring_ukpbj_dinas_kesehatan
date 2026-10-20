@@ -4,6 +4,7 @@ export const NAVIGATION = [
   "perencanaan",
   "verifikasi",
   "e-purchasing",
+  "pengadaan-langsung",
   "tender-non-tender",
   "kontrak-sp",
   "realisasi-belanja",

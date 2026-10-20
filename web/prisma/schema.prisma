@@ -307,6 +307,7 @@ model PaketPengadaan {
   serahTerima    SerahTerima[]
   timelineEvents TimelineEvent[]
   auditDokumen   AuditChecklist[]
+  pengadaanLangsung PengadaanLangsungWorkflow?
 
   @@index([namaPaket])
   @@index([unitPemohon])
@@ -315,6 +316,28 @@ model PaketPengadaan {
   @@index([metodePengadaan])
   @@index([statusPaket])
   @@map("paket_pengadaan")
+}
+
+model PengadaanLangsungWorkflow {
+  id          String   @id @default(uuid()) @db.Char(36)
+  rupId       String   @unique @map("rup_id") @db.Char(36)
+  paketId     String   @unique @map("paket_id") @db.Char(36)
+  rincian     Json?
+  penyedia    Json?
+  negosiasi   Json?
+  kontrak     Json?
+  pengiriman  Json?
+  pemeriksaan Json?
+  pembayaran  Json?
+  tahapAktif  String   @default("RINCIAN") @map("tahap_aktif") @db.VarChar(40)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rup   RencanaUmumPengadaan @relation(fields: [rupId], references: [id], onDelete: Restrict)
+  paket PaketPengadaan       @relation(fields: [paketId], references: [id], onDelete: Restrict)
+
+  @@index([tahapAktif])
+  @@map("pengadaan_langsung_workflow")
 }
 
 model Kontrak {
@@ -427,6 +450,9 @@ model RencanaUmumPengadaan {
   tanggalPembayaranEp      String?              @map("tanggal_pembayaran_ep") @db.VarChar(120)
   statusTransaksiKatalog   String?              @map("status_transaksi_katalog") @db.VarChar(80)
   catatanKatalog           String?              @map("catatan_katalog") @db.Text
+  catatanPengiriman        String?              @map("catatan_pengiriman") @db.Text
+  catatanPemeriksaan       String?              @map("catatan_pemeriksaan") @db.Text
+  catatanPembayaran        String?              @map("catatan_pembayaran") @db.Text
   jadwalMulaiRencana       String?              @map("jadwal_mulai_rencana") @db.VarChar(120)
   jadwalSelesaiRencana     String?              @map("jadwal_selesai_rencana") @db.VarChar(120)
   tahunAnggaran            Int                  @map("tahun_anggaran")
@@ -454,6 +480,7 @@ model RencanaUmumPengadaan {
   updatedAt                DateTime             @updatedAt @map("updated_at")
 
   verificationHistory UsulanVerificationHistory[]
+  pengadaanLangsung    PengadaanLangsungWorkflow?
 
   @@index([namaPaket])
   @@index([unitPengusul])

@@ -268,6 +268,7 @@ export type EPurchasingStage =
 
 export type EPurchasingCompletenessInput = RupCompletenessInput & {
   catatanKatalog?: string | null;
+  catatanPemeriksaan?: string | null;
   hargaNegosiasiKatalog?: MaybeNumber;
   hargaPenawaranKatalog?: MaybeNumber;
   hargaSatuanKatalog?: MaybeNumber;
@@ -390,7 +391,7 @@ export function validateInspectionStage(data: EPurchasingCompletenessInput) {
     [
       statusComplete(data.hasilPemeriksaan, ["DITERIMA"]) ||
         (statusComplete(data.hasilPemeriksaan, ["DITERIMA_DENGAN_CATATAN"]) &&
-          filled(data.catatanKatalog)),
+          filled(data.catatanPemeriksaan)),
       "hasilPemeriksaan",
     ],
     [filled(data.nomorBaPemeriksaan), "nomorBaPemeriksaan"],

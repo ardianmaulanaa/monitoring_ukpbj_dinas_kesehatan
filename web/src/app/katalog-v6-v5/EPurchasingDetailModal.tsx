@@ -83,7 +83,7 @@ export default function EPurchasingDetailModal({
         />
       </div>
 
-      <KatalogManualWorkflowClient initialDraft={draft} rup={rup} />
+      <KatalogManualWorkflowClient key={rup.id} initialDraft={draft} rup={rup} />
     </ModalShell>
   );
 }

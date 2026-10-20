@@ -47,6 +47,9 @@ type RupSummary = {
 export type EPurchasingDraft = {
   alamatPenyediaKatalog?: string | null;
   catatanKatalog?: string | null;
+  catatanPembayaran?: string | null;
+  catatanPemeriksaan?: string | null;
+  catatanPengiriman?: string | null;
   emailPenyediaKatalog?: string | null;
   etalaseKatalog?: string | null;
   hargaNegosiasiKatalog?: string | null;
@@ -621,7 +624,7 @@ export default function KatalogManualWorkflowClient({
           <label className="grid gap-2"><span className={labelClass}>Tanggal Rencana Pengiriman</span><input name="tanggalRencanaKirim" type="date" defaultValue={initialDraft.tanggalRencanaKirim ?? ""} className={inputClass} /></label>
           <label className="grid gap-2"><span className={labelClass}>Tanggal Aktual</span><input name="tanggalAktualKirim" type="date" defaultValue={initialDraft.tanggalAktualKirim ?? ""} className={inputClass} /></label>
           <label className="grid gap-2"><span className={labelClass}>Surat Jalan</span><input name="nomorSuratJalan" defaultValue={initialDraft.nomorSuratJalan ?? ""} className={inputClass} /></label>
-          <label className="grid gap-2 sm:col-span-2"><span className={labelClass}>Catatan</span><textarea name="catatan" defaultValue={initialDraft.catatanKatalog ?? ""} className={textareaClass} /></label>
+          <label className="grid gap-2 sm:col-span-2"><span className={labelClass}>Catatan Pengiriman</span><textarea name="catatan" defaultValue={initialDraft.catatanPengiriman ?? ""} className={textareaClass} /></label>
           <div className="sm:col-span-2"><SubmitButton pending={isPending}>Simpan Pengiriman</SubmitButton></div>
         </form>
       ) : null}
@@ -655,7 +658,7 @@ export default function KatalogManualWorkflowClient({
           <label className="grid gap-2"><span className={labelClass}>Hasil Pemeriksaan</span><select name="hasilPemeriksaan" defaultValue={initialDraft.hasilPemeriksaan ?? ""} className={inputClass}><option value="">Belum Ada</option><option value="DITERIMA">Diterima</option><option value="DITERIMA_DENGAN_CATATAN">Diterima Dengan Catatan</option><option value="DITOLAK">Ditolak</option></select></label>
           <label className="grid gap-2"><span className={labelClass}>Nomor BAST</span><input name="nomorBast" defaultValue={initialDraft.nomorBast ?? ""} className={inputClass} /></label>
           <label className="grid gap-2"><span className={labelClass}>Tanggal BAST</span><input name="tanggalBast" type="date" defaultValue={initialDraft.tanggalBast ?? ""} className={inputClass} /></label>
-          <label className="grid gap-2 sm:col-span-2"><span className={labelClass}>Catatan Pemeriksaan</span><textarea name="catatan" defaultValue={initialDraft.catatanKatalog ?? ""} className={textareaClass} /></label>
+          <label className="grid gap-2 sm:col-span-2"><span className={labelClass}>Catatan Pemeriksaan</span><textarea name="catatan" defaultValue={initialDraft.catatanPemeriksaan ?? ""} className={textareaClass} /></label>
           <div className="sm:col-span-2"><SubmitButton pending={isPending}>Simpan Pemeriksaan</SubmitButton></div>
         </form>
       ) : null}
@@ -683,7 +686,7 @@ export default function KatalogManualWorkflowClient({
           <label className="grid gap-2"><span className={labelClass}>Invoice</span><input name="nomorInvoice" defaultValue={initialDraft.nomorInvoice ?? ""} className={inputClass} /></label>
           <label className="grid gap-2"><span className={labelClass}>Faktur</span><input name="nomorFaktur" defaultValue={initialDraft.nomorFaktur ?? ""} className={inputClass} /></label>
           <label className="grid gap-2"><span className={labelClass}>Tanggal Pembayaran</span><input name="tanggalPembayaran" type="date" defaultValue={initialDraft.tanggalPembayaranEp ?? ""} className={inputClass} /></label>
-          <label className="grid gap-2 sm:col-span-2"><span className={labelClass}>Keterangan</span><textarea name="catatan" defaultValue={initialDraft.catatanKatalog ?? ""} className={textareaClass} /></label>
+          <label className="grid gap-2 sm:col-span-2"><span className={labelClass}>Keterangan Pembayaran</span><textarea name="catatan" defaultValue={initialDraft.catatanPembayaran ?? ""} className={textareaClass} /></label>
           <div className="sm:col-span-2"><SubmitButton pending={isPending}>Simpan Pembayaran</SubmitButton></div>
         </form>
       ) : null}

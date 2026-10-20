@@ -129,6 +129,7 @@ export type DashboardData = {
     paketBermasalah: number;
     paketEKatalogV6: number;
     paketTenderNonTender: number;
+    paketPengadaanLangsung: number;
     realisasiPercent: number;
     realisasiKontrakPercent: number;
     selesaiPercent: number;
@@ -153,6 +154,9 @@ export type DashboardData = {
     contractedPackages: number;
     ePurchasing: { total: number; amount: number; ready: number; active: number; done: number };
     tenderNonTender: { total: number; amount: number; active: number; done: number };
+    pengadaanLangsung: { total: number; amount: number; active: number; done: number };
+    tender: { total: number; amount: number; active: number; done: number };
+    legacyNonTender: { total: number; amount: number; active: number; done: number };
     failedOrCancelled: number;
   };
   deadlines: DashboardDeadline[];
@@ -1103,11 +1107,16 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
   const paketTenderNonTender = countRows(rows, (row) =>
     ["TENDER", "NON_TENDER"].includes(row.metodePengadaan),
   );
+  const paketPengadaanLangsung = countRows(rows, (row) => row.metodePengadaan === "PENGADAAN_LANGSUNG");
   const contractedPackages = countRows(rows, (row) => getContractValue(row) !== null);
   const ePurchasingRows = rows.filter((row) => row.metodePengadaan === "E_PURCHASING");
   const tenderRows = rows.filter((row) =>
     ["TENDER", "NON_TENDER"].includes(row.metodePengadaan),
   );
+  const directRows = rows.filter((row) => row.metodePengadaan === "PENGADAAN_LANGSUNG");
+  const tenderOnlyRows = rows.filter((row) => row.metodePengadaan === "TENDER");
+  const legacyNonTenderRows = rows.filter((row) => row.metodePengadaan === "NON_TENDER");
+  const methodSummary = (methodRows: RupRow[]) => ({ total: methodRows.length, amount: methodRows.reduce((sum,row)=>sum+toNumber(row.pagu),0), active: countRows(methodRows,(row)=>isStarted(row)&&!isDone(row)), done: countRows(methodRows,isDone) });
   const isDone = (row: RupRow) => getProcurementStage(row) === "done";
   const isStarted = (row: RupRow) =>
     !["planning", "verification", "rup"].includes(getProcurementStage(row));
@@ -1144,6 +1153,7 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
       paketBermasalah,
       paketEKatalogV6,
       paketTenderNonTender,
+      paketPengadaanLangsung,
       realisasiPercent:
         totalPagu > 0 ? Number(((totalRealisasi / totalPagu) * 100).toFixed(1)) : 0,
       realisasiKontrakPercent:
@@ -1189,6 +1199,9 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
         active: countRows(tenderRows, (row) => isStarted(row) && !isDone(row)),
         done: countRows(tenderRows, isDone),
       },
+      pengadaanLangsung: methodSummary(directRows),
+      tender: methodSummary(tenderOnlyRows),
+      legacyNonTender: methodSummary(legacyNonTenderRows),
       failedOrCancelled: countRows(
         rows,
         (row) =>

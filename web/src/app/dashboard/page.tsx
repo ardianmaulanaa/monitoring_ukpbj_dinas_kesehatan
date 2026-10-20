@@ -324,19 +324,27 @@ export default async function Page({
             <Link href="/tender-non-tender">
               <Card className="h-full p-5 transition hover:border-[#bfe5cf] hover:bg-[#f8fbf9]">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#64796f]">
-                  Tender / Non Tender
+                  Tender
                 </p>
                 <p className="mt-2 text-xl font-black text-[#28674e]">
-                  {count(procurementSummary.tenderNonTender.total)} paket
+                  {count(procurementSummary.tender.total)} paket
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[#64796f]">
-                  {money(procurementSummary.tenderNonTender.amount)}
+                  {money(procurementSummary.tender.amount)}
                   <br />
-                  Proses {procurementSummary.tenderNonTender.active} · Selesai{" "}
-                  {procurementSummary.tenderNonTender.done}
+                  Proses {procurementSummary.tender.active} · Selesai{" "}
+                  {procurementSummary.tender.done}
                 </p>
               </Card>
             </Link>
+            <Link href="/pengadaan-langsung">
+              <Card className="h-full p-5 transition hover:border-[#bfe5cf] hover:bg-[#f8fbf9]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#64796f]">Pengadaan Langsung</p>
+                <p className="mt-2 text-xl font-black text-[#087f4f]">{count(procurementSummary.pengadaanLangsung.total)} paket</p>
+                <p className="mt-1 text-xs leading-5 text-[#64796f]">{money(procurementSummary.pengadaanLangsung.amount)}<br />Proses {procurementSummary.pengadaanLangsung.active} · Selesai {procurementSummary.pengadaanLangsung.done}</p>
+              </Card>
+            </Link>
+            {procurementSummary.legacyNonTender.total > 0 ? <Card className="p-5"><p className="text-[11px] font-bold uppercase tracking-wider text-[#64796f]">Arsip Non Tender</p><p className="mt-2 text-xl font-black text-slate-700">{count(procurementSummary.legacyNonTender.total)} paket</p><p className="mt-1 text-xs text-[#64796f]">Dipertahankan tanpa reklasifikasi otomatis</p></Card> : null}
             <Card className="p-5">
               <p className="text-[11px] font-bold uppercase tracking-wider text-[#64796f]">
                 Paket Gagal / Batal

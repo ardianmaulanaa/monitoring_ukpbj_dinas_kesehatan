@@ -23,6 +23,7 @@ const protectedRedirectPrefixes = [
   "/e-purchasing",
   "/katalog-v6-v5",
   "/tender-non-tender",
+  "/pengadaan-langsung",
   "/kontrak-sp",
   "/realisasi-belanja",
   "/risiko-mitigasi",

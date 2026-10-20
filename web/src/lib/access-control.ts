@@ -64,6 +64,7 @@ const routeAccess: { prefix: string; roles: AppRoleCode[] }[] = [
   { prefix: "/sirup-rup", roles: planningRoles },
   { prefix: "/e-purchasing", roles: procurementRoles },
   { prefix: "/katalog-v6-v5", roles: procurementRoles },
+  { prefix: "/pengadaan-langsung", roles: ["SUPER_ADMIN", "PPK", "PROCUREMENT_OFFICER"] },
   { prefix: "/tender-non-tender", roles: procurementRoles },
   { prefix: "/paket-pengadaan", roles: [...planningRoles, ...procurementRoles] },
   { prefix: "/data-barang", roles: ["SUPER_ADMIN", "PPK"] },

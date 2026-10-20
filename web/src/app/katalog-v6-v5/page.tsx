@@ -3243,6 +3243,9 @@ async function KatalogWorkflowView({
   const buildKatalogDraft = (selectedRup: (typeof rupRows)[number]) => ({
     alamatPenyediaKatalog: selectedRup.alamatPenyediaKatalog,
     catatanKatalog: selectedRup.catatanKatalog,
+    catatanPembayaran: selectedRup.catatanPembayaran,
+    catatanPemeriksaan: selectedRup.catatanPemeriksaan,
+    catatanPengiriman: selectedRup.catatanPengiriman,
     emailPenyediaKatalog: selectedRup.emailPenyediaKatalog,
     etalaseKatalog: selectedRup.etalaseKatalog,
     hargaNegosiasiKatalog:
