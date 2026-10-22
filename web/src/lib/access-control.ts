@@ -75,6 +75,7 @@ const routeAccess: { prefix: string; roles: AppRoleCode[] }[] = [
   { prefix: "/risiko-mitigasi", roles: monitoringRoles },
   { prefix: "/audit-readiness", roles: ["SUPER_ADMIN", "PA", "KPA", "PPK"] },
   { prefix: "/timeline", roles: allRoles },
+  { prefix: "/vendor-management", roles: ["SUPER_ADMIN", "UKPBJ", "LPSE_ADMIN", "LEADER", "PPTK", "PPK", "PROCUREMENT_OFFICER", "SELECTION_WORKGROUP", "PA", "KPA", "AUDITOR", "VIEWER"] },
   { prefix: "/vendor-pasar", roles: [] },
   { prefix: "/klinik-ukpbj", roles: ["SUPER_ADMIN", "LEADER", "PPK"] },
   { prefix: "/dokumen-template", roles: [...planningRoles, ...procurementRoles] },

@@ -24,8 +24,12 @@ export default function ModalShell({
   onClose,
   title,
 }: ModalShellProps) {
-  const [animationState, setAnimationState] = useState<"opening" | "open" | "closing">("opening");
+  const [animationState, setAnimationState] = useState<
+    "opening" | "open" | "closing"
+  >("opening");
   const closeTimeoutRef = useRef<number | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   useBodyScrollLock(isOpen);
 
   const requestClose = useCallback(() => {
@@ -58,20 +62,49 @@ export default function ModalShell({
   useEffect(() => {
     if (!isOpen) return;
 
+    restoreFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const focusFrame = requestAnimationFrame(() => {
+      const focusable = panelRef.current?.querySelector<HTMLElement>(
+        "button, a[href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
+      );
+      focusable?.focus();
+    });
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") requestClose();
+      if (event.key === "Tab" && panelRef.current) {
+        const focusable = Array.from(
+          panelRef.current.querySelectorAll<HTMLElement>(
+            "button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+          ),
+        );
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     }
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      cancelAnimationFrame(focusFrame);
       window.removeEventListener("keydown", handleKeyDown);
+      restoreFocusRef.current?.focus();
     };
   }, [isOpen, requestClose]);
 
   // Portal membuat modal dirender langsung ke document.body agar berada di atas semua layout.
-  const portalTarget =
-    typeof document === "undefined" ? null : document.body;
+  const portalTarget = typeof document === "undefined" ? null : document.body;
 
   if (!isOpen || !portalTarget) return null;
 
@@ -98,6 +131,7 @@ export default function ModalShell({
       />
 
       <div
+        ref={panelRef}
         className={`relative flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] min-w-0 max-w-[calc(100vw-1.5rem)] ${maxWidthClassName} ${motionClass} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl transition-[opacity,transform] duration-200 ease-out motion-reduce:transform-none motion-reduce:transition-opacity sm:max-h-[calc(100dvh-3rem)] sm:w-full sm:max-w-[calc(100vw-3rem)]`}
       >
         {/* Header modal: label kecil, judul, dan tombol close. */}

@@ -1,0 +1,9 @@
+"use client";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+export default function StatusActions({ id, status, canVerify, canUpdate, canArchive }: { id:string; status:string; canVerify:boolean; canUpdate:boolean; canArchive:boolean }) {
+  const router=useRouter(); const [busy,setBusy]=useState(false); const [error,setError]=useState("");
+  async function transition(target:string) { const note=target==="NEEDS_REVISION"?window.prompt("Alasan revisi (wajib):")??"":target==="ARCHIVED"?window.prompt("Catatan pengarsipan:")??"":""; if(target==="NEEDS_REVISION"&&!note)return; setBusy(true); const response=await fetch(`/api/vendor-management/vendors/${id}/status`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:target,note})}); const body=await response.json(); setBusy(false); if(!response.ok){setError(body.message);return;} router.refresh(); }
+  return <div><div className="flex flex-wrap gap-2">{canUpdate&&["DRAFT","NEEDS_REVISION"].includes(status)&&<button disabled={busy} onClick={()=>transition("PENDING_REVIEW")} className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-bold text-white">Kirim Verifikasi</button>}{canVerify&&status==="PENDING_REVIEW"&&<><button disabled={busy} onClick={()=>transition("VERIFIED_INTERNAL")} className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white">Verifikasi Internal</button><button disabled={busy} onClick={()=>transition("NEEDS_REVISION")} className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-bold text-white">Minta Revisi</button></>}{canArchive&&status!=="ARCHIVED"&&<button disabled={busy} onClick={()=>transition("ARCHIVED")} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold">Arsipkan</button>}</div>{error&&<p className="mt-2 text-sm text-rose-700">{error}</p>}</div>;
+}

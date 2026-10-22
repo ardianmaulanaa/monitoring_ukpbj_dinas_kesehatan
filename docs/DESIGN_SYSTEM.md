@@ -27,6 +27,8 @@ Do not apply Dashboard palette through generic `aside`, `header`, `main`, or `na
 
 All protected pages use `ProtectedDashboardLayout`, `DashboardShell`, shared `Sidebar`, and shared `AppHeader`. A page must not instantiate a second sidebar/header or add hard-coded sidebar offsets. Changes to navigation components require regression checks on Dashboard, SIRUP/RUP, Perencanaan, Verifikasi, E-Purchasing, Tender/Non-Tender, and Kontrak/SP.
 
+Nine-stage workflow tab bars use a local `overflow-x-auto` container with non-shrinking, keyboard-focusable tabs; they must never create page-level horizontal overflow. Forms reflow from one to two columns and primary controls keep a minimum 44px touch height.
+
 ## Dashboard composition
 
 1. AppHeader shared.
@@ -69,3 +71,9 @@ Uniform white cards with label, small icon, large value, helper, and progress on
 ## Accessibility
 
 Maintain sufficient contrast, keyboard actions, visible focus, semantic labels, canvas chart titles/adjacent text, and textual empty states. Do not encode status by color alone.
+
+## VMS surfaces
+
+Halaman VMS memakai `ProtectedDashboardLayout`, `AppHeader`, sidebar existing, token warna putih-hijau, card berbatas lembut, table dengan overflow responsif, status badge, dan empty state. Navigasi sekunder VMS dapat di-scroll horizontal pada viewport sempit dan tidak membuat shell/sidebar kedua.
+
+Pada Direktori Penyedia, tambah vendor memakai `ModalShell` shared tanpa berpindah route. Modal memiliki header tetap, area form internal yang dapat di-scroll, footer aksi sticky, layout dua kolom yang berubah menjadi satu kolom di mobile, konfirmasi saat menutup form yang sudah berubah, dan notifikasi sukses. Route `/vendor-management/vendors/new` tetap tersedia sebagai fallback dan memakai komponen form yang sama.

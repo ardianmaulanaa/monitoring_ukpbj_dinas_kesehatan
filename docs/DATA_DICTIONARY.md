@@ -32,8 +32,10 @@ Central record for planning, verification, SIRUP, and current E-Purchasing imple
 | Catalog product | product/platform/category/link/price fields | nullable; length constraints | chosen catalog data |
 | Provider/negotiation | provider fields, offer/final price/status | nullable | selection outcome |
 | Contract/SP | SPPBJ, SP, SPK, SPMK number/date/status | nullable strings | contractual evidence |
-| Delivery/inspection | delivery, functional test, inspection, BAST fields | nullable strings | execution evidence |
-| Payment | document/payment status, `nilaiPembayaran?`, invoice/faktur/date | Decimal + strings | realized payment |
+| Delivery | delivery dates/status/surat jalan, `catatanPengiriman?` | nullable strings/text | delivery evidence and stage-specific note |
+| Inspection | functional test, inspection, BAST, `catatanPemeriksaan?` | nullable strings/text | inspection evidence and stage-specific note |
+| Payment | document/payment status, `nilaiPembayaran?`, invoice/faktur/date, `catatanPembayaran?` | Decimal + strings/text | realized payment and stage-specific note |
+| Catalog note | `catatanKatalog?` | nullable text | negotiation/legacy catalog note; not a fallback for execution-stage notes |
 | Stage marker | `statusTransaksiKatalog?` | VarChar(80) | current E-Purchasing marker |
 | Audit timestamps | `createdAt`, `updatedAt` | now/updatedAt | record input/update time |
 
@@ -42,6 +44,10 @@ Catalog length limits: product 220, brand 160, unit 60, display/category 160/120
 ### UsulanVerificationHistory
 
 `id` PK; `proposalId` required FK -> RUP with cascade; actor ID/name/role; action; old/new `StatusUsulan`; note/checklist; `createdAt`. It is the authoritative per-proposal approval history, distinct from global `AuditLog`.
+
+### PengadaanLangsungWorkflow
+
+Satu record per RUP `PENGADAAN_LANGSUNG`, dengan `rupId` dan `paketId` unik. `rincian`, `penyedia`, `negosiasi`, `kontrak`, `pengiriman`, `pemeriksaan`, dan `pembayaran` adalah JSON nullable yang divalidasi Zod sebelum ditulis. `tahapAktif` menyimpan marker monitoring. Dokumen menggunakan `AuditChecklist` milik `PaketPengadaan` terkait.
 
 ### Generic execution models
 
@@ -80,3 +86,7 @@ Catalog length limits: product 220, brand 160, unit 60, display/category 160/120
 - `RoleCode`: SUPER_ADMIN, LPSE_ADMIN, OPERATOR, LEADER, PPTK, PA, KPA, PPK, PROCUREMENT_OFFICER, SELECTION_WORKGROUP, UKPBJ, AUDITOR, VIEWER.
 - `StatusUsulan`: DRAFT, DIAJUKAN, MENUNGGU_VERIFIKASI_KEPALA_UNIT, DIVERIFIKASI_KEPALA_UNIT, MENUNGGU_VALIDASI_PPK_PPTK, DIVALIDASI_PPK_PPTK, MENUNGGU_PERSETUJUAN_PA_KPA, DISETUJUI_PA_KPA, PERLU_REVISI, SIAP_RUP, RUP_TAYANG.
 - Other authoritative enums are listed in `schema.prisma`; application string statuses are not enums and require Zod/business guards.
+
+## Vendor Management System
+
+`Vendor` adalah master penyedia VMS; `nibNormalized` unik digunakan untuk deteksi duplikasi deterministik tanpa menggabungkan entitas otomatis. Profil memiliki banyak kontak, dokumen, kategori, produk, kegiatan, relasi paket, evaluasi, dan status history. `VendorProcurementLink` menyimpan peran vendor pada paket dan mereferensikan `PaketPengadaan` sebagai sumber kebenaran. Harga produk bersifat indikatif; skor evaluasi bersifat monitoring internal.

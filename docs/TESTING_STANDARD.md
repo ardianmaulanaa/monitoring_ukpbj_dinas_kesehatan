@@ -19,6 +19,8 @@
 4. Revision returns without skipping stages and history is saved.
 5. E-Purchasing prerequisite blocks stage skipping; failed writes do not advance marker.
 6. Ready + in-progress + completed equals eligible distinct packages.
+7. Saving delivery, inspection, or payment notes changes only that stage's note; refresh/edit and switching between two package IDs must not leak or overwrite notes.
+8. Pengadaan Langsung accepts only its enum, keeps `NON_TENDER` historical rows separate, persists seven independent stage payloads, scopes documents by package, and calculates dashboard method counts without double counting.
 
 ## Dashboard regression suite
 
@@ -53,3 +55,9 @@ npm run build
 ```
 
 Release is blocked by failed required checks, unreviewed migration, known authorization bypass, or documentation contradicting shipped behavior. Until automated tests exist, record manual scenarios and do not claim automated coverage.
+
+## VMS release coverage
+
+Minimum regression: duplicate NIB ditolak, status tidak dapat melompati transition map, alasan revisi wajib, role tanpa permission mendapat 403, pagination/search stabil, audit/status history dibuat dalam transaction yang sama, relasi vendor-paket tidak mengubah paket, dan halaman kosong tidak memakai data palsu. Upload privat, export terfilter, scheduler, serta object ownership portal vendor belum dapat dinyatakan lulus sebelum fiturnya diimplementasikan.
+
+Create vendor juga harus mencakup: modal terbuka tanpa navigasi; X/Batal dan konfirmasi dirty state; validasi field tidak mengosongkan input; konflik NIB, kegagalan jaringan, dan error server mempertahankan modal serta data; sukses menutup modal dan me-refresh Server Component tanpa `window.location.reload()`; serta layout satu kolom tanpa overflow pada mobile.

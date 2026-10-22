@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { RoleCode } from "@prisma/client";
 import {
   AlertTriangle,
+  Building2,
   CalendarDays,
   ClipboardList,
   FileBarChart2,
@@ -76,14 +77,32 @@ const sections: NavigationSection[] = [
     title: "Pengadaan",
     items: [
       { href: "/e-purchasing", label: "E-Purchasing", icon: ShoppingCart },
-      { href: "/pengadaan-langsung", label: "Pengadaan Langsung", icon: ClipboardList },
+      {
+        href: "/pengadaan-langsung",
+        label: "Pengadaan Langsung",
+        icon: ClipboardList,
+      },
       {
         href: "/tender-non-tender",
         label: "Tender",
         icon: PackageSearch,
       },
       { href: "/kontrak-sp", label: "Kontrak & SP", icon: FileCheck2 },
-      { href: "/realisasi-belanja", label: "Realisasi Belanja", icon: WalletCards },
+      {
+        href: "/realisasi-belanja",
+        label: "Realisasi Belanja",
+        icon: WalletCards,
+      },
+    ],
+  },
+  {
+    title: "Manajemen Penyedia",
+    items: [
+      {
+        href: "/vendor-management",
+        label: "Vendor Management System (VMS)",
+        icon: Building2,
+      },
     ],
   },
   {
@@ -106,7 +125,11 @@ const sections: NavigationSection[] = [
         label: "Klinik UKPBJ",
         icon: MessageSquareText,
       },
-      { href: "/dokumen-template", label: "Dokumen & Template", icon: FolderOpen },
+      {
+        href: "/dokumen-template",
+        label: "Dokumen & Template",
+        icon: FolderOpen,
+      },
       { href: "/laporan", label: "Laporan", icon: FileBarChart2 },
       { href: "/pengaturan", label: "Pengaturan", icon: Settings },
     ],
@@ -119,8 +142,18 @@ function isActivePath(pathname: string, href: string) {
     return pathname === "/dashboard";
   }
 
+  if (href === "/vendor-management") {
+    return (
+      pathname === "/vendor-management" ||
+      pathname.startsWith("/vendor-management/")
+    );
+  }
+
   if (href === "/risiko-mitigasi") {
-    return pathname === "/risiko-mitigasi" || pathname.startsWith("/risiko-mitigasi/");
+    return (
+      pathname === "/risiko-mitigasi" ||
+      pathname.startsWith("/risiko-mitigasi/")
+    );
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -253,15 +286,11 @@ export default function Sidebar({
         </div>
 
         {/* HANYA BAGIAN INI YANG BOLEH SCROLL: daftar menu dari sections yang sudah difilter role. */}
-        <nav
-          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 py-5"
-        >
+        <nav className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 py-5">
           <div className="space-y-5">
             {visibleSections.map((section) => (
               <section key={section.title}>
-                <p
-                  className="px-3 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400"
-                >
+                <p className="px-3 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
                   {section.title}
                 </p>
 
@@ -281,7 +310,10 @@ export default function Sidebar({
                             : "text-slate-500 hover:bg-[#edf7f1] hover:text-[#08783f]"
                         }`}
                       >
-                        <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2.2} />
+                        <Icon
+                          className="h-[18px] w-[18px] shrink-0"
+                          strokeWidth={2.2}
+                        />
 
                         <span className="truncate">{item.label}</span>
                       </Link>

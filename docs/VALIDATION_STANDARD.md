@@ -23,6 +23,12 @@
 - Completion requires authoritative final status, not merely one intermediate date/form.
 - Duplicate/constraint/length errors must return specific safe feedback (`P2000` length, `P2002` conflict where applicable).
 
+## Pengadaan Langsung
+
+- Hanya RUP ber-metode `PENGADAAN_LANGSUNG` yang dapat dimutasi; `NON_TENDER` tidak boleh dipetakan implisit.
+- Payload tahap memakai discriminated server mapping dan Zod; multi-item maksimal 100, volume positif, nominal non-negatif, nilai kontrak tidak melebihi pagu.
+- Dokumen dibatasi PDF/JPG/PNG maksimal 10 MB dan selalu direlasikan ke paket workflow.
+
 ## Dates and money
 
 - Native Date fields require valid ISO-compatible dates and business ordering where relevant.
@@ -46,3 +52,12 @@ Rely on schema unique constraints for concurrency safety and catch conflict erro
 
 - Many workflow status/date fields are free-form strings; stricter shared schemas are recommended.
 - Full validation consistency across all legacy/general APIs is **NEEDS VERIFICATION** because no automated contract suite exists.
+
+## VMS validation
+
+- NIB dinormalisasi menjadi karakter alfanumerik kapital dan dijaga unik oleh database.
+- Payload create vendor dan produk menggunakan Zod dengan batas panjang sesuai schema.
+- `NEEDS_REVISION` mewajibkan catatan; transisi status diperiksa ulang di transaction server.
+- Semua mutation VMS wajib memverifikasi JWT dan action permission; ID yang diterima tidak pernah menjadi bukti otorisasi.
+- Form create vendor memakai `vendorCreateSchema` yang sama dengan API agar requiredness, format, dan panjang field konsisten. Error `422` dipetakan ke field, konflik NIB `409` ditampilkan spesifik, dan kegagalan validasi/jaringan/server tidak boleh mereset input atau menutup modal.
+- Field opsional VMS boleh dikirim sebagai string kosong dari kontrol HTML dan dinormalisasi menjadi `null` sebelum penyimpanan Prisma; deskripsi usaha, NPWP, dan website tidak boleh ditandai wajib oleh frontend.

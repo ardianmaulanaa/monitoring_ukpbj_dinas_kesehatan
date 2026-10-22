@@ -8,21 +8,22 @@ SIMUKPBJ memonitor perencanaan dan pelaksanaan pengadaan Laboratorium Kesehatan 
 
 ## Modul dan status
 
-| Modul | Route | Status | Bukti/catatan |
-|---|---|---|---|
-| Dashboard | `/dashboard` | IMPLEMENTED | Agregasi server `getDashboardData`; Chart.js; shared application shell |
-| Perencanaan | `/perencanaan` | IMPLEMENTED | `RencanaUmumPengadaan`, submit/edit, guard status |
-| Verifikasi | `/verifikasi` | IMPLEMENTED | Tiga tingkat: kepala unit, PPK/PPTK, PA/KPA; history tersimpan |
-| SIRUP/RUP | `/sirup-rup` | IMPLEMENTED | CRUD/import dan status RUP |
-| E-Purchasing | `/e-purchasing`, `/katalog-v6-v5` | IMPLEMENTED | Workflow tahap produk sampai pembayaran pada RUP |
-| Tender/Non-Tender | `/tender-non-tender` | PARTIAL | Halaman tersedia; workflow khusus tidak dimodelkan selengkap E-Purchasing |
-| Kontrak/SP | `/kontrak-sp` | IMPLEMENTED | Model `Kontrak` dan data kontrak/SP E-Purchasing tersedia sebagai jalur terpisah |
-| Realisasi | `/realisasi-belanja` | IMPLEMENTED | Model `RealisasiBelanja`; Dashboard RUP memakai `nilaiPembayaran` pada RUP |
-| Risiko | `/risiko-mitigasi` | IMPLEMENTED | Model dan route tersedia |
-| Notifikasi | `/notifications`, API | IMPLEMENTED | Notifikasi internal; kelengkapan event lintas workflow NEEDS VERIFICATION |
-| Laporan/export | `/laporan/*`, API laporan | IMPLEMENTED | Endpoint dan halaman tersedia; kontrol ekspor per endpoint harus diuji |
-| Administrasi | `/pengaturan`, `/master-data`, `/admin/sinkronisasi` | IMPLEMENTED | SUPER_ADMIN; sinkronisasi juga LPSE_ADMIN |
-| Vendor pasar | `/vendor-pasar` | DEPRECATED | Proxy mengalihkan route; daftar akses kosong |
+| Modul                   | Route                                                | Status      | Bukti/catatan                                                                                       |
+| ----------------------- | ---------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------- |
+| Dashboard               | `/dashboard`                                         | IMPLEMENTED | Agregasi server `getDashboardData`; Chart.js; shared application shell                              |
+| Perencanaan             | `/perencanaan`                                       | IMPLEMENTED | `RencanaUmumPengadaan`, submit/edit, guard status                                                   |
+| Verifikasi              | `/verifikasi`                                        | IMPLEMENTED | Tiga tingkat: kepala unit, PPK/PPTK, PA/KPA; history tersimpan                                      |
+| SIRUP/RUP               | `/sirup-rup`                                         | IMPLEMENTED | CRUD/import dan status RUP                                                                          |
+| E-Purchasing            | `/e-purchasing`, `/katalog-v6-v5`                    | IMPLEMENTED | Workflow tahap produk sampai pembayaran pada RUP                                                    |
+| Pengadaan Langsung      | `/pengadaan-langsung`                                | IMPLEMENTED | Workflow sembilan tab untuk RUP ber-enum `PENGADAAN_LANGSUNG`; tidak mengonversi arsip `NON_TENDER` |
+| Tender/arsip Non-Tender | `/tender-non-tender`                                 | PARTIAL     | Workflow lama dipertahankan untuk Tender dan data historis Non-Tender                               |
+| Kontrak/SP              | `/kontrak-sp`                                        | IMPLEMENTED | Model `Kontrak` dan data kontrak/SP E-Purchasing tersedia sebagai jalur terpisah                    |
+| Realisasi               | `/realisasi-belanja`                                 | IMPLEMENTED | Model `RealisasiBelanja`; Dashboard RUP memakai `nilaiPembayaran` pada RUP                          |
+| Risiko                  | `/risiko-mitigasi`                                   | IMPLEMENTED | Model dan route tersedia                                                                            |
+| Notifikasi              | `/notifications`, API                                | IMPLEMENTED | Notifikasi internal; kelengkapan event lintas workflow NEEDS VERIFICATION                           |
+| Laporan/export          | `/laporan/*`, API laporan                            | IMPLEMENTED | Endpoint dan halaman tersedia; kontrol ekspor per endpoint harus diuji                              |
+| Administrasi            | `/pengaturan`, `/master-data`, `/admin/sinkronisasi` | IMPLEMENTED | SUPER_ADMIN; sinkronisasi juga LPSE_ADMIN                                                           |
+| Vendor pasar            | `/vendor-pasar`                                      | DEPRECATED  | Proxy mengalihkan route; daftar akses kosong                                                        |
 
 ## Dashboard
 
@@ -30,14 +31,14 @@ Dashboard adalah halaman biasa di dalam `ProtectedDashboardLayout -> DashboardSh
 
 ### KPI
 
-| KPI | Definisi dan sumber | Formula aktual | Empty state/update |
-|---|---|---|---|
-| Total Pagu RUP | `RencanaUmumPengadaan.pagu` | jumlah seluruh row dalam scope | Rp0 bila scope kosong; request dinamis |
-| Total Realisasi | `nilaiPembayaran` | jumlah pembayaran tersimpan | bukan nilai kontrak |
-| Nilai Kontrak | `hargaNegosiasiKatalog` pada row dengan bukti kontrak/SP | jumlah nilai final valid | tidak memakai pembayaran sebagai fallback |
-| Efisiensi | pasangan `pagu` dan `hargaNegosiasiKatalog` positif | `max(sum(pagu pasangan)-sum(nilai final),0)` | “Belum tersedia” jika tidak ada pasangan |
-| Paket Selesai | status akhir E-Purchasing | `statusTransaksiKatalog=SELESAI` atau `statusPembayaranEp=DIBAYAR` | distinct row RUP |
-| Paket Berisiko | revisi/kendala/gagal/batal tersimpan | jumlah row matching indikator | angka 0 berarti tidak ada indikator tercatat, bukan jaminan tanpa risiko |
+| KPI             | Definisi dan sumber                                      | Formula aktual                                                     | Empty state/update                                                       |
+| --------------- | -------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Total Pagu RUP  | `RencanaUmumPengadaan.pagu`                              | jumlah seluruh row dalam scope                                     | Rp0 bila scope kosong; request dinamis                                   |
+| Total Realisasi | `nilaiPembayaran`                                        | jumlah pembayaran tersimpan                                        | bukan nilai kontrak                                                      |
+| Nilai Kontrak   | `hargaNegosiasiKatalog` pada row dengan bukti kontrak/SP | jumlah nilai final valid                                           | tidak memakai pembayaran sebagai fallback                                |
+| Efisiensi       | pasangan `pagu` dan `hargaNegosiasiKatalog` positif      | `max(sum(pagu pasangan)-sum(nilai final),0)`                       | “Belum tersedia” jika tidak ada pasangan                                 |
+| Paket Selesai   | status akhir E-Purchasing                                | `statusTransaksiKatalog=SELESAI` atau `statusPembayaranEp=DIBAYAR` | distinct row RUP                                                         |
+| Paket Berisiko  | revisi/kendala/gagal/batal tersimpan                     | jumlah row matching indikator                                      | angka 0 berarti tidak ada indikator tercatat, bukan jaminan tanpa risiko |
 
 Scope default adalah tahun anggaran terbaru pada data. UI tidak lagi menawarkan filter tahun/sumber dana/unit. Data dibaca server-side dan route dinamis untuk menghindari cache agregasi lama.
 
@@ -67,3 +68,10 @@ Scope default adalah tahun anggaran terbaru pada data. UI tidak lagi menawarkan 
 ## Referensi
 
 [Business rules](BUSINESS_RULES.md) · [Workflow](WORKFLOW.md) · [Data dictionary](DATA_DICTIONARY.md) · [Architecture](SYSTEM_ARCHITECTURE.md) · [Testing](TESTING_STANDARD.md)
+
+## Vendor Management System (2026-10-22)
+
+- **PARTIAL:** route dashboard, Direktorat Penyedia, tambah/detail vendor, katalog, presentasi/trial, evaluasi, dan laporan tersedia di `/vendor-management`.
+- **IMPLEMENTED:** master vendor terpisah dari `Penyedia` legacy, NIB ternormalisasi/unik, kontak, kategori configurable, status onboarding dengan transition guard, status history, audit log, backend RBAC, pagination/search, dan relasi eksplisit ke `PaketPengadaan`.
+- **PARTIAL:** halaman baca produk/presentasi/evaluasi sudah database-backed; mutation lengkap, upload/download privat, export, scheduler notifikasi, portal vendor, dan browser/E2E masih perlu fase lanjutan.
+- VMS hanya dokumentasi/monitoring internal dan tidak menggantikan SPSE, SiRUP, SIKaP, e-Katalog, atau proses pemilihan resmi.

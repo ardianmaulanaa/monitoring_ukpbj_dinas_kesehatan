@@ -48,16 +48,22 @@ flowchart LR
 | Penyedia | identitas/kontak penyedia | kelengkapan tahap produk |
 | Negosiasi | penawaran, kesepakatan, status | nilai positif dan prerequisite |
 | Kontrak/SP | SPPBJ/SP/SPK/SPMK | bukti kontrak/SP tersimpan |
-| Pengiriman | status, rencana/aktual, surat jalan | prerequisite kontrak |
-| Pemeriksaan | uji fungsi/pemeriksaan/BAST | prerequisite pengiriman |
-| Pembayaran | status dokumen, status bayar, nilai, invoice/faktur/tanggal | prerequisite pemeriksaan |
+| Pengiriman | status, rencana/aktual, surat jalan, `catatanPengiriman` | prerequisite kontrak |
+| Pemeriksaan | uji fungsi/pemeriksaan/BAST, `catatanPemeriksaan` | prerequisite pengiriman |
+| Pembayaran | status dokumen, status bayar, nilai, invoice/faktur/tanggal, `catatanPembayaran` | prerequisite pemeriksaan |
 | Selesai | marker final | `SELESAI` atau `DIBAYAR` |
 
 Server action melakukan authentication, role check, Zod validation, eligibility, prerequisite/completeness, Prisma update, error mapping, dan `revalidatePath`. Reset tersedia tetapi tidak boleh dipakai untuk menghapus record produksi tanpa otorisasi proses.
 
+Catatan tiga tahap pelaksanaan disimpan independen. `catatanKatalog` tetap merupakan catatan negosiasi/legacy dan tidak digunakan sebagai fallback catatan Pengiriman, Pemeriksaan, atau Pembayaran karena asal catatan historis tidak dapat dipastikan.
+
 ## Tender/Non-Tender dan transaksi umum
 
 Route dan model umum (`PaketPengadaan`, `Kontrak`, `ProgresPaket`, `SerahTerima`, `RealisasiBelanja`) tersedia. State detail khusus Tender/Non-Tender belum setara dengan workflow E-Purchasing (**PARTIAL**); jangan mengarang transisi yang tidak ada di handler.
+
+## Pengadaan Langsung
+
+RUP dengan metode `PENGADAAN_LANGSUNG` diproses melalui Overview, Rincian Barang/Jasa, Penyedia, Penawaran & Negosiasi, Kontrak/SPK, Pengiriman/Pelaksanaan, Pemeriksaan, Pembayaran, dan Dokumen. Payload setiap tahap disimpan pada properti JSON terpisah di `PengadaanLangsungWorkflow`; catatan antar-tahap tidak berbagi state atau kolom. `NON_TENDER` tidak dianggap Pengadaan Langsung dan tetap menjadi klasifikasi historis. Tahap negosiasi dapat ditandai tidak berlaku.
 
 ## Current-stage Dashboard
 
@@ -72,3 +78,7 @@ Setiap RUP ditentukan satu kali ke tahap terjauh berdasarkan field tersimpan: se
 ## Cross references
 
 [Business rules](BUSINESS_RULES.md) · [Validation](VALIDATION_STANDARD.md) · [RBAC](RBAC_MATRIX.md) · [Diagram HTML](diagram-paket-pengadaan.html)
+
+## VMS onboarding
+
+Transisi yang diberlakukan server: `DRAFT -> PENDING_REVIEW`, `NEEDS_REVISION -> PENDING_REVIEW`, `PENDING_REVIEW -> NEEDS_REVISION|VERIFIED_INTERNAL`, dan status aktif dapat menuju `ARCHIVED` sesuai permission. Alasan wajib untuk `NEEDS_REVISION`; setiap transisi tersimpan pada status history dan audit log. `VERIFIED_INTERNAL` hanya pemeriksaan administratif internal.

@@ -37,6 +37,7 @@ SUPER_ADMIN bypasses route role rules. OPERATOR, PROCUREMENT_OFFICER, SELECTION_
 | PA/KPA approval | PA, KPA, SUPER_ADMIN | global by current helper |
 | Process RUP | UKPBJ, LPSE_ADMIN, SUPER_ADMIN | route mismatch noted |
 | E-Purchasing action | PPK, PROCUREMENT_OFFICER, SUPER_ADMIN | eligibility + workflow guard |
+| Pengadaan Langsung read/write | PPK, PROCUREMENT_OFFICER, SUPER_ADMIN | route + server role, method, and RUP ID guard |
 | Delete planning proposal | SUPER_ADMIN | server helper |
 | SIRUP sync | SUPER_ADMIN | server helper |
 
@@ -56,3 +57,13 @@ SUPER_ADMIN bypasses route role rules. OPERATOR, PROCUREMENT_OFFICER, SELECTION_
 5. Endpoint-by-endpoint RBAC is not covered by automated tests.
 
 These are findings, not silently approved business changes. Resolve through explicit access decisions and regression tests.
+
+## VMS permissions
+
+- `SUPER_ADMIN`: seluruh aksi VMS.
+- `UKPBJ`/`LPSE_ADMIN`: pengelolaan vendor/produk, verifikasi, penjadwalan, review, laporan; arsip hanya UKPBJ/SUPER_ADMIN.
+- `PPK`: baca, pengajuan/evaluasi teknis, evaluasi kinerja hingga finalisasi, laporan.
+- `PPTK`, `PROCUREMENT_OFFICER`, `SELECTION_WORKGROUP`: akses operasional terbatas sesuai `vendor-management.ts`.
+- `LEADER`, `PA`, `KPA`, `AUDITOR`, `VIEWER`: monitoring/read; export hanya role yang dipetakan eksplisit.
+
+API vendor yang baru memverifikasi JWT bertanda tangan dan permission di server; proxy/menu hanya defense-in-depth.

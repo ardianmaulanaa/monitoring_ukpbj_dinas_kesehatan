@@ -51,6 +51,12 @@ Known migrations:
 3. `20261004114500_add_status_usulan_workflow`
 4. `20261005043700_extend_e_purchasing_workflow`
 5. `20261011172000_extend_planning_approval_hierarchy`
+6. `20261020060000_separate_e_purchasing_notes`
+7. `20261020073000_add_pengadaan_langsung_workflow`
+
+Migrasi keenam menambah kolom nullable `catatan_pengiriman`, `catatan_pemeriksaan`, dan `catatan_pembayaran`. Migrasi tidak mengubah atau menyalin `catatan_katalog`, sehingga data historis tetap utuh dan tidak diklasifikasikan ke tahap yang belum diketahui asalnya.
+
+Migrasi ketujuh menambah tabel satu-ke-satu `pengadaan_langsung_workflow` yang mereferensikan RUP dan paket monitoring existing. Seluruh kolom tahap nullable dan tidak ada update/backfill terhadap `NON_TENDER`.
 
 Production changes require reviewed migration SQL, recent restorable backup, explicit approval, `prisma migrate deploy`, and post-deploy verification. Never run `migrate reset` or unreviewed `db push` in production.
 
@@ -68,3 +74,7 @@ Production changes require reviewed migration SQL, recent restorable backup, exp
 - No automated database aggregation test suite was found.
 
 See [Data dictionary](DATA_DICTIONARY.md), [Business rules](BUSINESS_RULES.md), and [System architecture](SYSTEM_ARCHITECTURE.md).
+
+## VMS migration
+
+Migration `20261022103000_add_vendor_management` bersifat additive: menambah enum status serta tabel `vendors`, kontak, dokumen, kategori/assignment, produk/attachment, presentasi/produk/hasil teknis, relasi paket, kriteria/evaluasi/skor, dan status history. Tidak ada tabel atau data lama yang dihapus. `VendorProcurementLink` mereferensikan `PaketPengadaan`; ia tidak menyalin atau mengubah nilai/status paket sumber.

@@ -27,6 +27,7 @@ const protectedPrefixes = [
   "/serah-terima",
   "/tender-non-tender",
   "/timeline",
+  "/vendor-management",
   "/risiko-mitigasi",
   "/admin",
 ];
@@ -135,6 +136,7 @@ export const config = {
     "/serah-terima/:path*",
     "/tender-non-tender/:path*",
     "/timeline/:path*",
+    "/vendor-management/:path*",
     "/risiko-mitigasi/:path*",
     "/admin/:path*",
   ],

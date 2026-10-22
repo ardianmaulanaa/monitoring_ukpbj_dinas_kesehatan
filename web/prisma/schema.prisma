@@ -181,6 +181,43 @@ enum LaporanStatus {
   ARSIP
 }
 
+enum VendorProfileStatus {
+  DRAFT
+  PENDING_REVIEW
+  NEEDS_REVISION
+  VERIFIED_INTERNAL
+  ARCHIVED
+}
+
+enum VendorPresentationType {
+  PRESENTATION
+  DEMO
+  TRIAL
+  TECHNICAL_TEST
+}
+
+enum VendorPresentationStatus {
+  SUBMITTED
+  SCHEDULED
+  RESCHEDULE_REQUESTED
+  COMPLETED
+  CANCELLED
+}
+
+enum VendorTechnicalResult {
+  SESUAI_DENGAN_CATATAN
+  SESUAI
+  BELUM_SESUAI
+  PERLU_UJI_LANJUT
+}
+
+enum VendorEvaluationStatus {
+  DRAFT
+  IN_REVIEW
+  FINAL
+  CORRECTED
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Char(36)
   name         String     @db.VarChar(160)
@@ -196,8 +233,11 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  roles     UserRole[]
-  auditLogs AuditLog[]
+  roles                      UserRole[]
+  auditLogs                  AuditLog[]
+  vendorStatusChanges        VendorStatusHistory[]
+  vendorEvaluationsCreated   VendorPerformanceEvaluation[] @relation("VendorEvaluationCreator")
+  vendorEvaluationsFinalized VendorPerformanceEvaluation[] @relation("VendorEvaluationFinalizer")
 
   @@index([name])
   @@index([status])
@@ -301,13 +341,15 @@ model PaketPengadaan {
   createdAt          DateTime             @default(now()) @map("created_at")
   updatedAt          DateTime             @updatedAt @map("updated_at")
 
-  risikoMitigasi RisikoMitigasi[]
-  realisasi      RealisasiBelanja[]
-  progres        ProgresPaket[]
-  serahTerima    SerahTerima[]
-  timelineEvents TimelineEvent[]
-  auditDokumen   AuditChecklist[]
+  risikoMitigasi    RisikoMitigasi[]
+  realisasi         RealisasiBelanja[]
+  progres           ProgresPaket[]
+  serahTerima       SerahTerima[]
+  timelineEvents    TimelineEvent[]
+  auditDokumen      AuditChecklist[]
   pengadaanLangsung PengadaanLangsungWorkflow?
+  vendorLinks       VendorProcurementLink[]
+  vendorEvaluations VendorPerformanceEvaluation[]
 
   @@index([namaPaket])
   @@index([unitPemohon])
@@ -480,7 +522,7 @@ model RencanaUmumPengadaan {
   updatedAt                DateTime             @updatedAt @map("updated_at")
 
   verificationHistory UsulanVerificationHistory[]
-  pengadaanLangsung    PengadaanLangsungWorkflow?
+  pengadaanLangsung   PengadaanLangsungWorkflow?
 
   @@index([namaPaket])
   @@index([unitPengusul])
@@ -570,6 +612,343 @@ model Penyedia {
   @@index([nama])
   @@index([status])
   @@map("penyedia")
+}
+
+model VendorCategory {
+  id          String   @id @default(uuid()) @db.Char(36)
+  code        String   @unique @db.VarChar(60)
+  name        String   @unique @db.VarChar(120)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  assignments VendorCategoryAssignment[]
+  products    VendorProduct[]
+
+  @@index([active])
+  @@map("vendor_categories")
+}
+
+model Vendor {
+  id                  String              @id @default(uuid()) @db.Char(36)
+  companyName         String              @map("company_name") @db.VarChar(180)
+  businessEntityType  String              @map("business_entity_type") @db.VarChar(80)
+  nib                 String              @db.VarChar(40)
+  nibNormalized       String              @unique @map("nib_normalized") @db.VarChar(40)
+  npwp                String?             @db.VarChar(40)
+  npwpNormalized      String?             @map("npwp_normalized") @db.VarChar(40)
+  address             String              @db.Text
+  province            String              @db.VarChar(120)
+  city                String              @db.VarChar(120)
+  website             String?             @db.VarChar(255)
+  businessDescription String?             @map("business_description") @db.Text
+  status              VendorProfileStatus @default(DRAFT)
+  revisionNote        String?             @map("revision_note") @db.Text
+  verifiedAt          DateTime?           @map("verified_at")
+  verifiedById        String?             @map("verified_by_id") @db.Char(36)
+  archivedAt          DateTime?           @map("archived_at")
+  createdById         String              @map("created_by_id") @db.Char(36)
+  updatedById         String              @map("updated_by_id") @db.Char(36)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  contacts         VendorContact[]
+  documents        VendorDocument[]
+  categories       VendorCategoryAssignment[]
+  products         VendorProduct[]
+  productOfferings VendorProductVendor[]
+  presentations    VendorPresentation[]
+  procurementLinks VendorProcurementLink[]
+  evaluations      VendorPerformanceEvaluation[]
+  statusHistory    VendorStatusHistory[]
+
+  @@index([companyName])
+  @@index([npwpNormalized])
+  @@index([status])
+  @@index([updatedAt])
+  @@map("vendors")
+}
+
+model VendorContact {
+  id        String   @id @default(uuid()) @db.Char(36)
+  vendorId  String   @map("vendor_id") @db.Char(36)
+  name      String   @db.VarChar(160)
+  position  String   @db.VarChar(120)
+  phone     String   @db.VarChar(40)
+  email     String   @db.VarChar(180)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([email])
+  @@map("vendor_contacts")
+}
+
+model VendorDocument {
+  id           String    @id @default(uuid()) @db.Char(36)
+  vendorId     String    @map("vendor_id") @db.Char(36)
+  type         String    @db.VarChar(80)
+  number       String?   @db.VarChar(100)
+  issuedAt     DateTime? @map("issued_at") @db.Date
+  expiresAt    DateTime? @map("expires_at") @db.Date
+  description  String?   @db.Text
+  originalName String    @map("original_name") @db.VarChar(255)
+  storageKey   String    @unique @map("storage_key") @db.VarChar(255)
+  mimeType     String    @map("mime_type") @db.VarChar(120)
+  sizeBytes    Int       @map("size_bytes")
+  archivedAt   DateTime? @map("archived_at")
+  uploadedById String    @map("uploaded_by_id") @db.Char(36)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([type])
+  @@index([expiresAt])
+  @@map("vendor_documents")
+}
+
+model VendorCategoryAssignment {
+  id         String   @id @default(uuid()) @db.Char(36)
+  vendorId   String   @map("vendor_id") @db.Char(36)
+  categoryId String   @map("category_id") @db.Char(36)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  vendor   Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category VendorCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, categoryId])
+  @@index([categoryId])
+  @@map("vendor_category_assignments")
+}
+
+model VendorProduct {
+  id              String    @id @default(uuid()) @db.Char(36)
+  vendorId        String    @map("vendor_id") @db.Char(36)
+  categoryId      String?   @map("category_id") @db.Char(36)
+  name            String    @db.VarChar(180)
+  brand           String?   @db.VarChar(120)
+  model           String?   @db.VarChar(120)
+  description     String?   @db.Text
+  specification   String    @db.Text
+  unit            String    @db.VarChar(40)
+  indicativePrice Decimal?  @map("indicative_price") @db.Decimal(18, 2)
+  currency        String    @default("IDR") @db.VarChar(3)
+  offerValidUntil DateTime? @map("offer_valid_until") @db.Date
+  warranty        String?   @db.Text
+  afterSales      String?   @map("after_sales") @db.Text
+  archivedAt      DateTime? @map("archived_at")
+  createdById     String    @map("created_by_id") @db.Char(36)
+  updatedById     String    @map("updated_by_id") @db.Char(36)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  vendor        Vendor                      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category      VendorCategory?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  attachments   VendorProductAttachment[]
+  presentations VendorPresentationProduct[]
+  vendorLinks   VendorProductVendor[]
+
+  @@index([vendorId])
+  @@index([categoryId])
+  @@index([name])
+  @@map("vendor_products")
+}
+
+model VendorProductVendor {
+  id          String   @id @default(uuid()) @db.Char(36)
+  vendorId    String   @map("vendor_id") @db.Char(36)
+  productId   String   @map("product_id") @db.Char(36)
+  createdById String   @map("created_by_id") @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  vendor  Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  product VendorProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, productId])
+  @@index([vendorId])
+  @@index([productId])
+  @@map("vendor_product_vendors")
+}
+
+model VendorProductAttachment {
+  id           String   @id @default(uuid()) @db.Char(36)
+  productId    String   @map("product_id") @db.Char(36)
+  type         String   @db.VarChar(60)
+  originalName String   @map("original_name") @db.VarChar(255)
+  storageKey   String   @unique @map("storage_key") @db.VarChar(255)
+  mimeType     String   @map("mime_type") @db.VarChar(120)
+  sizeBytes    Int      @map("size_bytes")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  product VendorProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("vendor_product_attachments")
+}
+
+model VendorPresentation {
+  id                   String                   @id @default(uuid()) @db.Char(36)
+  vendorId             String                   @map("vendor_id") @db.Char(36)
+  type                 VendorPresentationType
+  title                String                   @db.VarChar(180)
+  purpose              String                   @db.Text
+  proposedAt           DateTime                 @map("proposed_at")
+  scheduledAt          DateTime?                @map("scheduled_at")
+  location             String                   @db.VarChar(180)
+  agenda               String?                  @db.Text
+  notes                String?                  @db.Text
+  requesterUnit        String?                  @map("requester_unit") @db.VarChar(160)
+  involvedTeam         String?                  @map("involved_team") @db.Text
+  participants         String?                  @db.Text
+  status               VendorPresentationStatus @default(SUBMITTED)
+  scheduleChangeReason String?                  @map("schedule_change_reason") @db.Text
+  createdById          String                   @map("created_by_id") @db.Char(36)
+  updatedById          String                   @map("updated_by_id") @db.Char(36)
+  createdAt            DateTime                 @default(now()) @map("created_at")
+  updatedAt            DateTime                 @updatedAt @map("updated_at")
+
+  vendor              Vendor                      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  products            VendorPresentationProduct[]
+  technicalEvaluation VendorTechnicalEvaluation?
+
+  @@index([vendorId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("vendor_presentations")
+}
+
+model VendorPresentationProduct {
+  id             String @id @default(uuid()) @db.Char(36)
+  presentationId String @map("presentation_id") @db.Char(36)
+  productId      String @map("product_id") @db.Char(36)
+
+  presentation VendorPresentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  product      VendorProduct      @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([presentationId, productId])
+  @@index([productId])
+  @@map("vendor_presentation_products")
+}
+
+model VendorTechnicalEvaluation {
+  id                  String                @id @default(uuid()) @db.Char(36)
+  presentationId      String                @unique @map("presentation_id") @db.Char(36)
+  specificationMatch  String                @map("specification_match") @db.Text
+  demonstrationResult String                @map("demonstration_result") @db.Text
+  functionTestResult  String?               @map("function_test_result") @db.Text
+  strengthsLimits     String?               @map("strengths_limits") @db.Text
+  safetyNotes         String?               @map("safety_notes") @db.Text
+  conclusion          String                @db.Text
+  followUp            String?               @map("follow_up") @db.Text
+  result              VendorTechnicalResult
+  evaluatorId         String                @map("evaluator_id") @db.Char(36)
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  presentation VendorPresentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+
+  @@index([result])
+  @@map("vendor_technical_evaluations")
+}
+
+model VendorProcurementLink {
+  id           String   @id @default(uuid()) @db.Char(36)
+  vendorId     String   @map("vendor_id") @db.Char(36)
+  packageId    String   @map("package_id") @db.Char(36)
+  role         String   @default("CONTRACTED_VENDOR") @db.VarChar(80)
+  sourceModule String   @map("source_module") @db.VarChar(80)
+  notes        String?  @db.Text
+  createdById  String   @map("created_by_id") @db.Char(36)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  vendor  Vendor         @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  package PaketPengadaan @relation(fields: [packageId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, packageId, role])
+  @@index([packageId])
+  @@map("vendor_procurement_links")
+}
+
+model VendorPerformanceCriterion {
+  id          String   @id @default(uuid()) @db.Char(36)
+  code        String   @unique @db.VarChar(60)
+  name        String   @db.VarChar(160)
+  description String?  @db.Text
+  weight      Decimal  @db.Decimal(5, 2)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  scores VendorPerformanceScore[]
+
+  @@index([active])
+  @@map("vendor_performance_criteria")
+}
+
+model VendorPerformanceEvaluation {
+  id             String                 @id @default(uuid()) @db.Char(36)
+  vendorId       String                 @map("vendor_id") @db.Char(36)
+  packageId      String?                @map("package_id") @db.Char(36)
+  status         VendorEvaluationStatus @default(DRAFT)
+  period         String?                @db.VarChar(80)
+  summary        String?                @db.Text
+  correctionNote String?                @map("correction_note") @db.Text
+  createdById    String                 @map("created_by_id") @db.Char(36)
+  finalizedById  String?                @map("finalized_by_id") @db.Char(36)
+  finalizedAt    DateTime?              @map("finalized_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  vendor      Vendor                   @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  package     PaketPengadaan?          @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  createdBy   User                     @relation("VendorEvaluationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  finalizedBy User?                    @relation("VendorEvaluationFinalizer", fields: [finalizedById], references: [id], onDelete: Restrict)
+  scores      VendorPerformanceScore[]
+
+  @@index([vendorId])
+  @@index([packageId])
+  @@index([status])
+  @@map("vendor_performance_evaluations")
+}
+
+model VendorPerformanceScore {
+  id           String  @id @default(uuid()) @db.Char(36)
+  evaluationId String  @map("evaluation_id") @db.Char(36)
+  criterionId  String  @map("criterion_id") @db.Char(36)
+  score        Decimal @db.Decimal(5, 2)
+  notes        String? @db.Text
+
+  evaluation VendorPerformanceEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  criterion  VendorPerformanceCriterion  @relation(fields: [criterionId], references: [id], onDelete: Restrict)
+
+  @@unique([evaluationId, criterionId])
+  @@index([criterionId])
+  @@map("vendor_performance_scores")
+}
+
+model VendorStatusHistory {
+  id         String               @id @default(uuid()) @db.Char(36)
+  vendorId   String               @map("vendor_id") @db.Char(36)
+  actorId    String               @map("actor_id") @db.Char(36)
+  fromStatus VendorProfileStatus? @map("from_status")
+  toStatus   VendorProfileStatus  @map("to_status")
+  note       String?              @db.Text
+  createdAt  DateTime             @default(now()) @map("created_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  actor  User   @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([vendorId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("vendor_status_history")
 }
 
 model RealisasiBelanja {
