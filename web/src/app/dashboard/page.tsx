@@ -20,6 +20,8 @@ import type {
   DashboardFilters,
 } from "@/lib/dashboard-data";
 
+export const dynamic = "force-dynamic";
+
 function parseFilters(params: Record<string, string | string[] | undefined>) {
   const value = (key: string) =>
     Array.isArray(params[key]) ? params[key]?.[0] : params[key];
@@ -139,9 +141,10 @@ export default async function Page({
   );
   const { summary, efficiency, procurementSummary } = dashboard;
   const stageGroups = [
-    { label: "Perencanaan", keys: ["planning", "rup"] },
-    { label: "Verifikasi / Persiapan", keys: ["verification"] },
-    { label: "Pemilihan", keys: ["selection"] },
+    {
+      label: "Perencanaan",
+      keys: ["planning", "verification", "rup", "selection"],
+    },
     { label: "Kontrak", keys: ["contract"] },
     { label: "Pelaksanaan", keys: ["delivery", "bast", "payment"] },
     { label: "Selesai", keys: ["done"] },

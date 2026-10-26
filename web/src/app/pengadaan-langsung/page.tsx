@@ -3,6 +3,10 @@ import { CircleDollarSign, Landmark } from "lucide-react";
 import AppHeader from "@/components/appheader/AppHeader";
 import ExportExcelButton from "@/components/button/shared/ExportExcelButton";
 import { formatCurrency } from "@/lib/currency";
+import {
+  getPengadaanLangsungProgress,
+  getPengadaanLangsungStatus,
+} from "@/lib/pengadaan-langsung-status";
 import { prisma } from "@/lib/prisma";
 import PengadaanLangsungClient from "./PengadaanLangsungClient";
 
@@ -26,15 +30,6 @@ type ProcurementStatus =
   | "REVISI"
   | "DIBATALKAN";
 
-const stageKeys = [
-  "rincian",
-  "penyedia",
-  "negosiasi",
-  "kontrak",
-  "pengiriman",
-  "pemeriksaan",
-  "pembayaran",
-] as const;
 const statusLabels: Record<ProcurementStatus, string> = {
   SIAP: "Siap Diproses",
   PROSES: "Dalam Proses",
@@ -53,11 +48,6 @@ const statusStyles: Record<ProcurementStatus, string> = {
 function param(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
-function object(value: unknown) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
 function compactCurrency(value: number) {
   if (value >= 1_000_000_000)
     return `Rp ${(value / 1_000_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`;
@@ -66,31 +56,10 @@ function compactCurrency(value: number) {
   return formatCurrency(value);
 }
 function workflowStatus(workflow: Workflow | null): ProcurementStatus {
-  if (!workflow) return "SIAP";
-  const values = stageKeys.map((key) => object(workflow[key]));
-  const searchable = JSON.stringify(values).toLowerCase();
-  if (/dibatalkan|batal/.test(searchable)) return "DIBATALKAN";
-  if (/perlu revisi|revisi/.test(searchable)) return "REVISI";
-  const completed = values.filter(
-    (value) => Object.keys(value).length > 0,
-  ).length;
-  const payment = object(workflow.pembayaran);
-  const paymentStatus = String(payment.statusPembayaran ?? "").toLowerCase();
-  if (
-    completed === stageKeys.length &&
-    /(selesai|lunas|dibayar)/.test(paymentStatus)
-  )
-    return "SELESAI";
-  return completed > 0 ? "PROSES" : "SIAP";
+  return getPengadaanLangsungStatus(workflow);
 }
 function progress(workflow: Workflow | null) {
-  if (!workflow) return 0;
-  return Math.round(
-    (stageKeys.filter((key) => Object.keys(object(workflow[key])).length > 0)
-      .length /
-      stageKeys.length) *
-      100,
-  );
+  return getPengadaanLangsungProgress(workflow);
 }
 export default async function Page({ searchParams }: Props) {
   const query = await searchParams;

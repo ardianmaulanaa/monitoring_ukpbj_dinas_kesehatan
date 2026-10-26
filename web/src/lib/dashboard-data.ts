@@ -1,4 +1,9 @@
 import type { PaketMetodePengadaan, Prisma } from "@prisma/client";
+import {
+  getPengadaanLangsungStatus,
+  isPengadaanLangsungComplete,
+  jsonObject,
+} from "@/lib/pengadaan-langsung-status";
 import { prisma } from "@/lib/prisma";
 
 export type DashboardFilters = {
@@ -204,7 +209,9 @@ const procurementStages = [
   { key: "done", label: "Selesai", tone: "done", color: "bg-slate-700" },
 ] as const;
 
-type RupRow = Prisma.RencanaUmumPengadaanGetPayload<Record<string, never>>;
+type RupRow = Prisma.RencanaUmumPengadaanGetPayload<{
+  include: { pengadaanLangsung: true };
+}>;
 
 function toNumber(value: unknown) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -253,10 +260,21 @@ function validAmount(value: unknown) {
 }
 
 function getNegotiatedFinalValue(row: RupRow) {
+  if (row.metodePengadaan === "PENGADAAN_LANGSUNG") {
+    return validAmount(jsonObject(row.pengadaanLangsung?.negosiasi).hargaNegosiasi);
+  }
   return validAmount(row.hargaNegosiasiKatalog);
 }
 
 function hasContractRecord(row: RupRow) {
+  if (row.metodePengadaan === "PENGADAAN_LANGSUNG") {
+    const contract = jsonObject(row.pengadaanLangsung?.kontrak);
+    return Boolean(
+      isFilled(String(contract.nomorDokumen ?? "")) ||
+        isFilled(String(contract.tanggalDokumen ?? "")) ||
+        isFilled(String(contract.status ?? "")),
+    );
+  }
   return (
     isFilled(row.nomorSpkKontrak) ||
     isFilled(row.tanggalKontrakEp) ||
@@ -270,7 +288,32 @@ function getContractValue(row: RupRow) {
   // Schema belum memiliki field nilai kontrak tersendiri. Business rules
   // menetapkan harga negosiasi sebagai nilai final kontrak/SP, tetapi nilai
   // baru dikategorikan sebagai kontrak ketika bukti kontrak/SP sudah ada.
-  return hasContractRecord(row) ? getNegotiatedFinalValue(row) : null;
+  if (!hasContractRecord(row)) return null;
+  if (row.metodePengadaan === "PENGADAAN_LANGSUNG") {
+    return validAmount(jsonObject(row.pengadaanLangsung?.kontrak).nilaiKontrak);
+  }
+  return getNegotiatedFinalValue(row);
+}
+
+function getRealizationValue(row: RupRow) {
+  if (row.metodePengadaan === "PENGADAAN_LANGSUNG") {
+    return toNumber(jsonObject(row.pengadaanLangsung?.pembayaran).nilai);
+  }
+  return toNumber(row.nilaiPembayaran);
+}
+
+function getContractDate(row: RupRow) {
+  if (row.metodePengadaan === "PENGADAAN_LANGSUNG") {
+    return parseLooseDate(String(jsonObject(row.pengadaanLangsung?.kontrak).tanggalDokumen ?? ""));
+  }
+  return parseLooseDate(row.tanggalKontrakEp ?? row.tanggalSuratPesanan);
+}
+
+function getPaymentDate(row: RupRow) {
+  if (row.metodePengadaan === "PENGADAAN_LANGSUNG") {
+    return parseLooseDate(String(jsonObject(row.pengadaanLangsung?.pembayaran).tanggal ?? ""));
+  }
+  return parseLooseDate(row.tanggalPembayaranEp);
 }
 
 function parseLooseDate(value?: string | Date | null) {
@@ -313,6 +356,27 @@ function formatDateLabel(value: Date) {
 }
 
 function getProcurementStage(row: RupRow): (typeof procurementStages)[number]["key"] {
+  if (row.metodePengadaan === "PENGADAAN_LANGSUNG" && row.pengadaanLangsung) {
+    if (isPengadaanLangsungComplete(row.pengadaanLangsung)) return "done";
+
+    switch (normalizeText(row.pengadaanLangsung.tahapAktif)) {
+      case "PEMBAYARAN":
+        return "payment";
+      case "PEMERIKSAAN":
+        return "bast";
+      case "PENGIRIMAN":
+        return "delivery";
+      case "KONTRAK":
+        return "contract";
+      case "PENYEDIA":
+      case "NEGOSIASI":
+        return "selection";
+      case "RINCIAN":
+      default:
+        return "rup";
+    }
+  }
+
   if (
     textIncludes(row.statusTransaksiKatalog, ["SELESAI"]) ||
     textIncludes(row.statusPembayaranEp, ["DIBAYAR"])
@@ -707,14 +771,14 @@ function buildMonthlyFinancials(rows: RupRow[]) {
     const paguDate = row.createdAt ?? row.updatedAt;
     values[paguDate.getMonth()].pagu += toNumber(row.pagu);
 
-    const contractDate = parseLooseDate(row.tanggalKontrakEp ?? row.tanggalSuratPesanan);
+    const contractDate = getContractDate(row);
     if (contractDate && contractDate.getFullYear() === row.tahunAnggaran) {
       values[contractDate.getMonth()].kontrak += getContractValue(row) ?? 0;
     }
 
-    const paymentDate = parseLooseDate(row.tanggalPembayaranEp);
+    const paymentDate = getPaymentDate(row);
     if (paymentDate && paymentDate.getFullYear() === row.tahunAnggaran) {
-      values[paymentDate.getMonth()].realisasi += toNumber(row.nilaiPembayaran);
+      values[paymentDate.getMonth()].realisasi += getRealizationValue(row);
     }
   }
 
@@ -775,7 +839,7 @@ function buildRecentPackages(rows: RupRow[]): DashboardRecentPackage[] {
     budget: toNumber(row.pagu),
     absorptionPercent:
       toNumber(row.pagu) > 0
-        ? Number(((toNumber(row.nilaiPembayaran) / toNumber(row.pagu)) * 100).toFixed(1))
+        ? Number(((getRealizationValue(row) / toNumber(row.pagu)) * 100).toFixed(1))
         : null,
     status:
       procurementStages.find((item) => item.key === getProcurementStage(row))?.label ??
@@ -1064,6 +1128,7 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
     getFilterOptions(),
     prisma.rencanaUmumPengadaan.findMany({
       where,
+      include: { pengadaanLangsung: true },
       orderBy: { updatedAt: "desc" },
     }),
   ]);
@@ -1078,7 +1143,7 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
     0,
   );
   const totalRealisasi = rows.reduce(
-    (sum, row) => sum + toNumber(row.nilaiPembayaran),
+    (sum, row) => sum + getRealizationValue(row),
     0,
   );
   const stages = buildStages(rows);
@@ -1087,6 +1152,7 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
     rows,
     (row) =>
       row.statusUsulan === "PERLU_REVISI" ||
+      ["REVISI", "DIBATALKAN"].includes(getPengadaanLangsungStatus(row.pengadaanLangsung)) ||
       textIncludes(row.kendala, ["TERLAMBAT", "GAGAL", "BATAL", "KENDALA"]) ||
       textIncludes(row.statusTransaksiKatalog, ["GAGAL", "BATAL"]),
   );
@@ -1172,7 +1238,7 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
     sourceRealizations: buildValueBreakdown(
       rows,
       (row) => row.sumberDana,
-      (row) => toNumber(row.nilaiPembayaran),
+      getRealizationValue,
     ),
     methods: buildBreakdown(
       rows,
@@ -1206,6 +1272,7 @@ async function computeDashboardData(filters: DashboardFilters = {}): Promise<Das
         rows,
         (row) =>
           textIncludes(row.kendala, ["GAGAL", "BATAL"]) ||
+          getPengadaanLangsungStatus(row.pengadaanLangsung) === "DIBATALKAN" ||
           textIncludes(row.statusTransaksiKatalog, ["GAGAL", "BATAL"]),
       ),
     },
