@@ -26,7 +26,22 @@ export function jsonObject(value: unknown) {
 }
 
 function normalized(value: unknown) {
-  return String(value ?? "").trim().toUpperCase();
+  return String(value ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+const finalPaymentStatuses = new Set([
+  "DIBAYAR",
+  "SUDAH_DIBAYAR",
+  "LUNAS",
+  "SELESAI",
+]);
+
+export function isFinalPaymentStatus(value: unknown) {
+  return finalPaymentStatuses.has(normalized(value));
 }
 
 export function isPengadaanLangsungComplete(
@@ -38,9 +53,7 @@ export function isPengadaanLangsungComplete(
     (key) => Object.keys(jsonObject(workflow[key])).length > 0,
   );
   const payment = jsonObject(workflow.pembayaran);
-  const paymentFinished = ["DIBAYAR", "LUNAS", "SELESAI"].includes(
-    normalized(payment.statusPembayaran),
-  );
+  const paymentFinished = isFinalPaymentStatus(payment.statusPembayaran);
 
   // Progress 100% hanya menunjukkan tujuh form pernah disimpan. Status akhir
   // pembayaran tetap wajib agar paket sah dikategorikan selesai.

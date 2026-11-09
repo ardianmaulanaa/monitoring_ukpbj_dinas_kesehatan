@@ -1,9 +1,12 @@
 import { Prisma, type PaketMetodePengadaan } from "@prisma/client";
 import {
   getPengadaanLangsungStatus,
-  isPengadaanLangsungComplete,
   jsonObject,
 } from "@/lib/pengadaan-langsung-status";
+import {
+  calculateProcurementKpis,
+  isProcurementComplete,
+} from "@/lib/procurement-completion";
 import { prisma } from "@/lib/prisma";
 import { calculatePercentage } from "@/lib/percentage";
 
@@ -588,7 +591,7 @@ function getProcurementStage(
   row: RupRow,
 ): (typeof procurementStages)[number]["key"] {
   if (row.metodePengadaan === "PENGADAAN_LANGSUNG" && row.pengadaanLangsung) {
-    if (isPengadaanLangsungComplete(row.pengadaanLangsung)) return "done";
+    if (isProcurementComplete(row)) return "done";
 
     switch (normalizeText(row.pengadaanLangsung.tahapAktif)) {
       case "PEMBAYARAN":
@@ -608,10 +611,7 @@ function getProcurementStage(
     }
   }
 
-  if (
-    textIncludes(row.statusTransaksiKatalog, ["SELESAI"]) ||
-    textIncludes(row.statusPembayaranEp, ["DIBAYAR"])
-  ) {
+  if (isProcurementComplete(row)) {
     return "done";
   }
 
@@ -1425,17 +1425,9 @@ async function computeDashboardData(
     0,
   );
   const stages = buildStages(rows);
-  const paketSelesai = stages.find((stage) => stage.key === "done")?.count ?? 0;
-  const paketBermasalah = countRows(
-    rows,
-    (row) =>
-      row.statusUsulan === "PERLU_REVISI" ||
-      ["REVISI", "DIBATALKAN"].includes(
-        getPengadaanLangsungStatus(row.pengadaanLangsung),
-      ) ||
-      textIncludes(row.kendala, ["TERLAMBAT", "GAGAL", "BATAL", "KENDALA"]) ||
-      textIncludes(row.statusTransaksiKatalog, ["GAGAL", "BATAL"]),
-  );
+  const procurementKpis = calculateProcurementKpis(rows);
+  const paketSelesai = procurementKpis.completedPackages;
+  const paketBermasalah = procurementKpis.riskyPackages;
   const monthlyFinancials = buildMonthlyFinancials(rows);
   const attentionItems = buildAttentionItems(rows);
   const deadlines = buildDeadlines(rows);

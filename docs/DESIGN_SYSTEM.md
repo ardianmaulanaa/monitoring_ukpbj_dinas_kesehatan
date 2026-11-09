@@ -34,8 +34,9 @@ Nine-stage workflow tab bars use a local `overflow-x-auto` container with non-sh
 1. AppHeader shared.
 2. Monthly package histogram card.
 3. Six KPI cards.
-4. Analytics grid: funding donut, monthly cumulative trend, current-stage donut.
-5. Funding and procurement summary cards.
+4. Negotiation analysis: four metrics, paired horizontal bars, method breakdown, and explicit empty/exclusion state.
+5. Analytics grid: funding donut, monthly cumulative trend, current-stage donut.
+6. Funding and procurement summary cards.
 
 The former hero and Dashboard filter bar are no longer rendered. Data scope uses backend defaults.
 
@@ -49,7 +50,11 @@ The former hero and Dashboard filter bar are no longer rendered. Data scope uses
 
 ### KPI cards
 
-Uniform white cards with label, small icon, large value, helper, and progress only when a valid denominator exists. Risk uses red accent only where semantically relevant. Currency display may be compact; tooltip/detail must preserve meaning.
+Uniform white cards with label, small icon, large value, helper, percentage text, and an 8-10px rounded progress bar. Percentages use 20-24px semibold/bold type but remain subordinate to the primary value. A zero denominator renders `0%` and an empty bar. Risk and failed/cancelled states use red only where semantically relevant. Currency display may be compact; tooltip/detail must preserve meaning.
+
+### Negotiation analysis
+
+The full-width negotiation card follows the Dashboard surface tokens. The initial bar is the 100% slate baseline; the final bar uses primary green and visually clamps at 100% while its textual ratio remains actual. Signed increases use danger red and explicit “kenaikan” wording. No valid pair renders an informative empty state, never a misleading zero efficiency.
 
 ## Other components
 

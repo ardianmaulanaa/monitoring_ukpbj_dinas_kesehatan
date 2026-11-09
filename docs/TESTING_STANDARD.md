@@ -31,7 +31,15 @@
 - Trend pagu uses RUP pagu/input date; realization uses payment value/payment date.
 - Cumulative Oct/Nov/Dec equality renders horizontal; Chart.js datasets have `tension: 0`; exact tooltip value.
 - Current-stage chart counts each RUP once.
+- Pengadaan Langsung memakai `tahapAktif`, bukan label umum "Dalam Proses"; `KONTRAK` masuk Kontrak dan tahap pengiriman sampai pembayaran masuk Pelaksanaan.
+- Pengadaan Langsung dengan tujuh payload tetapi status pembayaran belum final tidak masuk Selesai; nilai kontrak/realisasi berasal dari payload aktual.
+- Relasi RUP -> Pengadaan Langsung -> PaketPengadaan tidak menambah count atau pagu kedua.
 - Empty states render for no data; no canvas clipping/overflow.
+- Seluruh 13 kartu target menampilkan label persentase dan progress bar; denominator nol menghasilkan `0%`, bukan `NaN`/`Infinity`.
+- Risiko dan gagal/batal diuji dengan fixture terpisah; revisi/kendala tanpa gagal/batal hanya menambah KPI risiko.
+- Kontribusi sumber dana dan metode, realisasi sumber dana, serta penyelesaian metode cocok dengan agregasi backend dan tidak menghitung relasi anak sebagai paket baru.
+- Analisis negosiasi menghitung satu pasangan per RUP: status E-Purchasing belum `SELESAI`, tahap Pengadaan Langsung belum melewati negosiasi, `berlaku=false`, nilai nol/null, dan workflow legacy tidak lengkap masuk daftar eksklusi.
+- Total awal/final, selisih bertanda, rasio final, dan efisiensi negosiasi diuji untuk penghematan, nilai sama, kenaikan final, denominator nol, Decimal, filter aktif, serta tidak mencampur nilai kontrak/pagu.
 - Check 375, 503, 768, 1024, 1280, and 1440 px with authenticated browser.
 
 ## RBAC tests

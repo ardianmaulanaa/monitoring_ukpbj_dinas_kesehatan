@@ -27,7 +27,7 @@ SIMUKPBJ memonitor perencanaan dan pelaksanaan pengadaan Laboratorium Kesehatan 
 
 ## Dashboard
 
-Dashboard adalah halaman biasa di dalam `ProtectedDashboardLayout -> DashboardShell`; tidak boleh membuat Sidebar atau AppHeader kedua. UI aktual memakai tema putih-hijau. Bar filter dashboard telah dihapus; query parameter lama masih dapat diproses server dan default memilih tahun terbaru. Urutan konten: histogram paket bulanan, enam KPI, tiga grafik analitik, dan ringkasan sumber dana/pelaksanaan.
+Dashboard adalah halaman biasa di dalam `ProtectedDashboardLayout -> DashboardShell`; tidak boleh membuat Sidebar atau AppHeader kedua. UI aktual memakai tema putih-hijau. Bar filter dashboard telah dihapus; query parameter lama masih dapat diproses server dan default memilih tahun terbaru. Urutan konten: histogram paket bulanan, enam KPI, analisis negosiasi, tiga grafik analitik, dan ringkasan sumber dana/pelaksanaan.
 
 ### KPI
 
@@ -49,6 +49,8 @@ Scope default adalah tahun anggaran terbaru pada data. UI tidak lagi menawarkan 
 - **Tren pagu/realisasi (IMPLEMENTED):** pagu bulanan menurut `createdAt`; realisasi menurut tanggal valid `tanggalPembayaranEp`; keduanya dikumulatifkan Jan-Des. Chart.js memakai garis linear (`tension: 0`) agar tidak terjadi spline overshoot; tooltip menampilkan Rupiah penuh.
 - **Distribusi tahap (IMPLEMENTED):** satu current stage per row RUP, lalu dipetakan ke Perencanaan, Verifikasi/Persiapan, Pemilihan, Kontrak, Pelaksanaan, atau Selesai.
 - **Ringkasan APBD/BLUD/DBHCHT dan metode (IMPLEMENTED):** kategori tanpa data tampil nol; tidak membuat data palsu.
+- **Persentase kartu (IMPLEMENTED):** enam KPI, APBD/BLUD/DBHCHT, E-Purchasing/Tender/Pengadaan Langsung, serta gagal/batal menampilkan persentase tekstual dan progress bar. Kontribusi sumber dana memakai pagu; kontribusi metode memakai jumlah paket; progres metode memakai paket selesai.
+- **Analisis negosiasi (IMPLEMENTED):** memasangkan tepat satu harga penawaran awal dan harga final per RUP E-Purchasing/Pengadaan Langsung yang lolos validasi tahap. Menampilkan total awal/final, selisih, efisiensi terhadap penawaran awal, rasio final, breakdown metode, anomali kenaikan, dan alasan eksklusi. Metrik ini terpisah dari efisiensi terhadap pagu.
 
 ## Functional rules
 

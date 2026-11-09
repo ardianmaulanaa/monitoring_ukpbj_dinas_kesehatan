@@ -46,3 +46,22 @@
 - Verification: source/schema/static inspection, Markdown relative-link check, SVG XML validation, Prisma validation, TypeScript, ESLint, and production build passed.
 
 Only verifiable future entries should be added; do not reconstruct undocumented history.
+# 2026-10-25
+
+- Memperbaiki agregasi dashboard agar workflow Pengadaan Langsung ikut menentukan tahap, nilai kontrak, realisasi, tren pembayaran, dan status selesai.
+- Mempertahankan RUP sebagai identitas agregasi tunggal untuk mencegah double counting terhadap record `PaketPengadaan` pendamping.
+- Menjadikan route dashboard dinamis dan mempertahankan revalidasi setelah penyimpanan tahap agar perubahan workflow langsung tercermin.
+
+## 2026-11-01 — Persentase dan progress kartu Dashboard
+
+- Menambahkan persentase besar dan progress bar aksesibel pada enam KPI, tiga sumber dana, tiga metode pengadaan, serta paket gagal/batal.
+- Menampilkan kontribusi pagu/paket dan progres realisasi/penyelesaian dari agregasi database aktual dengan fallback aman `0%`.
+- Mempertahankan definisi risiko yang lebih luas dan memisahkannya dari indikator gagal/batal.
+- Menyeragamkan layout responsif menjadi satu, dua, dan tiga kolom tanpa mengubah endpoint, schema Prisma, atau filter backend.
+
+## 2026-11-01 — Analisis negosiasi Dashboard
+
+- Menambahkan section perbandingan total penawaran awal dan hasil negosiasi final setelah enam KPI Dashboard.
+- Mengagregasi satu pasangan valid per RUP dari E-Purchasing dan Pengadaan Langsung, mengikuti scope/filter backend Dashboard tanpa menggabungkan record pendamping.
+- Menampilkan selisih bertanda, efisiensi terhadap penawaran awal, rasio final, breakdown metode, anomali kenaikan, empty state, dan alasan paket dikecualikan.
+- Tidak mengubah schema Prisma, data historis, endpoint, atau definisi KPI efisiensi terhadap pagu.

@@ -6,7 +6,8 @@
     "dev": "next dev --webpack",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --test src/lib/*.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

@@ -72,14 +72,18 @@ Satu record per RUP `PENGADAAN_LANGSUNG`, dengan `rupId` dan `paketId` unik. `ri
 |---|---|---|
 | Total package | RUP `id` | row count in active scope |
 | Total pagu | RUP `pagu` | sum |
-| Realisasi | RUP `nilaiPembayaran` | sum; monthly date `tanggalPembayaranEp` |
-| Contract value | RUP `hargaNegosiasiKatalog` + contract/SP evidence | sum valid pairs |
+| Realisasi | E-Purchasing: RUP `nilaiPembayaran`; Pengadaan Langsung: workflow `pembayaran.nilai` | sum; monthly date uses the corresponding recorded payment date |
+| Contract value | E-Purchasing: RUP `hargaNegosiasiKatalog` + contract/SP evidence; Pengadaan Langsung: workflow `kontrak.nilaiKontrak` + contract evidence | sum valid pairs |
 | Efficiency | RUP `pagu`, `hargaNegosiasiKatalog` | difference only for valid paired rows |
 | Monthly package histogram | RUP `createdAt` | count by record-input month; not planning date |
 | Monthly pagu | RUP `pagu`, `createdAt` | sum by input month, cumulative in UI |
 | Funding donut | RUP `sumberDana`, `pagu` | group + sum |
 | Monthly realization | RUP `nilaiPembayaran`, `tanggalPembayaranEp` | valid parsed date/year, cumulative in UI |
-| Current stage | workflow/status/evidence fields on RUP | one furthest valid stage per row |
+| Current stage | E-Purchasing: workflow/status/evidence fields on RUP; Pengadaan Langsung: `PengadaanLangsungWorkflow.tahapAktif` + authoritative completion rule | one furthest valid stage per RUP row |
+| Funding realization % | funding-group realization and pagu | `sum(realization) / sum(pagu)`, zero when pagu is zero |
+| Method completion % | current-stage completion per method | completed distinct RUP rows / all distinct RUP rows in method |
+| Failed/cancelled % | failure/cancellation indicators on RUP/workflow | matching distinct RUP rows / total distinct RUP rows |
+| Negotiation analysis | E-Purchasing: RUP `hargaPenawaranKatalog`, `hargaNegosiasiKatalog`, `statusNegosiasiKatalog`; Pengadaan Langsung: workflow `negosiasi` JSON + `tahapAktif` | one valid initial/final pair per RUP; sum initial, sum final, signed difference, and difference / sum initial |
 
 ## Enums
 

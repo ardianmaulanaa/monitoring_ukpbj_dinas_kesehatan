@@ -52,6 +52,11 @@ Untuk row RUP eligible E-Purchasing:
 - Realisasi Dashboard RUP hanya `nilaiPembayaran`; tidak disamakan dengan kontrak, HPS, atau BAST.
 - Efisiensi hanya untuk row dengan `pagu > 0` dan `hargaNegosiasiKatalog > 0`: `max(total pagu pasangan - total nilai final pasangan, 0)`. Cakupan parsial tidak dibandingkan dengan total pagu semua paket.
 - Model `Kontrak` dan `RealisasiBelanja` adalah jalur transaksi umum terpisah; Dashboard terpusat saat ini tidak menggabungkan model tersebut ke KPI RUP.
+- Semua rasio Dashboard mengembalikan `0%` bila denominator nol atau input tidak finite. Progress visual dibatasi ke 0-100%, sedangkan label tetap menunjukkan hasil agregasi aktual.
+- Kontribusi sumber dana = pagu sumber / total pagu; realisasi sumber = realisasi sumber / pagu sumber; kontribusi metode = jumlah paket metode / total paket; penyelesaian metode = paket selesai / total paket metode.
+- Gagal/batal hanya memakai indikator gagal atau batal aktual. KPI berisiko lebih luas dan juga mencakup revisi/kendala, sehingga kedua angka tidak boleh disamakan.
+- Analisis negosiasi memakai satu pasangan per row RUP: E-Purchasing menggunakan `hargaPenawaranKatalog`/`hargaNegosiasiKatalog` hanya saat status negosiasi `SELESAI`; Pengadaan Langsung menggunakan `negosiasi.nilaiPenawaran`/`negosiasi.hargaNegosiasi` hanya saat negosiasi berlaku, status klarifikasi terisi, dan tahap telah mencapai `KONTRAK` atau sesudahnya.
+- Kedua nilai negosiasi harus positif. Paket parsial/non-negosiasi dikeluarkan beserta alasan; final di atas awal tetap masuk sebagai kenaikan transparan, bukan dipaksa menjadi penghematan. Efisiensi hasil negosiasi = `(sum awal - sum final) / sum awal`, berbeda dari efisiensi terhadap pagu.
 
 ## Dashboard time-series
 
@@ -60,6 +65,13 @@ Untuk row RUP eligible E-Purchasing:
 - Realisasi bulanan: `nilaiPembayaran` pada bulan tanggal valid `tanggalPembayaranEp` dan tahun yang sama dengan `tahunAnggaran`.
 - Data disusun Jan-Des sebelum cumulative reduce, sehingga sorting tidak bergantung urutan query.
 - Nilai negatif tidak dipaksa naik; koreksi sah akan terlihat. Kurva visual wajib linear agar tidak mengarang overshoot.
+
+## Dashboard Pengadaan Langsung
+
+- Unit agregasi tetap satu row RUP. Relasi `PengadaanLangsungWorkflow` dan `PaketPengadaan` adalah detail eksekusi, bukan paket tambahan.
+- Tahap Pengadaan Langsung memakai `tahapAktif`: `KONTRAK` masuk Kontrak; `PENGIRIMAN`, `PEMERIKSAAN`, dan `PEMBAYARAN` masuk kelompok Pelaksanaan pada chart dashboard.
+- Paket hanya masuk Selesai jika ketujuh payload tahap telah tersimpan dan `pembayaran.statusPembayaran` bernilai `DIBAYAR`, `LUNAS`, atau `SELESAI`. Progres 100% sendiri bukan bukti selesai.
+- Nilai kontrak berasal dari `kontrak.nilaiKontrak` bila bukti/status kontrak tersimpan. Realisasi berasal dari `pembayaran.nilai` dan tren bulanan memakai `pembayaran.tanggal`; keduanya tidak diturunkan dari pagu atau progres.
 
 ## Authorization and integrity
 

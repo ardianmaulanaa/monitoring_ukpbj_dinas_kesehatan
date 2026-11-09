@@ -590,12 +590,12 @@ export default async function Page({
     {
       label: "Paket Berisiko",
       value: count(summary.paketBermasalah),
-      helper: "Revisi, kendala, gagal, atau batal tercatat",
+      helper: "Pengukuran risiko dinonaktifkan sementara",
       progress: calculatePercentage(
         summary.paketBermasalah,
         summary.totalPaket,
       ),
-      progressDetail: "Paket berisiko unik ÷ total seluruh paket",
+      progressDetail: "Menunggu mekanisme penilaian risiko khusus",
       color: "#c24141",
       icon: AlertTriangle,
     },

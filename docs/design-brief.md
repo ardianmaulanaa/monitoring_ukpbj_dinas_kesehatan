@@ -17,8 +17,9 @@ SIMUKPBJ should feel like a modern government operations application: clean, pro
 1. Shared AppHeader/navigation context.
 2. Full-width “Jumlah Paket per Bulan” histogram based on RUP `createdAt`.
 3. Six KPI cards: total pagu, realization, contract value, efficiency, completed, risk.
-4. Three analytics: funding allocation, cumulative budget/realization, current stage.
-5. Funding and procurement summaries.
+4. Full-width negotiation analysis with initial/final comparison and method breakdown.
+5. Three analytics: funding allocation, cumulative budget/realization, current stage.
+6. Funding and procurement summaries.
 
 The old large title/description hero and global filter bar are removed. Do not reintroduce them without a new approved requirement.
 
