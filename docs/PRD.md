@@ -73,7 +73,7 @@ Scope default adalah tahun anggaran terbaru pada data. UI tidak lagi menawarkan 
 
 ## Vendor Management System (2026-10-22)
 
-- **PARTIAL:** route dashboard, Direktorat Penyedia, tambah/detail vendor, katalog, presentasi/trial, evaluasi, dan laporan tersedia di `/vendor-management`.
+- **IMPLEMENTED:** workspace utama VMS tersedia di satu route `/vms`; Dashboard Vendor, Direktori Penyedia, Katalog Produk, Presentasi & Trial, Evaluasi Kinerja, dan Laporan Penyedia berpindah melalui state tab tanpa full-page navigation. Route `/vendor-management` tetap dipertahankan sebagai kompatibilitas implementasi lama/detail fallback.
 - **IMPLEMENTED:** master vendor terpisah dari `Penyedia` legacy, NIB ternormalisasi/unik, kontak, kategori configurable, status onboarding dengan transition guard, status history, audit log, backend RBAC, pagination/search, dan relasi eksplisit ke `PaketPengadaan`.
-- **PARTIAL:** halaman baca produk/presentasi/evaluasi sudah database-backed; mutation lengkap, upload/download privat, export, scheduler notifikasi, portal vendor, dan browser/E2E masih perlu fase lanjutan.
+- **PARTIAL:** workspace baca produk/presentasi/evaluasi sudah database-backed, tambah/detail vendor dan tambah/hubungkan produk memakai API/RBAC existing, serta rekap vendor dapat diekspor CSV sesuai permission. Mutation presentasi/evaluasi lengkap, upload/download privat, export Excel/PDF, scheduler notifikasi, portal vendor, dan browser/E2E masih perlu fase lanjutan.
 - VMS hanya dokumentasi/monitoring internal dan tidak menggantikan SPSE, SiRUP, SIKaP, e-Katalog, atau proses pemilihan resmi.

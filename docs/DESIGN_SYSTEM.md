@@ -81,4 +81,6 @@ Maintain sufficient contrast, keyboard actions, visible focus, semantic labels, 
 
 Halaman VMS memakai `ProtectedDashboardLayout`, `AppHeader`, sidebar existing, token warna putih-hijau, card berbatas lembut, table dengan overflow responsif, status badge, dan empty state. Navigasi sekunder VMS dapat di-scroll horizontal pada viewport sempit dan tidak membuat shell/sidebar kedua.
 
+Workspace `/vms` mengadaptasi hierarki visual Tabler 1.7.4 (stat cards, bordered surfaces, activity list, responsive data table, status badge, dan tab navigation) ke Tailwind/design token SIMUKPBJ; Bootstrap, global CSS, font, dan JavaScript Tabler tidak diimpor. Keenam tab memakai `role="tablist"`, `role="tab"`, `role="tabpanel"`, `aria-selected`, roving focus, serta navigasi Arrow/Home/End. Warna tetap berasal dari token SIMUKPBJ (`--ukpbj-green`, navy, yellow, cyan, teal), sementara chart memakai Chart.js existing.
+
 Pada Direktori Penyedia, tambah vendor memakai `ModalShell` shared tanpa berpindah route. Modal memiliki header tetap, area form internal yang dapat di-scroll, footer aksi sticky, layout dua kolom yang berubah menjadi satu kolom di mobile, konfirmasi saat menutup form yang sudah berubah, dan notifikasi sukses. Route `/vendor-management/vendors/new` tetap tersedia sebagai fallback dan memakai komponen form yang sama.

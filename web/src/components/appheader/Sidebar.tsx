@@ -99,7 +99,7 @@ const sections: NavigationSection[] = [
     title: "Manajemen Penyedia",
     items: [
       {
-        href: "/vendor-management",
+        href: "/vms",
         label: "Vendor Management System (VMS)",
         icon: Building2,
       },
@@ -142,11 +142,8 @@ function isActivePath(pathname: string, href: string) {
     return pathname === "/dashboard";
   }
 
-  if (href === "/vendor-management") {
-    return (
-      pathname === "/vendor-management" ||
-      pathname.startsWith("/vendor-management/")
-    );
+  if (href === "/vms") {
+    return pathname === "/vms" || pathname.startsWith("/vms/");
   }
 
   if (href === "/risiko-mitigasi") {

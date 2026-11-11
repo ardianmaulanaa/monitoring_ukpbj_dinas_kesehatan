@@ -1,5 +1,13 @@
 # Documentation Changelog
 
+## 2026-11-11 — Single-page VMS workspace
+
+- Menambahkan route utama `/vms` dengan enam tab horizontal berbasis React state dan pola ARIA tab, tanpa membuat route terpisah untuk perpindahan submenu.
+- Mengadaptasi pola visual Tabler 1.7.4 ke token, shell, sidebar, typography, Tailwind, modal, RBAC, Prisma, dan Chart.js existing milik SIMUKPBJ; tidak mengimpor Bootstrap atau asset Tabler.
+- Dashboard kini menampilkan empat KPI, pertumbuhan registrasi, distribusi kategori/status, aktivitas, dan tindak lanjut dari data database aktual.
+- Direktori menyediakan search/filter/sort/pagination dan detail/edit modal; katalog mempertahankan mutation existing; presentasi/evaluasi memakai data aktual dan laporan menyediakan filter serta export CSV berbasis permission.
+- Status tetap PARTIAL untuk mutation presentasi/evaluasi lengkap, penyimpanan file privat, export Excel/PDF, notifikasi terjadwal, dan browser/E2E. Tidak ada perubahan schema atau migration database.
+
 ## 2026-10-22 — Modal create vendor dan feedback validasi
 
 - Tombol Tambah Vendor pada Direktori Penyedia kini membuka `ModalShell` shared tanpa navigasi route.
